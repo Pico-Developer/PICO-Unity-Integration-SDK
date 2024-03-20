@@ -1,0 +1,22 @@
+{
+    "name": "PxrPlatform",
+    "version": "1.0.0-preview",
+    "libraryName": "PxrPlatform",
+    "displays": [
+        {
+            "id": "PICO Display",
+            "disablesLegacyVr": true,
+            "supportedMirrorBlitReservedModes": [
+                "leftEye",
+                "rightEye",
+                "sideBySide",
+                "occlusionMesh"
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "PICO Input"
+        }
+    ]
+}

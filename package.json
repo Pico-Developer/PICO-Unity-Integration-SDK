@@ -1,0 +1,19 @@
+{
+  "name": "com.unity.xr.picoxr",
+  "displayName": "PICO Integration",
+  "version": "2.5.3",
+  "unity": "2020.3",
+  "description": "Provides display and input support for PICO devices.",
+  "keywords": [
+    "picoxr",
+    "xr",
+    "vr",
+    "virtual",
+    "xreditorsubsystem"
+  ],
+  "dependencies": {
+    "com.unity.xr.management": "4.0.0",
+    "com.unity.xr.interaction.toolkit": "2.0.0"
+  },
+  "unityRelease": "21f1"
+}

@@ -1,0 +1,25 @@
+{
+    "name": "PICO.TobSupport",
+    "references": [
+        "Unity.XR.PICO.Editor",
+        "Unity.XR.PICO",
+        "Unity.XR.OpenXR.Features.PICOSupport.Editor",
+        "Unity.XR.OpenXR.Features.PICOSupport",
+        "Unity.XR.OpenXR"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.xr.picoxr",
+            "expression": "2.3.3",
+            "define": "PICO_XR"
+        }
+    ],
+    "noEngineReferences": false
+}

@@ -1,0 +1,17 @@
+﻿namespace Unity.XR.PICO.TOBSupport
+{
+    public enum HomeFunctionEnum
+    {
+        VALUE_HOME_GO_TO_SETTING=0,
+        VALUE_HOME_BACK=1,
+        VALUE_HOME_RECENTER=2,
+        VALUE_HOME_OPEN_APP=3,
+        VALUE_HOME_DISABLE=4,
+        VALUE_HOME_GO_TO_HOME=5,
+        VALUE_HOME_SEND_BROADCAST=6,
+        VALUE_HOME_CLEAN_MEMORY=7,
+        VALUE_HOME_QUICK_SETTING=8,
+        VALUE_HOME_SCREEN_CAP=9,
+        VALUE_HOME_SCREEN_RECORD=10
+    }
+}

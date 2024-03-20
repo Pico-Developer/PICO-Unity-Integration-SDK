@@ -1,0 +1,41 @@
+{
+    "name": "Unity.XR.PICO",
+    "rootNamespace": "",
+    "references": [
+        "Unity.XR.Management",
+        "Unity.InputSystem",
+        "Unity.Subsystem.Registration",
+        "Unity.XR.Hands",
+        "Unity.XR.PICO.LivePreview"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.inputsystem",
+            "expression": "",
+            "define": "UNITY_INPUT_SYSTEM"
+        },
+        {
+            "name": "com.unity.xr.management",
+            "expression": "3.2.0",
+            "define": "XR_MGMT_GTE_320"
+        },
+        {
+            "name": "com.unity.xr.hands",
+            "expression": "1.1.0",
+            "define": "XR_HANDS"
+        },
+        {
+            "name": "com.unity.pico.livepreview",
+            "expression": "1.0.0",
+            "define": "PICO_LIVE_PREVIEW"
+        }
+    ],
+    "noEngineReferences": false
+}
