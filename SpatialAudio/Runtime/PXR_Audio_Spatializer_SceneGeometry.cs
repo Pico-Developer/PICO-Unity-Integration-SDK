@@ -10,8 +10,15 @@ using UnityEngine;
 [RequireComponent(typeof(PXR_Audio_Spatializer_SceneMaterial))]
 public class PXR_Audio_Spatializer_SceneGeometry : MonoBehaviour
 {
+    [Tooltip("Whether include meshes in children game objects as the shape of this acoustic geometry.")]
     [SerializeField] private bool includeChildren = false;
+    
+    [Tooltip("Whether visualize meshes in current scene that are included as the shape of this acoustic geometry.\n" +
+             "  - non-static meshes are visualized using white wire frames;\n" +
+             "  - static meshes are visualized using green wire frames.")]
     [SerializeField] private bool visualizeMeshInEditor = false;
+    
+    [Tooltip("Baked static mesh used as the shape of this acoustic geometry.")]
     [SerializeField] private Mesh bakedStaticMesh;
 
     #region EDITOR-ONLY SerializedFields

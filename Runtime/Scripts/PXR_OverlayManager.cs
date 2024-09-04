@@ -95,7 +95,8 @@ namespace Unity.XR.PXR
             if (cam == null || cam != Camera.main || cam.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right) return;
 
             //CompositeLayers
-            int boundaryState = PXR_Plugin.Boundary.UPxr_GetSeeThroughState();
+            int boundaryState = PXR_Plugin.Boundary.seeThroughState;
+
             if (null == PXR_OverLay.Instances) return;
             if (PXR_OverLay.Instances.Count > 0 && boundaryState != 2)
             {
@@ -108,7 +109,10 @@ namespace Unity.XR.PXR
                     overlay.CreateTexture();
                     if (GraphicsDeviceType.Vulkan == SystemInfo.graphicsDeviceType)
                     {
-                        PXR_Plugin.Render.UPxr_GetLayerNextImageIndex(overlay.overlayIndex, ref overlay.imageIndex);
+                        if (overlay.enableSubmitLayer)
+                        {
+                            PXR_Plugin.Render.UPxr_GetLayerNextImageIndex(overlay.overlayIndex, ref overlay.imageIndex);
+                        }
                     }
                 }
             }
@@ -120,7 +124,7 @@ namespace Unity.XR.PXR
             if (null == Camera.main) return;
             if (cam == null || cam != Camera.main || cam.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right) return;
 
-            int boundaryState = PXR_Plugin.Boundary.UPxr_GetSeeThroughState();
+            int boundaryState = PXR_Plugin.Boundary.seeThroughState;
             if (null == PXR_OverLay.Instances) return;
             if (PXR_OverLay.Instances.Count > 0 && boundaryState != 2)
             {
@@ -228,6 +232,11 @@ namespace Unity.XR.PXR
                     if (compositeLayer.isPremultipliedAlpha)
                     {
                         header.layerFlags |= (UInt32)PxrLayerSubmitFlags.PxrLayerFlagPremultipliedAlpha;
+                    }
+
+                    if (!compositeLayer.enableSubmitLayer)
+                    {
+                        header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagFixLayer);
                     }
 
                     if (compositeLayer.overlayShape == PXR_OverLay.OverlayShape.Quad)
@@ -604,6 +613,93 @@ namespace Unity.XR.PXR
                         compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
                         Marshal.StructureToPtr(layerSubmit2, compositeLayer.layerSubmitPtr, false);
                         PXR_Plugin.Render.UPxr_SubmitLayerEac2ByRender(compositeLayer.layerSubmitPtr);
+                    }
+                    else if (compositeLayer.overlayShape == PXR_OverLay.OverlayShape.Fisheye)
+                    {
+                        PxrLayerFisheye layerSubmit = new PxrLayerFisheye();
+                        layerSubmit.header = header;
+                        layerSubmit.poseLeft = poseLeft;
+                        layerSubmit.poseRight = poseRight;
+                        layerSubmit.header.layerShape = PXR_OverLay.OverlayShape.Fisheye;
+
+                        layerSubmit.radiusLeft = compositeLayer.radius;
+                        layerSubmit.radiusRight = compositeLayer.radius;
+                        layerSubmit.scaleXLeft = 1 / compositeLayer.dstRectLeft.width;
+                        layerSubmit.scaleXRight = 1 / compositeLayer.dstRectRight.width;
+                        layerSubmit.scaleYLeft = 1 / compositeLayer.dstRectLeft.height;
+                        layerSubmit.scaleYRight = 1 / compositeLayer.dstRectRight.height;
+                        layerSubmit.biasXLeft = -compositeLayer.dstRectLeft.x / compositeLayer.dstRectLeft.width;
+                        layerSubmit.biasXRight = -compositeLayer.dstRectRight.x / compositeLayer.dstRectRight.width;
+                        layerSubmit.biasYLeft = 1 + (compositeLayer.dstRectLeft.y - 1) / compositeLayer.dstRectLeft.height;
+                        layerSubmit.biasYRight = 1 + (compositeLayer.dstRectRight.y - 1) / compositeLayer.dstRectRight.height;
+
+                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero)
+                        {
+                            Marshal.FreeHGlobal(compositeLayer.layerSubmitPtr);
+                            compositeLayer.layerSubmitPtr = IntPtr.Zero;
+                        }
+                        compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit));
+                        Marshal.StructureToPtr(layerSubmit, compositeLayer.layerSubmitPtr, false);
+                        PXR_Plugin.Render.UPxr_SubmitLayerFisheyeByRender(compositeLayer.layerSubmitPtr);
+                    }
+                    else if (compositeLayer.overlayShape == PXR_OverLay.OverlayShape.BlurredQuad)
+                    {
+                        PxrLayerQuad2 layerSubmit2 = new PxrLayerQuad2();
+                        float blurredQuadEXTAlpha = 0.0f;
+                        if (PXR_OverLay.BlurredQuadMode.SmallWindow == compositeLayer.blurredQuadMode)
+                        {
+                            header.layerFlags |= (UInt32)PxrLayerSubmitFlags.PxrLayerFlagBlurredQuadModeSmallWindow;
+                            blurredQuadEXTAlpha = 1.0f;
+                        }
+                        else if (PXR_OverLay.BlurredQuadMode.Immersion == compositeLayer.blurredQuadMode)
+                        {
+                            header.layerFlags |= (UInt32)PxrLayerSubmitFlags.PxrLayerFlagBlurredQuadModeImmersion;
+                            blurredQuadEXTAlpha = 0.0f;
+                        }
+                        layerSubmit2.header = header;
+                        layerSubmit2.poseLeft = poseLeft;
+                        layerSubmit2.poseRight = poseRight;
+
+                        layerSubmit2.sizeLeft.x = compositeLayer.modelScales[0].x;
+                        layerSubmit2.sizeLeft.y = compositeLayer.modelScales[0].y;
+                        layerSubmit2.sizeRight.x = compositeLayer.modelScales[0].x;
+                        layerSubmit2.sizeRight.y = compositeLayer.modelScales[0].y;
+
+                        if (compositeLayer.useImageRect)
+                        {
+                            Vector3 lPos = new Vector3();
+                            Vector3 rPos = new Vector3();
+                            Quaternion quaternion = new Quaternion(compositeLayer.modelRotations[0].x, compositeLayer.modelRotations[0].y, -compositeLayer.modelRotations[0].z, -compositeLayer.modelRotations[0].w);
+
+                            lPos.x = compositeLayer.modelScales[0].x * (-0.5f + compositeLayer.dstRectLeft.x + 0.5f * Mathf.Min(compositeLayer.dstRectLeft.width, 1 - compositeLayer.dstRectLeft.x));
+                            lPos.y = compositeLayer.modelScales[0].y * (-0.5f + compositeLayer.dstRectLeft.y + 0.5f * Mathf.Min(compositeLayer.dstRectLeft.height, 1 - compositeLayer.dstRectLeft.y));
+                            lPos.z = 0;
+                            lPos = quaternion * lPos;
+                            layerSubmit2.poseLeft.position.x += lPos.x;
+                            layerSubmit2.poseLeft.position.y += lPos.y;
+                            layerSubmit2.poseLeft.position.z += lPos.z;
+
+                            rPos.x = compositeLayer.modelScales[0].x * (-0.5f + compositeLayer.dstRectRight.x + 0.5f * Mathf.Min(compositeLayer.dstRectRight.width, 1 - compositeLayer.dstRectRight.x));
+                            rPos.y = compositeLayer.modelScales[0].y * (-0.5f + compositeLayer.dstRectRight.y + 0.5f * Mathf.Min(compositeLayer.dstRectRight.height, 1 - compositeLayer.dstRectRight.y));
+                            rPos.z = 0;
+                            rPos = quaternion * rPos;
+                            layerSubmit2.poseRight.position.x += rPos.x;
+                            layerSubmit2.poseRight.position.y += rPos.y;
+                            layerSubmit2.poseRight.position.z += rPos.z;
+
+                            layerSubmit2.sizeLeft.x = compositeLayer.modelScales[0].x * Mathf.Min(compositeLayer.dstRectLeft.width, 1 - compositeLayer.dstRectLeft.x);
+                            layerSubmit2.sizeLeft.y = compositeLayer.modelScales[0].y * Mathf.Min(compositeLayer.dstRectLeft.height, 1 - compositeLayer.dstRectLeft.y);
+                            layerSubmit2.sizeRight.x = compositeLayer.modelScales[0].x * Mathf.Min(compositeLayer.dstRectRight.width, 1 - compositeLayer.dstRectRight.x);
+                            layerSubmit2.sizeRight.y = compositeLayer.modelScales[0].y * Mathf.Min(compositeLayer.dstRectRight.height, 1 - compositeLayer.dstRectRight.y);
+                        }
+                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero)
+                        {
+                            Marshal.FreeHGlobal(compositeLayer.layerSubmitPtr);
+                            compositeLayer.layerSubmitPtr = IntPtr.Zero;
+                        }
+                        compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
+                        Marshal.StructureToPtr(layerSubmit2, compositeLayer.layerSubmitPtr, false);
+                        PXR_Plugin.Render.UPxr_SubmitLayerBlurredQuad2ByRender(compositeLayer.layerSubmitPtr, compositeLayer.blurredQuadScale, compositeLayer.blurredQuadShift, compositeLayer.blurredQuadFOV, compositeLayer.blurredQuadIPD, blurredQuadEXTAlpha);
                     }
                 }
             }

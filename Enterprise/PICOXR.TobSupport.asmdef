@@ -2,6 +2,7 @@
     "name": "PICO.TobSupport",
     "references": [
         "Unity.XR.PICO.Editor",
+        "Unity.XR.Interaction.Toolkit",
         "Unity.XR.PICO",
         "Unity.XR.OpenXR.Features.PICOSupport.Editor",
         "Unity.XR.OpenXR.Features.PICOSupport",
@@ -19,6 +20,10 @@
             "name": "com.unity.xr.picoxr",
             "expression": "2.3.3",
             "define": "PICO_XR"
+        },{
+            "name": "com.unity.xr.interaction.toolkit",
+            "expression": "2.4.0",
+            "define": "XRI_240"
         }
     ],
     "noEngineReferences": false

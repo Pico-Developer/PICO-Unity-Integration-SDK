@@ -10,7 +10,7 @@ public class PXR_Audio_Spatializer_SceneGeometryEditor : Editor
     private SerializedProperty bakedStaticMesh;
     private SerializedProperty meshBakingLayerMask;
     private bool showMeshBakingUtilsFlag = true;
-    private string showMeshBakingUtilities = "Static mesh baking utilities";
+    private string meshBakingUtilitiesTitle = "Static mesh baking utilities";
 
     void OnEnable()
     {
@@ -29,16 +29,18 @@ public class PXR_Audio_Spatializer_SceneGeometryEditor : Editor
         EditorGUILayout.PropertyField(visualizeMeshInEditor);
 
         //  Static mesh baking utilities
-        showMeshBakingUtilsFlag = EditorGUILayout.Foldout(showMeshBakingUtilsFlag, showMeshBakingUtilities);
+        showMeshBakingUtilsFlag = EditorGUILayout.Foldout(showMeshBakingUtilsFlag, meshBakingUtilitiesTitle);
         if (showMeshBakingUtilsFlag)
         {
             EditorGUI.indentLevel++;
-            
-            EditorGUILayout.PropertyField(meshBakingLayerMask);
+
+            EditorGUILayout.PropertyField(meshBakingLayerMask,
+                new GUIContent("Layer", "Layers of game objects that will trigger mesh baking."));
             serializedObject.ApplyModifiedProperties();
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(EditorGUI.indentLevel * 15);
-            if (GUILayout.Button("Bake"))
+            if (GUILayout.Button(new GUIContent("Bake", "Bake acoustic meshes for this acoustic geometry\n" +
+                                                        "  - affected by your 'Layer' setting.")))
             {
                 var start = Time.realtimeSinceStartup;
 
@@ -65,7 +67,7 @@ public class PXR_Audio_Spatializer_SceneGeometryEditor : Editor
                     durationMs);
             }
 
-            if (GUILayout.Button("Clear"))
+            if (GUILayout.Button(new GUIContent("Clear", "Clear the baked mesh")))
             {
                 Undo.IncrementCurrentGroup();
                 var undoGroupIndex = Undo.GetCurrentGroup();

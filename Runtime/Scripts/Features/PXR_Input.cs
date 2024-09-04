@@ -26,6 +26,7 @@ namespace Unity.XR.PXR
             Neo3,
             PICO_4,
             G3,
+            PICO_4U,
             NewController = 10
         }
 
@@ -49,6 +50,9 @@ namespace Unity.XR.PXR
             LeftController = 1,
             RightController = 2,
             BothController = 3,
+            LeftPICO4U = 4,
+            RightPICO4U = 8,
+            BothPICO4U = 12,
         }
 
         public enum CacheType
@@ -64,7 +68,8 @@ namespace Unity.XR.PXR
             Yes,
         }
 
-        public enum CacheConfig {
+        public enum CacheConfig
+        {
             CacheAndVibrate = 1,
             CacheNoVibrate = 2,
         }
@@ -522,7 +527,7 @@ namespace Unity.XR.PXR
         {
             return PXR_Plugin.Controller.UPxr_UpdateVibrateParams(sourceId, (int)vibrateController, (int)channelFlip, amp);
         }
-        
+
         /// <summary>
         /// Gets the data about the poses of body joints.
         /// </summary>
@@ -532,14 +537,14 @@ namespace Unity.XR.PXR
         {
             return PXR_Plugin.Controller.UPxr_GetBodyTrackingPose(predictTime, ref bodyTrackerResult);
         }
-        
+
         /// <summary>
         /// Gets the number of PICO Motion Trackers currently connected and their IDs.
         /// </summary>
         /// <param name="state">The number and IDs of connected PICO Motion Trackers.</param>
-        public static int GetFitnessBandConnectState(ref PxrFitnessBandConnectState state)
+        public static int GetMotionTrackerConnectStateWithID(ref PxrMotionTracker1ConnectState state)
         {
-            return PXR_Plugin.Controller.UPxr_GetFitnessBandConnectState(ref state);
+            return PXR_Plugin.Controller.UPxr_GetMotionTrackerConnectStateWithID(ref state);
         }
 
         /// <summary>
@@ -547,9 +552,9 @@ namespace Unity.XR.PXR
         /// </summary>
         /// <param name="trackerId">The ID of the motion tracker to get battery for.</param>
         /// <param name="battery">The motion tracker's battery. Value range: [0,5]. The smaller the value, the lower the battery level.</param>
-        public static int GetFitnessBandBattery(int trackerId, ref int battery)
+        public static int GetMotionTrackerBattery(int trackerId, ref int battery)
         {
-            return PXR_Plugin.Controller.UPxr_GetFitnessBandBattery(trackerId, ref battery);
+            return PXR_Plugin.Controller.UPxr_GetMotionTrackerBattery(trackerId, ref battery);
         }
 
         /// <summary>
@@ -559,25 +564,28 @@ namespace Unity.XR.PXR
         /// `0`: calibration uncompleted
         /// `1`: calibration completed
         /// </param>
-        public static int GetFitnessBandCalibState(ref int calibrated) {
-            return PXR_Plugin.Controller.UPxr_GetFitnessBandCalibState(ref calibrated);
+        public static int GetMotionTrackerCalibState(ref int calibrated)
+        {
+            return PXR_Plugin.Controller.UPxr_GetMotionTrackerCalibState(ref calibrated);
         }
 
         /// <summary>
         /// Sets a body tracking mode for PICO Motion Tracker. If this API is not called, the mode defaults to leg tracking.
-        /// @note If you want to set the mode to full-body tracking, you must call this API before calling `OpenFitnessBandCalibrationAPP`.
+        /// @note If you want to set the mode to full-body tracking, you must call this API before calling `OpenMotionTrackerCalibrationAPP`.
         /// </summary>
         /// <param name="mode">Selects a body tracking mode from the following:
-        /// * `0`: leg tracking, nodes numbered 0 to 15 in `BodyTrackerRole` enum will return data.
-        /// * `1`: full-body tracking, nodes numbered 0 to 23 in `BodyTrackerRole` enum will return data.
+        /// * Motion Tracker 1.0  `0`: leg tracking, nodes numbered 0 to 15 in `BodyTrackerRole` enum will return data.
+        /// * Motion Tracker 1.0  `1`: full-body tracking, nodes numbered 0 to 23 in `BodyTrackerRole` enum will return data.
+        /// * Motion Tracker 2.0  `0`: full-body tracking, nodes numbered 0 to 23 in `BodyTrackerRole` enum will return data. Low latency.
+        /// * Motion Tracker 2.0  `1`: full-body tracking, nodes numbered 0 to 23 in `BodyTrackerRole` enum will return data. High latency.
         /// </param>
         /// <returns>
         /// * `0`: success
         /// * `1`: failure
         /// </returns>
-        public static int SetSwiftMode(int mode)
+        public static int SetBodyTrackingMode(BodyTrackingMode mode)
         {
-            return PXR_Plugin.Controller.UPxr_SetSwiftMode(mode);
+            return PXR_Plugin.Controller.UPxr_SetBodyTrackingMode(mode);
         }
 
         /// <summary>
@@ -591,13 +599,6 @@ namespace Unity.XR.PXR
         public static int SetBodyTrackingBoneLength(BodyTrackingBoneLength boneLength)
         {
             return PXR_Plugin.Controller.UPxr_SetBodyTrackingBoneLength(boneLength);
-        }
-
-        /// <summary>
-        /// Launches the calibration app if the PICO Motion Tracker hasn't completed calibration.
-        /// </summary>
-        public static void OpenFitnessBandCalibrationAPP() {
-            PXR_Plugin.System.UPxr_OpenFitnessBandCalibrationAPP();
         }
 
         /// <summary>
@@ -823,7 +824,8 @@ namespace Unity.XR.PXR
         /// Updates the settings for a specified buffered haptic.
         /// </summary>
         /// <param name="sourceId">The source ID returned by `SendHapticBuffer`.
-        /// Set it to the target source ID to update a specific buffered haptic.</param>
+        /// Set it to the target source ID to update a specific buffered haptic.
+        /// </param>
         /// <param name="vibrateType">The controller(s) that the vibration is applied to:
         /// * `None`
         /// * `LeftController`
@@ -833,6 +835,7 @@ namespace Unity.XR.PXR
         /// <param name="channelFlip">Determines whether to enable audio channel inversion. Once enabled, the left controller vibrates with the audio data from the right channel, and vice versa.
         /// * `Yes`: enable
         /// * `No`: disable
+        /// </param>
         /// <param name="amplitudeScale">Vibration amplitude, the higher the amplitude, the stronger the haptic effect. The valid value range from `0` to `2`:
         /// * `0`: no vibration
         /// * `1`: standard amplitude
@@ -950,7 +953,7 @@ namespace Unity.XR.PXR
         /// </summary>
         /// <param name="source_id">The ID of the stream.</param>
         /// <returns>
-        /// * `0`: success
+        /// * `0`: successGetMotionTrackerCalibState
         /// * `1`: failure
         /// </returns>
         public static int RemoveHapticStream(int source_id)
@@ -1000,4 +1003,3 @@ namespace Unity.XR.PXR
 
     }
 }
-

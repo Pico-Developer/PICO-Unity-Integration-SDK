@@ -70,6 +70,16 @@ namespace Unity.XR.PXR
         public bool isExternalAndroidSurface = false;
         public bool isExternalAndroidSurfaceDRM = false;
         public Surface3DType externalAndroidSurface3DType = Surface3DType.Single;
+
+        #region Blurred Quad
+        public BlurredQuadMode blurredQuadMode = BlurredQuadMode.SmallWindow;
+
+        public float blurredQuadScale = 0.5f;
+        public float blurredQuadShift = 0.01f;
+        public float blurredQuadFOV = 70.0f;
+        public float blurredQuadIPD = 0.064f;
+        #endregion
+
         public IntPtr externalAndroidSurfaceObject = IntPtr.Zero;
         public delegate void ExternalAndroidSurfaceObjectCreated();
         public ExternalAndroidSurfaceObjectCreated externalAndroidSurfaceObjectCreated = null;
@@ -107,6 +117,8 @@ namespace Unity.XR.PXR
 
         public bool isClones = false;
         public bool isClonesToNew = false;
+        
+        public bool enableSubmitLayer = true;
         public PXR_OverLay originalOverLay;
         public IntPtr layerSubmitPtr = IntPtr.Zero;
         public APIExecutionStatus Quad2Status = APIExecutionStatus.None;
@@ -197,7 +209,7 @@ namespace Unity.XR.PXR
 
         private void InitializeBuffer()
         {
-            if (!isExternalAndroidSurface)
+            if (!isExternalAndroidSurface && !isClones)
             {
                 if (null == layerTextures[0] && null == layerTextures[1])
                 {
@@ -460,7 +472,10 @@ namespace Unity.XR.PXR
             }
             if (GraphicsDeviceType.Vulkan != SystemInfo.graphicsDeviceType)
             {
-                PXR_Plugin.Render.UPxr_GetLayerNextImageIndexByRender(overlayIndex, ref imageIndex);
+                if (enableSubmitLayer)
+                {
+                    PXR_Plugin.Render.UPxr_GetLayerNextImageIndexByRender(overlayIndex, ref imageIndex);
+                }
             }
             for (int i = 0; i < eyeCount; i++)
             {
@@ -598,6 +613,14 @@ namespace Unity.XR.PXR
 
         public void DestroyLayer()
         {
+            if (isExternalAndroidSurface)
+            {
+                PXR_Plugin.Render.UPxr_DestroyLayer(overlayIndex);
+                externalAndroidSurfaceObject = IntPtr.Zero;
+                ClearTexture();
+                return;
+            }
+
             if (!isClones)
             {
                 List<PXR_OverLay> toDestroyClones = new List<PXR_OverLay>();
@@ -625,11 +648,6 @@ namespace Unity.XR.PXR
                 }
             }
             ClearTexture();
-
-            if (isExternalAndroidSurface)
-            {
-                externalAndroidSurfaceObject = IntPtr.Zero;
-            }
         }
 
         private void ClearTexture()
@@ -746,7 +764,9 @@ namespace Unity.XR.PXR
             Cylinder = 2,
             Equirect = 3,
             Cubemap = 5,
-            Eac = 6
+            Eac = 6,
+            Fisheye = 7,
+            BlurredQuad = 9
         }
 
         public enum OverlayType
@@ -811,6 +831,12 @@ namespace Unity.XR.PXR
             None,
             True,
             False
+        }
+
+        public enum BlurredQuadMode
+        {
+            SmallWindow,
+            Immersion
         }
     }
 }

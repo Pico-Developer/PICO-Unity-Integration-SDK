@@ -11,7 +11,8 @@ using UnityEditor;
 
 public partial class PXR_Audio_Spatializer_Context : MonoBehaviour
 {
-    [SerializeField] public SpatializerApiImpl spatializerApiImpl = SpatializerApiImpl.unity;
+    [Tooltip("Audio backend you prefer to use")] [SerializeField]
+    public SpatializerApiImpl spatializerApiImpl = SpatializerApiImpl.unity;
 
     private static PXR_Audio.Spatializer.Api _api = null;
 
@@ -57,6 +58,9 @@ public partial class PXR_Audio_Spatializer_Context : MonoBehaviour
         get => initialized;
     }
 
+    [Tooltip(
+        "Rendering quality for Pico Spatial Audio system. Higher quality gives you better accuracy to real world, while lower quality saves you more computation.\n" +
+        "  - You need to re-enable this component after your changed quality during runtime.")]
     [SerializeField]
     private PXR_Audio.Spatializer.RenderingMode renderingQuality = PXR_Audio.Spatializer.RenderingMode.MediumQuality;
 
@@ -70,8 +74,13 @@ public partial class PXR_Audio_Spatializer_Context : MonoBehaviour
 
     public PXR_Audio.Spatializer.RenderingMode RenderingQuality => renderingQuality;
 
-    [SerializeField] private UnityEvent preInitEvent;
-    [SerializeField] private UnityEvent lateInitEvent;
+    [Tooltip("Customizable event executed right before Pico Spatial Audio system is initialized for this game.")]
+    [SerializeField]
+    private UnityEvent preInitEvent;
+
+    [Tooltip("Customizable event executed right after Pico Spatial Audio system is initialized for this game.")]
+    [SerializeField]
+    private UnityEvent lateInitEvent;
 
     private AudioConfiguration audioConfig;
 

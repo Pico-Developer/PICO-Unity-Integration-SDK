@@ -239,9 +239,11 @@ namespace Unity.XR.PXR
                                 ret |= UpdateSuccessFlags.LeftHandRootPose;
                             }
                         }
-                        ret |= UpdateSuccessFlags.LeftHandJoints;
-
-                        PicoAimHand.left.UpdateHand(HandType.HandLeft, (ret & UpdateSuccessFlags.LeftHandRootPose) != 0);
+                        
+                        if (PicoAimHand.left.UpdateHand(HandType.HandLeft, (ret & UpdateSuccessFlags.LeftHandRootPose) != 0))
+                        {
+                            ret  |= UpdateSuccessFlags.LeftHandJoints;
+                        }
                     }
                 }
 
@@ -262,9 +264,10 @@ namespace Unity.XR.PXR
                             }
 
                         }
-                        ret |= UpdateSuccessFlags.RightHandJoints;
-
-                        PicoAimHand.right.UpdateHand(HandType.HandRight, (ret & UpdateSuccessFlags.RightHandRootPose) != 0);
+                        if (PicoAimHand.right.UpdateHand(HandType.HandRight, (ret & UpdateSuccessFlags.RightHandRootPose) != 0))
+                        {
+                            ret |=   UpdateSuccessFlags.RightHandJoints;
+                        }
                     }
                 }
 
@@ -562,7 +565,7 @@ namespace Unity.XR.PXR
             }
         }
 
-        internal void UpdateHand(HandType handType, bool isHandRootTracked)
+        internal bool UpdateHand(HandType handType, bool isHandRootTracked)
         {
 
             HandAimState handAimState = new HandAimState();
@@ -573,6 +576,8 @@ namespace Unity.XR.PXR
                 handAimState.aimStatus,
                 handAimState.aimRayPose,
                 handAimState.touchStrengthRay);
+           
+            return (handAimState.aimStatus&HandAimStatus.AimComputed) != 0;
         }
 
 #if UNITY_EDITOR

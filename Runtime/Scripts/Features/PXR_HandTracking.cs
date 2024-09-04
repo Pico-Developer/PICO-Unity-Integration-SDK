@@ -19,9 +19,18 @@ using Unity.XR.PICO.LivePreview;
 
 namespace Unity.XR.PXR
 {
+    /// <summary>
+    /// Hand types.
+    /// </summary>
     public enum HandType
     {
+        /// <summary>
+        /// Left hand.
+        /// </summary>
         HandLeft = 0,
+        /// <summary>
+        /// Right hand.
+        /// </summary>
         HandRight = 1,
     }
 
@@ -317,15 +326,14 @@ namespace Unity.XR.PXR
         /// {
         ///     // Whether the data is valid.
         ///     public bool Computed { get; private set; }
-        ///
         ///     // The ray pose.
         ///     public Posef RayPose { get; private set; }
         ///     // Whether the ray was displayed.
         ///     public bool RayValid { get; private set; }
-        ///     // Whether the ray touched.
-        ///     public bool RayTouched { get; private set; }
-        ///     // The strength of ray touch.
-        ///     public float TouchStrengthRay { get; private set; }
+        ///     // Whether the ray pinched.
+        ///     public bool Pinch { get; private set; }
+        ///     // The strength of ray pinch.
+        ///     public float PinchStrength { get; private set; }
         /// ```
         /// </param>
         /// <returns>
@@ -391,6 +399,23 @@ namespace Unity.XR.PXR
             return true;
 #endif
             return PXR_Plugin.HandTracking.UPxr_GetHandTrackerJointLocations(hand, ref jointLocations);
+        }
+
+        /// <summary>
+        /// Gets the scaling ratio of the hand model.
+        /// </summary>
+        /// <param name="hand">Specifies the hand to get scaling ratio for:
+        /// * `HandLeft`: left hand
+        /// * `HandRight`: right hand
+        /// </param>
+        /// <param name="scale">Returns the scaling ratio for the specified hand.</param>
+        /// <returns>
+        /// * `true`: success
+        /// * `false`: failure
+        /// </returns>
+        public static bool GetHandScale(HandType hand,ref float scale)
+        {
+            return PXR_Plugin.HandTracking.UPxr_GetHandScale((int)hand, ref scale);
         }
 
     }

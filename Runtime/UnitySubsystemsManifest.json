@@ -18,5 +18,10 @@
         {
             "id": "PICO Input"
         }
+    ],
+	"meshings": [
+        {
+            "id": "PICO Mesh"
+        }
     ]
 }

@@ -27,6 +27,8 @@ namespace Unity.XR.PXR
         public GameObject PICO_4L;
         public GameObject PICO_4R;
         public GameObject G3;
+        public GameObject PICO_4U_L;
+        public GameObject PICO_4U_R;
 
         public Material legacyMaterial;
         private Texture2D modelTexture2D;
@@ -49,7 +51,8 @@ namespace Unity.XR.PXR
             None,
             Neo3,
             PICO4,
-            G3
+            G3,
+            PICO4U
         }
 #if UNITY_EDITOR
         [SerializeField]
@@ -68,17 +71,22 @@ namespace Unity.XR.PXR
                 case ControllerSimulationType.Neo3:
                     {
                         Instantiate(hand == PXR_Input.Controller.LeftController ? neo3L : neo3R, transform, false);
-                        break; ;
+                        break;
                     }
                 case ControllerSimulationType.PICO4:
                     {
                         Instantiate(hand == PXR_Input.Controller.LeftController ? PICO_4L : PICO_4R, transform, false);
-                        break; ;
+                        break;
                     }
                 case ControllerSimulationType.G3:
                     {
                         Instantiate(G3, transform, false);
-                        break; ;
+                        break;
+                    }
+                case ControllerSimulationType.PICO4U:
+                    {
+                        Instantiate(hand == PXR_Input.Controller.LeftController ? PICO_4U_L : PICO_4U_R, transform, false);
+                        break;
                     }
             }
 #endif
@@ -232,6 +240,10 @@ namespace Unity.XR.PXR
                     break;
                 case 7:
                     Instantiate(G3, transform, false);
+                    loadModelSuccess = true;
+                    break;
+                case 8:
+                    Instantiate(hand == PXR_Input.Controller.LeftController ? PICO_4U_L : PICO_4U_R, transform, false);
                     loadModelSuccess = true;
                     break;
                 default:

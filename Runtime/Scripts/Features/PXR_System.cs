@@ -17,34 +17,8 @@ using UnityEngine;
 
 namespace Unity.XR.PXR
 {
-    /// <summary>
-    /// A callback function that notifies the change of input device.
-    /// </summary>
-    public delegate void InputDeviceChangedCallBack(int value);
-    /// <summary>
-    /// A callback function that notifies the change of seethrough state.
-    /// </summary>
-    public delegate void SeethroughStateChangedCallBack(int value);
-    /// <summary>
-    /// A callback function that notifies the current connection status of PICO Motion Tracker and the number of motion trackers connected.
-    /// For connection status, `0` indicates "disconnected" and `1` indicates "connected".
-    /// </summary>
-    public delegate void FitnessBandNumberOfConnectionsCallBack(int state, int value);
-    /// <summary>
-    /// A callback function that notifies calibration exceptions.
-    /// The user then needs to recalibrate with PICO Motion Tracker.
-    /// </summary>
-    public delegate void FitnessBandAbnormalCalibrationDataCallBack(int state, int value);
-    /// <summary>
-    /// A callback function that notifies the battery of PICO Motion Traker.
-    /// Value range: [0,5]. `0` indicates a low battery, which can affect the tracking accuracy.
-    /// </summary>
-    public delegate void FitnessBandElectricQuantityCallBack(int trackerID, int battery);
-    /// <summary>
-    /// A callback function that notifies the change of loglevel state.
-    /// </summary>
-    public delegate void LoglevelChangedCallBack(int value);
-    
+    public delegate void EventDataBufferCallBack(ref PxrEventDataBuffer dataBuffer);
+
     public class PXR_System
     {
         /// <summary>
@@ -436,6 +410,11 @@ namespace Unity.XR.PXR
         public static bool SetVolumeNum(int volume)
         {
             return PXR_Plugin.System.UPxr_SetVolumeNum(volume);
+        }
+
+        public static string GetProductName()
+        {
+            return PXR_Plugin.System.ProductName;
         }
     }
 }

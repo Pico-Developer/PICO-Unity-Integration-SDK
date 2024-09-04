@@ -10,11 +10,14 @@ material is strictly forbidden unless prior written permission is obtained from
 PICO Technology Co., Ltd. 
 *******************************************************************************/
 
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using Unity.XR.PXR;
+using System.Linq;
+using UnityEngine.SceneManagement;
+#if AR_FOUNDATION
+using UnityEngine.XR.ARFoundation;
+#endif
 
 namespace Unity.XR.PXR.Editor
 {
@@ -38,14 +41,14 @@ namespace Unity.XR.PXR.Editor
 
         void OnEnable()
         {
-            if (stereoRenderingModeAndroid == null) 
+            if (stereoRenderingModeAndroid == null)
                 stereoRenderingModeAndroid = serializedObject.FindProperty(StereoRenderingModeAndroid);
             if (systemDisplayFrequency == null)
                 systemDisplayFrequency = serializedObject.FindProperty(SystemDisplayFrequency);
             if (optimizeBufferDiscards == null)
-                optimizeBufferDiscards = serializedObject.FindProperty(OptimizeBufferDiscards);            
+                optimizeBufferDiscards = serializedObject.FindProperty(OptimizeBufferDiscards);
             if (systemSplashScreen == null)
-                systemSplashScreen = serializedObject.FindProperty(SystemSplashScreen);       
+                systemSplashScreen = serializedObject.FindProperty(SystemSplashScreen);
         }
 
         public override void OnInspectorGUI()
@@ -72,6 +75,66 @@ namespace Unity.XR.PXR.Editor
                 EditorGUILayout.PropertyField(optimizeBufferDiscards, guiOptimizeBuffer);
                 EditorGUILayout.PropertyField(serializedObject.FindProperty("enableAppSpaceWarp"), new GUIContent("Application SpaceWarp"));
                 EditorGUILayout.PropertyField(systemSplashScreen, guiSystemSplashScreen);
+
+#if AR_FOUNDATION
+                PXR_ProjectSetting projectConfig = PXR_ProjectSetting.GetProjectConfig();
+                var guiContent = new GUIContent();
+                guiContent.text = "AR Foundation";
+                projectConfig.arFoundation = EditorGUILayout.Toggle(guiContent, projectConfig.arFoundation);
+                if (projectConfig.arFoundation)
+                {
+                    EditorGUI.indentLevel++;
+                    // body tracking
+                    guiContent.text = "Body Tracking";
+                    projectConfig.bodyTracking = EditorGUILayout.Toggle(guiContent, projectConfig.bodyTracking);
+
+                    // face tracking
+                    guiContent.text = "Face Tracking";
+                    projectConfig.faceTracking = EditorGUILayout.Toggle(guiContent, projectConfig.faceTracking);
+
+                    // anchor
+                    guiContent.text = "Anchor";
+                    projectConfig.spatialAnchor = EditorGUILayout.Toggle(guiContent, projectConfig.spatialAnchor);
+
+                    // anchor
+                    guiContent.text = "Meshing";
+                    projectConfig.spatialMesh = EditorGUILayout.Toggle(guiContent, projectConfig.spatialMesh);
+
+                    List<ARCameraManager> components = FindComponentsInScene<ARCameraManager>().Where(component => (component.enabled && component.gameObject.CompareTag("MainCamera"))).ToList();
+                    bool cameraEffect = false;
+                    for (int i = 0; i < components.Count; i++)
+                    {
+                        ARCameraManager aRCamera = components[i];
+                        if (aRCamera.gameObject.GetComponent<PXR_ARCameraEffectManager>())
+                        {
+                            cameraEffect = true;
+                        }
+                        Camera camera = aRCamera.gameObject.GetComponent<Camera>();
+                        if (camera)
+                        {
+                            camera.clearFlags = CameraClearFlags.SolidColor;
+                            camera.backgroundColor = new Color(0, 0, 0, 0);
+                        }
+                    }
+
+                    if (!cameraEffect && components.Count > 0)
+                    {
+                        ARCameraManager aRCamera = components[0];
+                        if (!aRCamera.gameObject.GetComponent<PXR_ARCameraEffectManager>())
+                        {
+                            aRCamera.gameObject.AddComponent<PXR_ARCameraEffectManager>();
+                        }
+                        cameraEffect = true;
+                    }
+
+                    EditorGUI.indentLevel--;
+                }
+
+                if (GUI.changed)
+                {
+                    EditorUtility.SetDirty(projectConfig);
+                }
+#endif
             }
             EditorGUI.EndDisabledGroup();
             EditorGUILayout.EndVertical();
@@ -79,6 +142,21 @@ namespace Unity.XR.PXR.Editor
 
             serializedObject.ApplyModifiedProperties();
             EditorGUIUtility.labelWidth = 0f;
+        }
+
+        public static List<T> FindComponentsInScene<T>() where T : Component
+        {
+            var activeScene = SceneManager.GetActiveScene();
+            var foundComponents = new List<T>();
+
+            var rootObjects = activeScene.GetRootGameObjects();
+            foreach (var rootObject in rootObjects)
+            {
+                var components = rootObject.GetComponentsInChildren<T>(true);
+                foundComponents.AddRange(components);
+            }
+
+            return foundComponents;
         }
     }
 }

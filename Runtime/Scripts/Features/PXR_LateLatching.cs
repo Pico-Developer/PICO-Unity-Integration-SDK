@@ -62,6 +62,7 @@ namespace Unity.XR.PXR
 
         }
 
+#if !UNITY_EDITOR
         private void OnPreRender()
         {
             s_DisplaySubsystem.BeginRecordingIfLateLatched(m_LateLatchingCamera);
@@ -71,6 +72,7 @@ namespace Unity.XR.PXR
         {
             s_DisplaySubsystem.EndRecordingIfLateLatched(m_LateLatchingCamera);
         }
+#endif
 
         private void FixedUpdate()
         {

@@ -1,7 +1,9 @@
 {
     "name": "Pico.Spatializer",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "Unity.XR.PICO"
+    ],
     "includePlatforms": [
         "Android",
         "Editor",

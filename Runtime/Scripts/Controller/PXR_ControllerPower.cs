@@ -36,7 +36,15 @@ public class PXR_ControllerPower : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        powerMaterial = GetComponent<MeshRenderer>().material;
+        if (GetComponent<MeshRenderer>() != null)
+        {
+            powerMaterial = GetComponent<MeshRenderer>().material;
+            
+        }
+        else
+        {
+            powerMaterial = GetComponent<SkinnedMeshRenderer>().material;
+        }
     }
 
     // Update is called once per frame

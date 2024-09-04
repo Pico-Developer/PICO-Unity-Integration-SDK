@@ -50,5 +50,7 @@ MonoBehaviour:
   PICO_4L: {fileID: 3222469904833361626, guid: 853840c5196b2486a97e1785f3a68575, type: 3}
   PICO_4R: {fileID: 1704171135803129665, guid: 3a5f20f82a5224d7d969e99da633fc69, type: 3}
   G3: {fileID: 3592357975929350142, guid: 4632f3d33fc5ea94e8a7673306cbb3e2, type: 3}
+  PICO_4U_L: {fileID: 5160734707760153619, guid: d600af752179d4343b26d6d3eab89e8d, type: 3}
+  PICO_4U_R: {fileID: 2641197622611298662, guid: ab854e81d8fcde04eb1603f397457afc, type: 3}
   legacyMaterial: {fileID: 2100000, guid: ea5d1bb890cef78439598b7062576fa3, type: 2}
   controllerSimulation: 0

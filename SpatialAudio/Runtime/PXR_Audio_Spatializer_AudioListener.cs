@@ -14,7 +14,11 @@ public class PXR_Audio_Spatializer_AudioListener : MonoBehaviour
         PicoAudioRouter
     }
 
-    [SerializeField] private OutputMethod outputMethod = OutputMethod.OnAudioFilterRead;
+    [Tooltip("Determine where the output spatial audio signal goes:\n" +
+             "  - On Audio Filter Read: Spatial audio signal got mixed with the rest of the game.\n" +
+             "  - Pico Audio Router: Spatial audio signal got transmitted to one or more 'Pico Audio Router' effects in the Unity Audio Mixer to gain more control to your mix.")]
+    [SerializeField]
+    private OutputMethod outputMethod = OutputMethod.OnAudioFilterRead;
 
     private float[] temp_output_buffer = new float[2048];
 
@@ -107,6 +111,7 @@ public class PXR_Audio_Spatializer_AudioListener : MonoBehaviour
             context.GetInterleavedBinauralBuffer(temp_output_buffer, (uint)(data.Length / channels), false);
             PicoAudioRouterInput(temp_output_buffer, data.Length / channels, channels);
         }
+
         isAudioDSPInProgress = false;
     }
 }

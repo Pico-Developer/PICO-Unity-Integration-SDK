@@ -2,6 +2,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Unity.XR.PXR;
 using UnityEngine;
 
 namespace PXR_Audio
@@ -237,6 +238,7 @@ namespace PXR_Audio
                     uint sampleRate
                 )
             {
+                PXR_Plugin.System.UPxr_LogSdkApi("pico_spatial_audio_create_context|unity_native");
                 return CreateContextImport(ref ctx, mode, framesPerBuffer, sampleRate);
             }
 
@@ -308,6 +310,7 @@ namespace PXR_Audio
                 int indicesCount,
                 ref MeshConfig config, ref int geometryId)
             {
+                PXR_Plugin.System.UPxr_LogSdkApi("pico_spatial_audio_submit_mesh_with_config|unity_native");
                 return SubmitMeshWithConfigImport(ctx, vertices, verticesCount, indices, indicesCount, ref config,
                     ref geometryId);
             }
@@ -434,6 +437,7 @@ namespace PXR_Audio
                 bool isAsync
             )
             {
+                PXR_Plugin.System.UPxr_LogSdkApi("pico_spatial_audio_add_source_with_config|unity_native");
                 return AddSourceWithConfigImport(ctx, ref sourceConfig, ref sourceId, isAsync);
             }
 
@@ -826,6 +830,7 @@ namespace PXR_Audio
                     uint sampleRate
                 )
             {
+                PXR_Plugin.System.UPxr_LogSdkApi("pico_spatial_audio_create_context|wwise");
                 return CreateContextImport(ref ctx, mode, framesPerBuffer, sampleRate);
             }
 
@@ -895,6 +900,7 @@ namespace PXR_Audio
                 int indicesCount,
                 ref MeshConfig config, ref int geometryId)
             {
+                PXR_Plugin.System.UPxr_LogSdkApi("pico_spatial_audio_submit_mesh_with_config|wwise");
                 return SubmitMeshWithConfigImport(ctx, vertices, verticesCount, indices, indicesCount, ref config,
                     ref geometryId);
             }

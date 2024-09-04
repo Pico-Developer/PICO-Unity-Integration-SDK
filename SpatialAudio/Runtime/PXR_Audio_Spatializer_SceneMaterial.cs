@@ -4,17 +4,28 @@ using UnityEngine;
 
 public class PXR_Audio_Spatializer_SceneMaterial : MonoBehaviour
 {
-    [SerializeField] public PXR_Audio.Spatializer.AcousticsMaterial
+    [Tooltip("Acoustic material preset corresponding to real-world material types. " +
+             "Absorption, scattering, and transmission will be automatically set based on the physical nature of the selected material.\n" +
+             "Deviating acoustic parameters away from preset values will automatically set this field to 'Custom'")]
+    [SerializeField]
+    public PXR_Audio.Spatializer.AcousticsMaterial
         materialPreset = PXR_Audio.Spatializer.AcousticsMaterial.AcousticTile;
 
     private PXR_Audio.Spatializer.AcousticsMaterial lastMaterialPreset =
         PXR_Audio.Spatializer.AcousticsMaterial.AcousticTile;
 
-    [SerializeField] [Range(0.0f, 1.0f)] public float[] absorption = new float[4];
+    [SerializeField] [Range(0.0f, 1.0f)]
+    public float[] absorption = new float[4];
 
-    [SerializeField] [Range(0.0f, 1.0f)] public float scattering = 0.0f;
+    [Tooltip("Ratio of sound energy get scattered by each reflection.\n" +
+             "  - Low scattering will result in a more echoic sound\n" +
+             "  - high scattering will result in a more reverberant sound")]
+    [SerializeField]
+    [Range(0.0f, 1.0f)]
+    public float scattering = 0.0f;
 
-    [SerializeField] [Range(0.0f, 1.0f)] public float transmission = 0.0f;
+    [Tooltip("Ratio of sound energy get transmitted through this material.")] [SerializeField] [Range(0.0f, 1.0f)]
+    public float transmission = 0.0f;
 
     private float[] absorptionForValidation = new float[4];
     private float scatteringForValidation = 0.0f;

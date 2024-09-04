@@ -14,13 +14,1420 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Tilemaps;
+using UnityEngine.XR;
 
 namespace Unity.XR.PXR
 {
     public class PXR_MixedReality
     {
-        #region New API
+        private const string TAG = "[PXR_MixedReality]";
+        /// <summary>
+        /// Starts the Spatial Anchor or Scene Capture feature by starting the corresponding sense data provider.
+        /// </summary>
+        /// <param name="type">Specifies the type of sense data provider to start: `SpatialAnchor` or `SceneCapture`.</param>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static async Task<PxrResult> StartSenseDataProvider(PxrSenseDataProviderType type, CancellationToken token = default)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                return PxrResult.SUCCESS;
+            }
+            else
+            {
+                return await Task.Run(() =>
+                {
+                    var providerHandle = PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(type);
+                    var startResult = PXR_Plugin.MixedReality.UPxr_StartSenseDataProviderAsync(providerHandle, out var future);
+                    if (startResult == PxrResult.SUCCESS)
+                    {
+                        while (true)
+                        {
+                            var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                            if (pollResult == PxrResult.SUCCESS)
+                            {
+                                if (futureState == PxrFutureState.Ready)
+                                {
+                                    var completeResult = PXR_Plugin.MixedReality.UPxr_StartSenseDataProviderComplete(future, out var completion);
+                                    if (completeResult == PxrResult.SUCCESS)
+                                    {
+                                        return completion.futureResult;
+                                    }
+                                    else
+                                    {
+                                        return completeResult;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return pollResult;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return startResult;
+                    }
+
+                }, token);
+            }
+        }
+
+        /// <summary>
+        /// Gets the state of the sense data provider.
+        /// </summary>
+        /// <param name="type">Specifies the type of sense data provider to get state for: `SpatialAnchor` or `SceneCapture`.</param>
+        /// <param name="state">Returns the state of the specified sense data provider.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult GetSenseDataProviderState(PxrSenseDataProviderType type,out PxrSenseDataProviderState state)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                state = PxrSenseDataProviderState.Running;
+                return PxrResult.SUCCESS;
+            }
+            else
+            {
+                var providerHandle = PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(type);
+                return PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderState(providerHandle, out state);
+            }
+        }
+
+        /// <summary>
+        /// Stops the Spatial Anchor or Scene Capture feature by stopping the corresponding sense data provider.
+        /// </summary>
+        /// <param name="type">Specifies the sense data provider to stop: `SpatialAnchor` or `SceneCapture`.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult StopSenseDataProvider(PxrSenseDataProviderType type)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                return PxrResult.SUCCESS;
+            }
+            else
+            {
+                var providerHandle = PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(type);
+                var stopResult = PXR_Plugin.MixedReality.UPxr_StopSenseDataProvide(providerHandle);
+                return stopResult;
+            }
+        }
+
+        /// <summary>
+        /// Creates a spatial anchor in the app's memory.
+        /// </summary>
+        /// <param name="position">Specifies the position of the spatial anchor.</param>
+        /// <param name="rotation">Specifies the rotation of the spatial anchor.</param>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details. In addition, the handle and UUID of the spatial anchor created are returned.</returns>
+        public static async Task<(PxrResult result,ulong anchorHandle,Guid uuid)> CreateSpatialAnchorAsync(Vector3 position, Quaternion rotation, CancellationToken token = default)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                var result = CreateAnchorEntity(position, rotation,out var taskId);
+                if (result == PxrResult.SUCCESS)
+                {
+                    var tcs = new TaskCompletionSource<(PxrResult result, ulong anchorHandle, Guid uuid)>();
+
+                    void Handler(PxrEventAnchorEntityCreated entityCreated)
+                    {
+                        PXR_Manager.AnchorEntityCreated -= Handler;
+
+                        tcs.SetResult((entityCreated.result,entityCreated.anchorHandle,entityCreated.uuid));
+                    }
+
+                    PXR_Manager.AnchorEntityCreated += Handler;
+
+                    return await tcs.Task;
+                }
+                else
+                {
+                    return (result, ulong.MinValue, Guid.Empty);
+                }
+            }
+            else
+            {
+                return await Task.Run(() =>
+                {
+                    var createResult = PXR_Plugin.MixedReality.UPxr_CreateSpatialAnchorAsync(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), position, rotation, out var future);
+                    if (createResult == PxrResult.SUCCESS)
+                    {
+                        while (true)
+                        {
+                            var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                            if (pollResult == PxrResult.SUCCESS)
+                            {
+                                if (futureState == PxrFutureState.Ready)
+                                {
+                                    var completeResult = PXR_Plugin.MixedReality.UPxr_CreateSpatialAnchorComplete(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), future, out var completion);
+                                    if (completeResult == PxrResult.SUCCESS)
+                                    {
+                                        byte[] byteArray = new byte[16];
+                                        BitConverter.GetBytes(completion.uuid.value0).CopyTo(byteArray, 0);
+                                        BitConverter.GetBytes(completion.uuid.value1).CopyTo(byteArray, 8);
+                                        var uuid = new Guid(byteArray);
+                                        return (completion.futureResult, completion.anchorHandle, uuid);
+                                    }
+                                    else
+                                    {
+                                        return (completeResult, ulong.MinValue, Guid.Empty);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return (pollResult, ulong.MinValue, Guid.Empty);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return (createResult, ulong.MinValue, Guid.Empty);
+                    }
+                }, token);
+            }
+        }
+
+        /// <summary>
+        /// Persists a spatial anchor to the PICO device's local disk.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the spatial anchor to persist.</param>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static async Task<PxrResult> PersistSpatialAnchorAsync(ulong anchorHandle, CancellationToken token = default)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                ulong[] anchors = { anchorHandle };
+                var result = PersistAnchorEntity(anchors, PxrPersistLocation.Local, out var taskId);
+                if (result == PxrResult.SUCCESS)
+                {
+                    var tcs = new TaskCompletionSource<PxrResult>();
+
+                    void Handler(PxrEventAnchorEntityPersisted entityPersisted)
+                    {
+                        PXR_Manager.AnchorEntityPersisted -= Handler;
+
+                        tcs.SetResult(entityPersisted.result);
+                    }
+
+                    PXR_Manager.AnchorEntityPersisted += Handler;
+
+                    return await tcs.Task;
+                }
+                else
+                {
+                    return result;
+                }
+            }
+            else
+            {
+                return await Task.Run(() =>
+                {
+                    var persistResult = PXR_Plugin.MixedReality.UPxr_PersistSpatialAnchorAsync(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), anchorHandle, out var future);
+                    if (persistResult == PxrResult.SUCCESS)
+                    {
+                        while (true)
+                        {
+                            var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                            if (pollResult == PxrResult.SUCCESS)
+                            {
+                                if (futureState == PxrFutureState.Ready)
+                                {
+                                    var completeResult = PXR_Plugin.MixedReality.UPxr_PersistSpatialAnchorComplete(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), future, out var completion);
+                                    if (completeResult == PxrResult.SUCCESS)
+                                    {
+                                        return completion.futureResult;
+                                    }
+                                    else
+                                    {
+                                        return completeResult;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return pollResult;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return persistResult;
+                    }
+                }, token);
+            }
+        }
+
+        /// <summary>
+        /// Unpersists a spatial anchor from the PICO device's local disk.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the spatial anchor to unpersist.</param>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static async Task<PxrResult> UnPersistSpatialAnchorAsync(ulong anchorHandle, CancellationToken token = default)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                ulong[] anchors = { anchorHandle };
+                var result = UnPersistAnchorEntity(anchors, PxrPersistLocation.Local, out var taskId);
+                if (result == PxrResult.SUCCESS)
+                {
+                    var tcs = new TaskCompletionSource<PxrResult>();
+
+                    void Handler(PxrEventAnchorEntityUnPersisted entityUnPersisted)
+                    {
+                        PXR_Manager.AnchorEntityUnPersisted -= Handler;
+
+                        tcs.SetResult(entityUnPersisted.result);
+                    }
+
+                    PXR_Manager.AnchorEntityUnPersisted += Handler;
+
+                    return await tcs.Task;
+                }
+                else
+                {
+                    return result;
+                }
+            }
+            else
+            {
+                return await Task.Run(() =>
+                {
+                    var unPersistResult = PXR_Plugin.MixedReality.UPxr_UnPersistSpatialAnchorAsync(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), anchorHandle, out var future);
+                    if (unPersistResult == PxrResult.SUCCESS)
+                    {
+                        while (true)
+                        {
+                            var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                            if (pollResult == PxrResult.SUCCESS)
+                            {
+                                if (futureState == PxrFutureState.Ready)
+                                {
+                                    var completeResult = PXR_Plugin.MixedReality.UPxr_UnPersistSpatialAnchorComplete(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), future, out var completion);
+                                    if (completeResult == PxrResult.SUCCESS)
+                                    {
+                                        return completion.futureResult;
+                                    }
+                                    else
+                                    {
+                                        return completeResult;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return pollResult;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return unPersistResult;
+                    }
+                }, token);
+            }
+        }
+
+        /// <summary>
+        /// Destroys an anchor in the app's memory.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the anchor to destroy. If you specify the handle of a scene anchor, the "Invalid handle" prompt will appear.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult DestroyAnchor(ulong anchorHandle)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                return DestroyAnchorEntity(anchorHandle);
+            }
+            else
+            {
+                if (PXR_Plugin.MixedReality.SceneAnchorData.ContainsKey(anchorHandle))
+                {
+                    return PxrResult.ERROR_HANDLE_INVALID;
+                }
+                else
+                {
+                    return PXR_Plugin.MixedReality.UPxr_DestroyAnchor(anchorHandle);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Gets the UUID of an anchor.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the anchor to get UUID for.</param>
+        /// <param name="uuid">Returns the UUID of the specified anchor.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult GetAnchorUuid(ulong anchorHandle, out Guid uuid)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                return GetAnchorEntityUuid(anchorHandle, out uuid);
+            }
+            else
+            {
+                if (PXR_Plugin.MixedReality.SceneAnchorData.ContainsKey(anchorHandle))
+                {
+                    if (PXR_Plugin.MixedReality.SceneAnchorData.TryGetValue(anchorHandle, out var data))
+                    {
+                        uuid = data.uuid;
+                        return PxrResult.SUCCESS;
+                    }
+                    else
+                    {
+                        uuid = Guid.Empty;
+                        return PxrResult.ERROR_HANDLE_INVALID;
+                    }
+                }
+                else
+                {
+                    return PXR_Plugin.MixedReality.UPxr_GetAnchorUuid(anchorHandle, out uuid);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Locates an anchor by getting its real-time position and rotation.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the anchor to locate.</param>
+        /// <param name="position">Returns the position of the anchor.</param>
+        /// <param name="rotation">Returns the rotation of the anchor.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult LocateAnchor(ulong anchorHandle, out Vector3 position, out Quaternion rotation)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                return GetAnchorPose(anchorHandle, out rotation, out position);
+            }
+            else
+            {
+                if (PXR_Plugin.MixedReality.SceneAnchorData.ContainsKey(anchorHandle))
+                {
+                    if (PXR_Plugin.MixedReality.SceneAnchorData.TryGetValue(anchorHandle, out var data))
+                    {
+                        position = data.position;
+                        rotation = data.rotation;
+                        return PxrResult.SUCCESS;
+                    }
+                    else
+                    {
+                        position = Vector3.zero;
+                        rotation = Quaternion.identity;
+                        return PxrResult.ERROR_HANDLE_INVALID;
+                    }
+                }
+                else
+                {
+                    return PXR_Plugin.MixedReality.UPxr_LocateAnchor(anchorHandle, out position, out rotation);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Loads spatial anchor(s) from the device's local storage and the app's memory.
+        /// </summary>
+        /// <param name="uuids">Specifies the UUID(s) of the spatial anchor(s) you want to load. If you do not pass any UUID, all spatial anchors will be loaded.</param>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details. In addition, a list of the handles of the loaded anchors is returned.</returns>
+        public static async Task<(PxrResult result, List<ulong> anchorHandleList)> QuerySpatialAnchorAsync(Guid[] uuids = null, CancellationToken token = default)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                var result = LoadAnchorEntityByUuidFilter(out var taskId, uuids);
+                if (result == PxrResult.SUCCESS)
+                {
+                    var tcs = new TaskCompletionSource<(PxrResult result, List<ulong> anchorHandleList)>();
+
+                    void Handler(PxrEventAnchorEntityLoaded entityLoaded)
+                    {
+                        PXR_Manager.AnchorEntityLoaded -= Handler;
+
+                        if (entityLoaded.result == PxrResult.SUCCESS && entityLoaded.count > 0)
+                        {
+                            GetAnchorEntityLoadResults(entityLoaded.taskId, entityLoaded.count, out var loadedAnchors);
+                            tcs.SetResult((entityLoaded.result,loadedAnchors.Keys.ToList()));
+                        }
+                        else
+                        {
+                            tcs.SetResult((entityLoaded.result, new List<ulong>()));
+                        }
+                    }
+
+                    PXR_Manager.AnchorEntityLoaded += Handler;
+
+                    return await tcs.Task;
+                }
+                else
+                {
+                    return (result, new List<ulong>());
+                }
+            }
+            else
+            {
+                return await Task.Run(() =>
+                {
+                    if (uuids == null)
+                    {
+                        uuids = Array.Empty<Guid>();
+                    }
+                    var queryResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataByUuidAsync(uuids, out var future);
+                    if (queryResult == PxrResult.SUCCESS)
+                    {
+                        while (true)
+                        {
+                            var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                            if (pollResult == PxrResult.SUCCESS)
+                            {
+                                if (futureState == PxrFutureState.Ready)
+                                {
+                                    var completeResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataComplete(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), future, out var completion);
+                                    if (completeResult == PxrResult.SUCCESS)
+                                    {
+                                        if (completion.futureResult == PxrResult.SUCCESS)
+                                        {
+                                            var getResult = PXR_Plugin.MixedReality.UPxr_GetQueriedSenseData(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), completion.snapshotHandle, out var entityInfos);
+                                            if (getResult == PxrResult.SUCCESS)
+                                            {
+                                                var anchorHandleList = new List<ulong>();
+                                                foreach (var e in entityInfos)
+                                                {
+                                                    var retrieveResult = PXR_Plugin.MixedReality.UPxr_RetrieveSpatialEntityAnchor(completion.snapshotHandle, e.spatialEntity, out var anchorHandle);
+                                                    if (retrieveResult == PxrResult.SUCCESS)
+                                                    {
+                                                        anchorHandleList.Add(anchorHandle);
+                                                    }
+                                                }
+                                                PXR_Plugin.MixedReality.UPxr_DestroySenseDataQueryResult(completion.snapshotHandle);
+                                                return (getResult, anchorHandleList);
+                                            }
+                                            else
+                                            {
+                                                return (getResult, new List<ulong>());
+                                            }
+                                        }
+                                        else
+                                        {
+                                            return (completion.futureResult, new List<ulong>());
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return (completeResult, new List<ulong>());
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return (pollResult, new List<ulong>());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return (queryResult, new List<ulong>());
+                    }
+                }, token);
+            }
+        }
+
+        /// <summary>
+        /// Launches the Room Capture app to capture the current real-world scene.
+        /// </summary>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static async Task<PxrResult> StartSceneCaptureAsync(CancellationToken token = default)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                var result = StartSpatialSceneCapture(out var taskId);
+                if (result == PxrResult.SUCCESS)
+                {
+                    var tcs = new TaskCompletionSource<PxrResult>();
+
+                    void Handler(PxrEventSpatialSceneCaptured sceneCaptured)
+                    {
+                        PXR_Manager.SpatialSceneCaptured -= Handler;
+
+                        tcs.SetResult(sceneCaptured.result);
+                    }
+
+                    PXR_Manager.SpatialSceneCaptured += Handler;
+
+                    return await tcs.Task;
+                }
+                else
+                {
+                    return result;
+                }
+            }
+            else
+            {
+                return await Task.Run(() =>
+                {
+                    var startResult = PXR_Plugin.MixedReality.UPxr_StartSceneCaptureAsync(out var future);
+                    if (startResult == PxrResult.SUCCESS)
+                    {
+                        while (true)
+                        {
+                            var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                            if (pollResult == PxrResult.SUCCESS)
+                            {
+                                if (futureState == PxrFutureState.Ready)
+                                {
+                                    var completeResult = PXR_Plugin.MixedReality.UPxr_StartSceneCaptureComplete(future, out var completion);
+                                    if (completeResult == PxrResult.SUCCESS)
+                                    {
+                                        return completion.futureResult;
+                                    }
+                                    else
+                                    {
+                                        return completeResult;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return pollResult;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return startResult;
+                    }
+                }, token);
+            }
+        }
+
+        /// <summary>
+        /// Loads scene anchors with specified semantic label(s).
+        /// </summary>
+        /// <param name="labels">Specifies the semantic label(s). If not specified, all scene anchors will be returned.</param>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details. In addition, a list of the handles of loaded anchors is returned.</returns>
+        public static async Task<(PxrResult result, List<ulong> anchorHandleList)> QuerySceneAnchorAsync(PxrSemanticLabel[] labels = null, CancellationToken token = default)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                PxrResult result;
+                if (labels == null)
+                {
+                    var flagsValues = (PxrSpatialSceneDataTypeFlags[])Enum.GetValues(typeof(PxrSpatialSceneDataTypeFlags));
+                    result = LoadAnchorEntityBySceneFilter(flagsValues, out var taskId);
+                }
+                else
+                {
+                    List<PxrSpatialSceneDataTypeFlags> flags = new List<PxrSpatialSceneDataTypeFlags>();
+                    foreach (var label in labels)
+                    {
+                        flags.Add(PXR_Plugin.MixedReality.UPxr_ConvertSemanticToSceneFlag(label));
+                    }
+                    result = LoadAnchorEntityBySceneFilter(flags.ToArray(), out var taskId);
+                }
+                if (result == PxrResult.SUCCESS)
+                {
+                    var tcs = new TaskCompletionSource<(PxrResult result, List<ulong> anchorHandleList)>();
+
+                    void Handler(PxrEventAnchorEntityLoaded entityLoaded)
+                    {
+                        PXR_Manager.AnchorEntityLoaded -= Handler;
+
+                        if (entityLoaded.result == PxrResult.SUCCESS && entityLoaded.count > 0)
+                        {
+                            GetAnchorEntityLoadResults(entityLoaded.taskId, entityLoaded.count, out var loadedAnchors);
+                            tcs.SetResult((entityLoaded.result, loadedAnchors.Keys.ToList()));
+                        }
+                        else
+                        {
+                            tcs.SetResult((entityLoaded.result, new List<ulong>()));
+                        }
+                    }
+
+                    PXR_Manager.AnchorEntityLoaded += Handler;
+
+                    return await tcs.Task;
+                }
+                else
+                {
+                    return (result, new List<ulong>());
+                }
+            }
+            else
+            {
+                return await Task.Run(() =>
+                {
+                    if (labels == null)
+                    {
+                        labels = Array.Empty<PxrSemanticLabel>();
+                    }
+
+                    var queryResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataBySemanticAsync(labels, out var future);
+                    if (queryResult == PxrResult.SUCCESS)
+                    {
+                        while (true)
+                        {
+                            var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                            if (pollResult == PxrResult.SUCCESS)
+                            {
+                                if (futureState == PxrFutureState.Ready)
+                                {
+                                    var completeResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataComplete(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture), future, out var completion);
+                                    if (completeResult == PxrResult.SUCCESS)
+                                    {
+                                        if (completion.futureResult == PxrResult.SUCCESS)
+                                        {
+                                            var getResult = PXR_Plugin.MixedReality.UPxr_GetQueriedSenseData(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture), completion.snapshotHandle, out var entityInfos);
+                                            if (getResult == PxrResult.SUCCESS)
+                                            {
+                                                var anchorHandleList = new List<ulong>();
+                                                PXR_Plugin.MixedReality.SceneAnchorData.Clear();
+                                                PXR_Plugin.MixedReality.SceneAnchorData = new Dictionary<ulong, PxrSceneComponentData>();
+                                                foreach (var e in entityInfos)
+                                                {
+                                                    byte[] byteArray = new byte[16];
+                                                    BitConverter.GetBytes(e.uuid.value0).CopyTo(byteArray, 0);
+                                                    BitConverter.GetBytes(e.uuid.value1).CopyTo(byteArray, 8);
+                                                    Guid guid = new Guid(byteArray);
+                                                    anchorHandleList.Add(e.spatialEntity);
+                                                    var sceneAnchor = new PxrSceneComponentData
+                                                    {
+                                                        uuid = guid
+                                                    };
+                                                    var result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntitySemanticInfo(completion.snapshotHandle, e.spatialEntity, out var label);
+                                                    if (result == PxrResult.SUCCESS)
+                                                    {
+                                                        sceneAnchor.label = label;
+                                                    }
+                                                    result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntityLocationInfo(completion.snapshotHandle, e.spatialEntity, out var position, out var rotation);
+                                                    if (result == PxrResult.SUCCESS)
+                                                    {
+                                                        sceneAnchor.position = position;
+                                                        sceneAnchor.rotation = rotation;
+                                                    }
+                                                    result = PXR_Plugin.MixedReality.UPxr_EnumerateSpatialEntityComponentTypes(completion.snapshotHandle, e.spatialEntity, out var types);
+                                                    if (result == PxrResult.SUCCESS)
+                                                    {
+                                                        sceneAnchor.types = types;
+                                                    }
+
+                                                    foreach (var t in types)
+                                                    {
+                                                        switch (t)
+                                                        {
+                                                            case PxrSceneComponentType.Box3D:
+                                                                {
+                                                                    result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntityBox3DInfo(completion.snapshotHandle, e.spatialEntity, out var cPosition, out var cRotation, out var extent);
+                                                                    if (result == PxrResult.SUCCESS)
+                                                                    {
+                                                                        sceneAnchor.box3D = new PxrSceneBox3D()
+                                                                        {
+                                                                            position = cPosition,
+                                                                            rotation = cRotation,
+                                                                            extent = extent
+                                                                        };
+                                                                    }
+                                                                    break;
+                                                                }
+                                                            case PxrSceneComponentType.Box2D:
+                                                                {
+                                                                    result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntityBox2DInfo(completion.snapshotHandle, e.spatialEntity, out var offset, out var extent);
+                                                                    if (result == PxrResult.SUCCESS)
+                                                                    {
+                                                                        sceneAnchor.box2D = new PxrSceneBox2D()
+                                                                        {
+                                                                            offset = offset,
+                                                                            extent = extent
+                                                                        };
+                                                                    }
+                                                                    break;
+                                                                }
+                                                            case PxrSceneComponentType.Polygon:
+                                                                {
+                                                                    result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntityPolygonInfo(completion.snapshotHandle, e.spatialEntity, out var vertices);
+                                                                    if (result == PxrResult.SUCCESS)
+                                                                    {
+                                                                        sceneAnchor.polygon = new PxrScenePolygon()
+                                                                        {
+                                                                            vertices = vertices
+                                                                        };
+                                                                    }
+                                                                    break;
+                                                                }
+                                                        }
+                                                    }
+#if UNITY_2021_1_OR_NEWER
+                                                    PXR_Plugin.MixedReality.SceneAnchorData.TryAdd(e.spatialEntity, sceneAnchor);
+#else
+                                                    PXR_Plugin.MixedReality.SceneAnchorData.Add(e.spatialEntity, sceneAnchor);
+#endif
+                                                }
+                                                PXR_Plugin.MixedReality.UPxr_DestroySenseDataQueryResult(completion.snapshotHandle);
+                                                return (getResult, anchorHandleList);
+                                            }
+                                            else
+                                            {
+                                                return (getResult, new List<ulong>());
+                                            }
+                                        }
+                                        else
+                                        {
+                                            return (completion.futureResult, new List<ulong>());
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return (completeResult, new List<ulong>());
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return (pollResult, new List<ulong>());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return (queryResult, new List<ulong>());
+                    }
+                }, token);
+            }
+        }
+        
+        /// <summary>
+        /// Loads all scene anchors.
+        /// </summary>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details. In addition, a list of the handles and UUIDs of all scene anchors is returned.</returns>
+        public static async Task<(PxrResult result, Dictionary<ulong,Guid> anchorDictionary)> QuerySceneAnchorAsync(CancellationToken token = default)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                var flagsValues = (PxrSpatialSceneDataTypeFlags[])Enum.GetValues(typeof(PxrSpatialSceneDataTypeFlags));
+                var result = LoadAnchorEntityBySceneFilter(flagsValues, out var taskId);
+
+                if (result == PxrResult.SUCCESS)
+                {
+                    var tcs = new TaskCompletionSource<(PxrResult result, Dictionary<ulong, Guid> anchorDictionary)>();
+
+                    void Handler(PxrEventAnchorEntityLoaded entityLoaded)
+                    {
+                        PXR_Manager.AnchorEntityLoaded -= Handler;
+
+                        if (entityLoaded.result == PxrResult.SUCCESS && entityLoaded.count > 0)
+                        {
+                            GetAnchorEntityLoadResults(entityLoaded.taskId, entityLoaded.count, out var loadedAnchors);
+                            tcs.SetResult((entityLoaded.result, loadedAnchors));
+                        }
+                        else
+                        {
+                            tcs.SetResult((entityLoaded.result, new Dictionary<ulong, Guid>()));
+                        }
+                    }
+
+                    PXR_Manager.AnchorEntityLoaded += Handler;
+
+                    return await tcs.Task;
+                }
+                else
+                {
+                    return (result, new Dictionary<ulong, Guid>());
+                }
+            }
+            else
+            {
+                return await Task.Run(() =>
+                {
+                    var queryResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataBySemanticAsync(Array.Empty<PxrSemanticLabel>(), out var future);
+                    if (queryResult == PxrResult.SUCCESS)
+                    {
+                        while (true)
+                        {
+                            var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                            if (pollResult == PxrResult.SUCCESS)
+                            {
+                                if (futureState == PxrFutureState.Ready)
+                                {
+                                    var completeResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataComplete(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture), future, out var completion);
+                                    if (completeResult == PxrResult.SUCCESS)
+                                    {
+                                        if (completion.futureResult == PxrResult.SUCCESS)
+                                        {
+                                            var getResult = PXR_Plugin.MixedReality.UPxr_GetQueriedSenseData(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture), completion.snapshotHandle, out var entityInfos);
+                                            if (getResult == PxrResult.SUCCESS)
+                                            {
+                                                var anchorDictionary = new Dictionary<ulong, Guid>();
+                                                PXR_Plugin.MixedReality.SceneAnchorData.Clear();
+                                                PXR_Plugin.MixedReality.SceneAnchorData = new Dictionary<ulong, PxrSceneComponentData>();
+                                                foreach (var e in entityInfos)
+                                                {
+                                                    byte[] byteArray = new byte[16];
+                                                    BitConverter.GetBytes(e.uuid.value0).CopyTo(byteArray, 0);
+                                                    BitConverter.GetBytes(e.uuid.value1).CopyTo(byteArray, 8);
+                                                    Guid guid = new Guid(byteArray);
+                                                    anchorDictionary.Add(e.spatialEntity, guid);
+                                                    var sceneAnchor = new PxrSceneComponentData();
+                                                    var result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntitySemanticInfo(completion.snapshotHandle, e.spatialEntity, out var label);
+                                                    if (result == PxrResult.SUCCESS)
+                                                    {
+                                                        sceneAnchor.label = label;
+                                                    }
+                                                    result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntityLocationInfo(completion.snapshotHandle, e.spatialEntity, out var position, out var rotation);
+                                                    if (result == PxrResult.SUCCESS)
+                                                    {
+                                                        sceneAnchor.position = position;
+                                                        sceneAnchor.rotation = rotation;
+                                                    }
+                                                    result = PXR_Plugin.MixedReality.UPxr_EnumerateSpatialEntityComponentTypes(completion.snapshotHandle, e.spatialEntity, out var types);
+                                                    if (result == PxrResult.SUCCESS)
+                                                    {
+                                                        sceneAnchor.types = types;
+                                                    }
+
+                                                    foreach (var t in types)
+                                                    {
+                                                        switch (t)
+                                                        {
+                                                            case PxrSceneComponentType.Box3D:
+                                                                {
+                                                                    result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntityBox3DInfo(completion.snapshotHandle, e.spatialEntity, out var cPosition, out var cRotation, out var extent);
+                                                                    if (result == PxrResult.SUCCESS)
+                                                                    {
+                                                                        sceneAnchor.box3D = new PxrSceneBox3D()
+                                                                        {
+                                                                            position = cPosition,
+                                                                            rotation = cRotation,
+                                                                            extent = extent
+                                                                        };
+                                                                    }
+                                                                    break;
+                                                                }
+                                                            case PxrSceneComponentType.Box2D:
+                                                                {
+                                                                    result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntityBox2DInfo(completion.snapshotHandle, e.spatialEntity, out var offset, out var extent);
+                                                                    if (result == PxrResult.SUCCESS)
+                                                                    {
+                                                                        sceneAnchor.box2D = new PxrSceneBox2D()
+                                                                        {
+                                                                            offset = offset,
+                                                                            extent = extent
+                                                                        };
+                                                                    }
+                                                                    break;
+                                                                }
+                                                            case PxrSceneComponentType.Polygon:
+                                                                {
+                                                                    result = PXR_Plugin.MixedReality.UPxr_GetSpatialEntityPolygonInfo(completion.snapshotHandle, e.spatialEntity, out var vertices);
+                                                                    if (result == PxrResult.SUCCESS)
+                                                                    {
+                                                                        sceneAnchor.polygon = new PxrScenePolygon()
+                                                                        {
+                                                                            vertices = vertices
+                                                                        };
+                                                                    }
+                                                                    break;
+                                                                }
+                                                        }
+                                                    }
+#if UNITY_2021_1_OR_NEWER
+                                                    PXR_Plugin.MixedReality.SceneAnchorData.TryAdd(e.spatialEntity, sceneAnchor);
+#else
+                                                    PXR_Plugin.MixedReality.SceneAnchorData.Add(e.spatialEntity, sceneAnchor);
+#endif
+                                                }
+                                                PXR_Plugin.MixedReality.UPxr_DestroySenseDataQueryResult(completion.snapshotHandle);
+                                                return (getResult, anchorDictionary);
+                                            }
+                                            else
+                                            {
+                                                return (getResult, new Dictionary<ulong, Guid>());
+                                            }
+                                        }
+                                        else
+                                        {
+                                            return (completion.futureResult, new Dictionary<ulong, Guid>());
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return (completeResult, new Dictionary<ulong, Guid>());
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return (pollResult, new Dictionary<ulong, Guid>());
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return (queryResult, new Dictionary<ulong, Guid>());
+                    }
+                }, token);
+            }
+        }
+
+        /// <summary>
+        /// Gets the component type of a scene anchor.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the anchor to get component type for.</param>
+        /// <param name="types">Returns the component type of the specified anchor.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult GetSceneAnchorComponentTypes(ulong anchorHandle, out PxrSceneComponentType[] types)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                var result = GetAnchorComponentFlags(anchorHandle, out var flags);
+                if (result == PxrResult.SUCCESS)
+                {
+                    var typeList = new List<PxrSceneComponentType>();
+                    foreach (var f in flags)
+                    {
+                        var type = PXR_Plugin.MixedReality.UPxr_ConvertAnchorCTypeToSceneCType(f);
+                        if (!typeList.Contains(type))
+                        {
+                            typeList.Add(type);
+                        }
+                    }
+
+                    types = typeList.ToArray();
+                    return PxrResult.SUCCESS;
+                }
+                else
+                {
+                    types = Array.Empty<PxrSceneComponentType>();
+                    return result;
+                }
+            }
+            else
+            {
+                if (PXR_Plugin.MixedReality.SceneAnchorData.TryGetValue(anchorHandle, out var data))
+                {
+                    types = data.types;
+                    return PxrResult.SUCCESS;
+                }
+                else
+                {
+                    types = Array.Empty<PxrSceneComponentType>();
+                    return PxrResult.ERROR_HANDLE_INVALID;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the semantic label of a scene anchor.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the anchor to get semantic label for.</param>
+        /// <param name="label">Returns the semantic label of the specified anchor.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult GetSceneSemanticLabel(ulong anchorHandle,out PxrSemanticLabel label)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                var result = GetAnchorSceneLabel(anchorHandle, out var sceneLabel);
+                if (result == PxrResult.SUCCESS)
+                {
+                    label = (PxrSemanticLabel)sceneLabel;
+                    return result;
+                }
+                else
+                {
+                    label = PxrSemanticLabel.Unknown;
+                    return result;
+                }
+            }
+            else
+            {
+                if (PXR_Plugin.MixedReality.SceneAnchorData.TryGetValue(anchorHandle, out var data))
+                {
+                    label = data.label;
+                    return PxrResult.SUCCESS;
+                }
+                else
+                {
+                    label = PxrSemanticLabel.Unknown;
+                    return PxrResult.ERROR_HANDLE_INVALID;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the information of a 3D box object.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the scene anchor that the 3D box object is associated with.</param>
+        /// <param name="position">Returns the position of the 3D box object relative to the center of the scene anchor.</param>
+        /// <param name="rotation">Returns the rotation of the 3D box object relative to the center of the scene anchor.</param>
+        /// <param name="extent">Returns the length, width, and height of the 3D box object.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult GetSceneBox3DData(ulong anchorHandle, out Vector3 position, out Quaternion rotation, out Vector3 extent)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                rotation = Quaternion.identity;
+                var result = GetAnchorVolumeInfo(anchorHandle, out position, out extent);
+                return result;
+            }
+            else
+            {
+                if (PXR_Plugin.MixedReality.SceneAnchorData.TryGetValue(anchorHandle, out var data))
+                {
+                    if (data.types.Contains(PxrSceneComponentType.Box3D))
+                    {
+                        position = data.box3D.position;
+                        rotation = data.box3D.rotation;
+                        extent = data.box3D.extent;
+                        return PxrResult.SUCCESS;
+                    }
+                    else
+                    {
+                        position = Vector3.zero;
+                        rotation = Quaternion.identity;
+                        extent = Vector3.zero;
+                        return PxrResult.ERROR_HANDLE_INVALID;
+                    }
+
+                }
+                else
+                {
+                    position = Vector3.zero;
+                    rotation = Quaternion.identity;
+                    extent = Vector3.zero;
+                    return PxrResult.ERROR_HANDLE_INVALID;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the information of a 2D box object.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the scene anchor that the 2D box object is associated with.</param>
+        /// <param name="offset">Returns the offset of the 2D box object relative to the center of the scene anchor.</param>
+        /// <param name="extent">Returns the length and width of the 2D box object.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult GetSceneBox2DData(ulong anchorHandle, out Vector2 offset, out Vector2 extent)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                var result = GetAnchorPlaneBoundaryInfo(anchorHandle, out var center, out extent);
+                offset = new Vector2(center.x, center.z);
+                return result;
+            }
+            else
+            {
+                if (PXR_Plugin.MixedReality.SceneAnchorData.TryGetValue(anchorHandle, out var data))
+                {
+                    if (data.types.Contains(PxrSceneComponentType.Box2D))
+                    {
+                        offset = data.box2D.offset;
+                        extent = data.box2D.extent;
+                        return PxrResult.SUCCESS;
+                    }
+                    else
+                    {
+                        offset = Vector2.zero;
+                        extent = Vector2.zero;
+                        return PxrResult.ERROR_HANDLE_INVALID;
+                    }
+                }
+                else
+                {
+                    offset = Vector2.zero;
+                    extent = Vector2.zero;
+                    return PxrResult.ERROR_HANDLE_INVALID;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the information of a polygon object.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the scene anchor that the polygon object is associated with.</param>
+        /// <param name="vertices">Returns the array of vertices of the polygon object.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details.</returns>
+        public static PxrResult GetScenePolygonData(ulong anchorHandle, out Vector2[] vertices)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                var result = GetAnchorPlanePolygonInfo(anchorHandle, out var verticesV3);
+                vertices = Array.ConvertAll(verticesV3, v => new Vector2(v.x, v.y));
+                return result;
+            }
+            else
+            {
+                if (PXR_Plugin.MixedReality.SceneAnchorData.TryGetValue(anchorHandle, out var data))
+                {
+                    if (data.types.Contains(PxrSceneComponentType.Polygon))
+                    {
+                        vertices = data.polygon.vertices;
+                        return PxrResult.SUCCESS;
+                    }
+                    else
+                    {
+                        vertices = Array.Empty<Vector2>();
+                        return PxrResult.ERROR_HANDLE_INVALID;
+                    }
+                }
+                else
+                {
+                    vertices = Array.Empty<Vector2>();
+                    return PxrResult.ERROR_HANDLE_INVALID;
+                }
+            }
+        }
+
+        public static async Task<(PxrResult result, List<PxrSpatialMeshInfo> meshInfos)> QueryMeshAnchorAsync(CancellationToken token = default)
+        {
+            return await Task.Run(() =>
+            {
+                PxrSenseDataQueryInfo info = new PxrSenseDataQueryInfo()
+                {
+                    type = PxrStructureType.SenseDataQueryInfo,
+                    filter = IntPtr.Zero
+                };
+                var pxrResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataAsync(PXR_Plugin.MixedReality.UPxr_GetSpatialMeshProviderHandle(), ref info, out var future);
+                if (pxrResult == PxrResult.SUCCESS)
+                {
+                    while (true)
+                    {
+                        var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                        if (pollResult == PxrResult.SUCCESS)
+                        {
+                            if (futureState == PxrFutureState.Ready)
+                            {
+                                var completeResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataComplete(PXR_Plugin.MixedReality.UPxr_GetSpatialMeshProviderHandle(), future, out var completion);
+                                if (completeResult == PxrResult.SUCCESS)
+                                {
+                                    if (completion.futureResult == PxrResult.SUCCESS)
+                                    {
+                                        var getResult = PXR_Plugin.MixedReality.UPxr_GetQueriedSenseData(PXR_Plugin.MixedReality.UPxr_GetSpatialMeshProviderHandle(), completion.snapshotHandle, out var entityHandles);
+                                        if (getResult == PxrResult.SUCCESS)
+                                        {
+                                            var keysToRemove = PXR_Plugin.MixedReality.SpatialMeshData
+                                                .Where(pair => pair.Value.state == MeshChangeState.Removed)
+                                                .Select(pair => pair.Key)
+                                                .ToList();
+                                            foreach (var key in keysToRemove)
+                                            {
+                                                PXR_Plugin.MixedReality.SpatialMeshData.Remove(key);
+                                            }
+                                            var toBeRemove = new List<Guid>(PXR_Plugin.MixedReality.meshAnchorLastData.Keys);
+                                            foreach (var e in entityHandles)
+                                            {
+                                                byte[] byteArray = new byte[16];
+                                                BitConverter.GetBytes(e.uuid.value0).CopyTo(byteArray, 0);
+                                                BitConverter.GetBytes(e.uuid.value1).CopyTo(byteArray, 8);
+                                                Guid guid = new Guid(byteArray);
+                                                var item = new PxrSpatialMeshInfo()
+                                                {
+                                                    uuid = guid,
+                                                };
+                                                toBeRemove.Remove(guid);
+
+                                                if (PXR_Plugin.MixedReality.meshAnchorLastData.TryGetValue(guid, out var lastTime))
+                                                {
+                                                    if (lastTime < e.time)
+                                                    {
+                                                        var result = PXR_Plugin.MixedReality.UPxr_GetSpatialMesh(completion.snapshotHandle, e.spatialEntity, ref item);
+                                                        if (result == PxrResult.SUCCESS)
+                                                        {
+                                                            item.state = MeshChangeState.Updated;
+                                                            PXR_Plugin.MixedReality.SpatialMeshData[guid] = item;
+                                                        }
+                                                        PXR_Plugin.MixedReality.meshAnchorLastData[guid] = e.time;
+                                                    }
+                                                    else
+                                                    {
+                                                        var tempMesh = PXR_Plugin.MixedReality.SpatialMeshData[guid];
+                                                        tempMesh.state = MeshChangeState.Unchanged;
+                                                        PXR_Plugin.MixedReality.SpatialMeshData[guid] = tempMesh;
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    var result = PXR_Plugin.MixedReality.UPxr_GetSpatialMesh(completion.snapshotHandle, e.spatialEntity, ref item);
+                                                    if (result == PxrResult.SUCCESS)
+                                                    {
+                                                        item.state = MeshChangeState.Added;
+#if UNITY_2021_1_OR_NEWER
+                                                        PXR_Plugin.MixedReality.SpatialMeshData.TryAdd(guid, item);
+#else
+                                                        PXR_Plugin.MixedReality.SpatialMeshData.Add(guid, item);
+#endif
+                                                    }
+#if UNITY_2021_1_OR_NEWER
+                                                    PXR_Plugin.MixedReality.meshAnchorLastData.TryAdd(guid, e.time);
+#else
+                                                    PXR_Plugin.MixedReality.meshAnchorLastData.Add(guid, e.time);
+#endif
+                                                }
+                                            }
+
+                                            foreach (var m in toBeRemove)
+                                            {
+                                                PXR_Plugin.MixedReality.meshAnchorLastData.Remove(m);
+                                                PXR_Plugin.MixedReality.SpatialMeshData.Remove(m);
+                                                var removedMesh = new PxrSpatialMeshInfo()
+                                                {
+                                                    uuid = m,
+                                                    state = MeshChangeState.Removed
+                                                };
+#if UNITY_2021_1_OR_NEWER
+                                                PXR_Plugin.MixedReality.SpatialMeshData.TryAdd(m, removedMesh);
+#else
+                                                PXR_Plugin.MixedReality.SpatialMeshData.Add(m, removedMesh);
+#endif
+                                            }
+
+                                            PXR_Plugin.MixedReality.UPxr_DestroySenseDataQueryResult(completion.snapshotHandle);
+                                            return (getResult, PXR_Plugin.MixedReality.SpatialMeshData.Values.ToList());
+                                        }
+                                        else
+                                        {
+                                            return (getResult, new List<PxrSpatialMeshInfo>());
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        return (completion.futureResult, new List<PxrSpatialMeshInfo>());
+                                    }
+                                }
+                                else
+                                {
+                                    return (completeResult, new List<PxrSpatialMeshInfo>());
+                                }
+                            }
+                        }
+                        else
+                        {
+                            return (pollResult, new List<PxrSpatialMeshInfo>());
+                        }
+                    }
+                }
+                else
+                {
+                    return (pxrResult, new List<PxrSpatialMeshInfo>());
+                }
+            }, token);
+        }
+        
+        /// <summary>
+        /// Uploads a spatial anchor to the cloud. The spatial anchor then becomes a shared spatial anchor, which can be downloaded and used by others.
+        /// </summary>
+        /// <param name="anchorHandle">Specifies the handle of the anchor to upload.</param>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details. In addition, the handle and UUID of the shared spatial anchor are returned.</returns>
+        public static async Task<(PxrResult result, Guid uuid)> UploadSpatialAnchorAsync(ulong anchorHandle, CancellationToken token = default)
+        {
+            return await Task.Run(() =>
+            {
+                var startResult = PXR_Plugin.MixedReality.UPxr_ShareSpatialAnchorAsync(anchorHandle, out var future);
+                if (startResult == PxrResult.SUCCESS)
+                {
+                    while (true)
+                    {
+                        var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                        if (pollResult == PxrResult.SUCCESS)
+                        {
+                            if (futureState == PxrFutureState.Ready)
+                            {
+                                var completeResult = PXR_Plugin.MixedReality.UPxr_ShareSpatialAnchorComplete(future, out var completion);
+                                if (completeResult == PxrResult.SUCCESS)
+                                {
+                                    if (completion.futureResult == PxrResult.SUCCESS)
+                                    {
+                                        var getResult = GetAnchorUuid(anchorHandle, out var uuid);
+                                        if (getResult == PxrResult.SUCCESS)
+                                        {
+                                            return (PxrResult.SUCCESS, uuid);
+                                        }
+                                        else
+                                        {
+                                            return (getResult, Guid.Empty);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return (completion.futureResult, Guid.Empty);
+                                    }
+                                }
+                                else
+                                {
+                                    return (completeResult, Guid.Empty);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            return (pollResult, Guid.Empty);
+                        }
+                    }
+                }
+                else
+                {
+                    return (startResult, Guid.Empty);
+                }
+            },token);
+        }
+
+        /// <summary>
+        /// Downloads a shared spatial anchor from cloud.
+        /// </summary>
+        /// <param name="uuid">Specifies the UUID of the shared spatial anchor to download.</param>
+        /// <param name="token">Propagates notification that operations should be canceled.</param>
+        /// <returns>Refer to the `PxrResult` enumeration for details. In addition, the handle and UUID of the downloaded shared spatial anchor are returned.</returns>
+        public static async Task<PxrResult> DownloadSharedSpatialAnchorAsync(Guid uuid, CancellationToken token = default)
+        {
+            return await Task.Run(() =>
+            {
+                var startResult = PXR_Plugin.MixedReality.UPxr_DownloadSharedSpatialAnchorsAsync(uuid, out var future);
+                if (startResult == PxrResult.SUCCESS)
+                {
+                    while (true)
+                    {
+                        var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                        if (pollResult == PxrResult.SUCCESS)
+                        {
+                            if (futureState == PxrFutureState.Ready)
+                            {
+                                var completeResult = PXR_Plugin.MixedReality.UPxr_DownloadSharedSpatialAnchorsComplete(future, out var completion);
+                                if (completeResult == PxrResult.SUCCESS)
+                                {
+                                    return completion.futureResult;
+                                }
+                                else
+                                {
+                                    return completeResult;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            return pollResult;
+                        }
+                    }
+                }
+                else
+                {
+                    return startResult;
+                }
+            },token);
+        }
+
+        [Obsolete("Please use UploadSpatialAnchorAsync")]
+        public static async Task<(PxrResult result, Guid uuid)> ShareSpatialAnchorAsync(ulong anchorHandle)
+        {
+            return await UploadSpatialAnchorAsync(anchorHandle);
+        }
+
+        #region 2.0 API Only Support PICO 4
         /// <summary>
         /// Creates an anchor entity in the app's memory. Should listen to the `PxrEventAnchorEntityCreated` event which returns the handle and UUID of the anchor.
         /// </summary>
@@ -28,6 +1435,7 @@ namespace Unity.XR.PXR
         /// <param name="rotation">Sets the orientation of the anchor entity.</param>
         /// <param name="taskId">Returns the ID of this task.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult CreateAnchorEntity(Vector3 position, Quaternion rotation, out ulong taskId)
         {
             PXR_System.GetTrackingOrigin(out var originMode);
@@ -61,6 +1469,7 @@ namespace Unity.XR.PXR
         /// </summary>
         /// <param name="handle">Specifies the handle of the to-be-destroyed anchor entity.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult DestroyAnchorEntity(ulong handle)
         {
             PxrAnchorEntityDestroyInfo info = new PxrAnchorEntityDestroyInfo()
@@ -77,6 +1486,7 @@ namespace Unity.XR.PXR
         /// <param name="orientation">Returns the orientation of the anchor entity.</param>
         /// <param name="position">Returns the position of the anchor entity.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult GetAnchorPose(ulong handle,out Quaternion orientation,out Vector3 position)
         {
             PXR_System.GetTrackingOrigin(out var originMode);
@@ -92,6 +1502,7 @@ namespace Unity.XR.PXR
         /// <param name="handle">Specifies the handle of the anchor entity to get UUID for.</param>
         /// <param name="uuid">Returns the UUID of the anchor entity.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult GetAnchorEntityUuid(ulong handle, out Guid uuid)
         {
             var result = PXR_Plugin.MixedReality.UPxr_GetAnchorEntityUuid(handle, out var pUid);
@@ -113,6 +1524,7 @@ namespace Unity.XR.PXR
         /// </param>
         /// <param name="taskId">Returns the ID of the task.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult PersistAnchorEntity(ulong[] anchorHandles, PxrPersistLocation location,out ulong taskId)
         {
             PxrAnchorEntityPersistInfo info = new PxrAnchorEntityPersistInfo()
@@ -145,6 +1557,7 @@ namespace Unity.XR.PXR
         /// </param>
         /// <param name="taskId">Returns the ID of the task.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult UnPersistAnchorEntity(ulong[] anchorHandles, PxrPersistLocation location, out ulong taskId)
         {
             PxrAnchorEntityUnPersistInfo info = new PxrAnchorEntityUnPersistInfo()
@@ -172,6 +1585,7 @@ namespace Unity.XR.PXR
         /// <param name="location">Specifies the location where the to-be-cleared anchor entities are saved. Currently, only supports passing `Local` to clear the anchor entities stored in the device's local storage.</param>
         /// <param name="taskId">Returns the ID of the task.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult ClearPersistedAnchorEntity(PxrPersistLocation location, out ulong taskId)
         {
             PxrAnchorEntityClearInfo info = new PxrAnchorEntityClearInfo()
@@ -187,6 +1601,7 @@ namespace Unity.XR.PXR
         /// <param name="anchorHandle">Specifies the handle of the anchor entity to get supported components for.</param>
         /// <param name="flags">Returns the flags of the supported components.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult GetAnchorComponentFlags(ulong anchorHandle,out PxrAnchorComponentTypeFlags[] flags)
         {
             List<PxrAnchorComponentTypeFlags> flagList = new List<PxrAnchorComponentTypeFlags>();
@@ -210,6 +1625,7 @@ namespace Unity.XR.PXR
         /// <param name="taskId">Returns the ID of the task.</param>
         /// <param name="uuids">Specifies The UUIDs of the anchor entities to load.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult LoadAnchorEntityByUuidFilter(out ulong taskId, Guid[] uuids = null)
         {
             PxrAnchorEntityLoadInfo info = new PxrAnchorEntityLoadInfo()
@@ -250,6 +1666,7 @@ namespace Unity.XR.PXR
         /// <param name="flags">Specifies the flags of scene data types.</param>
         /// <param name="taskId">Returns the ID of the task.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult LoadAnchorEntityBySceneFilter(PxrSpatialSceneDataTypeFlags[] flags, out ulong taskId)
         {
             PxrAnchorEntityLoadInfo info = new PxrAnchorEntityLoadInfo()
@@ -284,6 +1701,7 @@ namespace Unity.XR.PXR
         /// <param name="count">Returns the number of anchor entities successfully loaded.</param>
         /// <param name="loadedAnchors">Returns the handles and UUIDs of the anchor entities loaded.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult GetAnchorEntityLoadResults(ulong taskId, uint count, out Dictionary<ulong,Guid> loadedAnchors)
         {
             if (count == 0)
@@ -310,7 +1728,10 @@ namespace Unity.XR.PXR
                 BitConverter.GetBytes(t.uuid.value0).CopyTo(byteArray, 0);
                 BitConverter.GetBytes(t.uuid.value1).CopyTo(byteArray, 8);
                 var uuid = new Guid(byteArray);
-                loadedAnchors.Add(t.anchor, uuid);
+                if (!loadedAnchors.ContainsKey(t.anchor))
+                {
+                    loadedAnchors.Add(t.anchor, uuid);
+                }
             }
             Marshal.FreeHGlobal(results.loadResults);
             return result;
@@ -321,6 +1742,7 @@ namespace Unity.XR.PXR
         /// </summary>
         /// <param name="taskId">Returns the ID of the task.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult StartSpatialSceneCapture(out ulong taskId)
         {
             return PXR_Plugin.MixedReality.UPxr_StartSpatialSceneCapture(out taskId);
@@ -334,6 +1756,7 @@ namespace Unity.XR.PXR
         /// <param name="center">Returns the offset of the volume's position relative to the anchor entity's position.</param>
         /// <param name="extent">Returns the length, width, and height of the volume.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult GetAnchorVolumeInfo(ulong anchorHandle, out Vector3 center,out Vector3 extent)
         {
             PxrAnchorVolumeInfo info = new PxrAnchorVolumeInfo();
@@ -350,6 +1773,7 @@ namespace Unity.XR.PXR
         /// <param name="anchorHandle">Specifies the handle of the anchor entity.</param>
         /// <param name="vertices">Returns the positions of the polygon's vertices on the X, Y, and Z axis.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult GetAnchorPlanePolygonInfo(ulong anchorHandle, out Vector3[] vertices)
         {
             PxrAnchorPlanePolygonInfo info = new PxrAnchorPlanePolygonInfo()
@@ -383,6 +1807,7 @@ namespace Unity.XR.PXR
         /// <param name="center">Returns the offset of the boundary's position relative to the anchor entity's position.</param>
         /// <param name="extent">Returns the width and height of the boundary.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult GetAnchorPlaneBoundaryInfo(ulong anchorHandle, out Vector3 center,out Vector2 extent)
         {
             PxrAnchorPlaneBoundaryInfo info = new PxrAnchorPlaneBoundaryInfo();
@@ -398,17 +1823,18 @@ namespace Unity.XR.PXR
         /// <param name="anchorHandle">Specifies the handle of the anchor entity.</param>
         /// <param name="label">Returns the anchor entity's scene label.</param>
         /// <returns>Returns `0` for success and other values for failure. For failure reasons, refer to the `PxrResult` enum.</returns>
+        [Obsolete("Deprecated.Only Support PICO 4.")]
         public static PxrResult GetAnchorSceneLabel(ulong anchorHandle, out PxrSceneLabel label)
         {
             return PXR_Plugin.MixedReality.UPxr_GetAnchorSceneLabel(anchorHandle, out label);
         }
 
-        #endregion
+#endregion
 
         /// <summary>
         /// Enables/disables video seethrough.
         /// </summary>
-        /// <param name="state">Determines the state of video seethrough:
+        /// <param name="state">Specifies whether to enable or disable video seethrough:
         /// * `true`: enable
         /// * `false`: disable
         /// </param>
@@ -418,191 +1844,54 @@ namespace Unity.XR.PXR
             return PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(state);
         }
 
+        /// <summary>
+        /// Enables/disables video seethrough effect.
+        /// </summary>
+        /// <param name="value">Specifies whether to enable or disable video seethrough effect:
+        /// * `true`: enable
+        /// * `false`: disable
+        /// </param>
+        /// <returns>`0` indicates a success and other values indicate a failure.</returns>
         public static int EnableVideoSeeThroughEffect(bool value)
         {
             return PXR_Plugin.MixedReality.UPxr_EnableVideoSeeThroughEffect(value);
         }
 
+        /// <summary>
+        /// Sets video seethrough effect-related parameters.
+        /// </summary>
+        /// <param name="type">Specifies the parameter to set. You can set contrast, saturation, brightness, and colormap.</param>
+        /// <param name="value">Specifies the final value that the current value of the parameter changes to. Value range: [-50,50]. The default value is `0`.</param>
+        /// <param name="duration">Specifies the duration during which the current value of the specified parameter gradually changes to the specified value. If the duration is set to `0`, the current value of the specified parameter immediately changes to the specified value.</param>
+        /// <returns>`0` indicates a success and other values indicate a failure.</returns>
         public static int SetVideoSeeThroughEffect(PxrLayerEffect type,float value,float duration)
         {
             return PXR_Plugin.MixedReality.UPxr_SetVideoSeeThroughEffect(type, value, duration);
         }
 
+        /// <summary>
+        /// Sets a LUT texture for video seethrough.
+        /// </summary>
+        /// <param name="texture">Passes a standard LUT texture. The size of the texture should not exceed 512*512 pixels. The imported LUT texture needs to be converted to the RGBA32 format in order to obtain the corresponding RGBA values correctly.</param>
+        /// <param name="row">Specifies the number of rows in the LUT texture.</param>
+        /// <param name="col">Specifies the number of columns in the LUT texture.</param>
+        /// <returns>`0` indicates a success and other values indicate a failure.</returns>
         public static int SetVideoSeeThroughLut(Texture2D texture, int row, int col)
         {
+            if (texture.format != TextureFormat.RGBA32)
+            {
+                PLog.e(TAG, "Unsupported texture format! Please provide a texture in RGBA32 format!");
+                return -1;
+            }
+
+            if (texture.width > 512 || texture.height > 512)
+            {
+                PLog.e(TAG, "The texture size must not exceed 512x512 pixels!");
+                return -1;
+            }
+
             var data = texture.GetRawTextureData();
             return PXR_Plugin.MixedReality.UPxr_SetVideoSeeThroughLUT(ref data, texture.width, texture.height, row, col);
-        }
-
-        [System.Obsolete("Deprecated. Please use CreateAnchorEntity", false)]
-        public static int CreateSpatialAnchor(Vector3 position, Quaternion rotation, PxrReferenceType type, ref ulong handle)
-        {
-            PxrSpatialAnchorCreateInfo info = new PxrSpatialAnchorCreateInfo()
-            {
-                referenceType = type,
-                pose = new PxrPosef()
-                {
-                    orientation = new PxrVector4f()
-                    {
-                        x = rotation.x,
-                        y = rotation.y,
-                        z = -rotation.z,
-                        w = -rotation.w
-                    },
-                    position = new PxrVector3f()
-                    {
-                        x = position.x,
-                        y = position.y,
-                        z = -position.z
-                    }
-                },
-                time = PXR_Plugin.System.UPxr_GetPredictedDisplayTime()
-            };
-            return PXR_Plugin.MixedReality.UPxr_CreateSpatialAnchor(ref info, ref handle);
-        }
-        
-        [System.Obsolete("Deprecated. Please use DestroyAnchorEntity", false)]
-        public static int DestroySpatialAnchor(ulong handle)
-        {
-            return PXR_Plugin.MixedReality.UPxr_DestroySpatialAnchor(handle);
-        }
-        
-        [System.Obsolete("Deprecated. Please use PersistAnchorEntity", false)]
-        public static int SaveSpatialAnchor(PxrSpatialAnchorSaveInfo info, ref ulong requestId)
-        {
-            return PXR_Plugin.MixedReality.UPxr_SaveSpatialAnchor(ref info, ref requestId);
-        }
-        
-        [System.Obsolete("Deprecated. Please use UnPersistAnchorEntity", false)]
-        public static int DeleteSpatialAnchor(PxrSpatialAnchorDeleteInfo info, ref ulong requestId)
-        {
-            return PXR_Plugin.MixedReality.UPxr_DeleteSpatialAnchor(ref info, ref requestId);
-        }
-        
-        [System.Obsolete("Deprecated. Please use LoadAnchorEntity", false)]
-        public static int LoadSpatialAnchorById(PxrSpatialInstanceLoadByIdInfo info, ref ulong requestId)
-        {
-            return PXR_Plugin.MixedReality.UPxr_LoadSpatialAnchorById(ref info, ref requestId);
-        }
-        
-        [System.Obsolete("Deprecated. Please use GetAnchorEntityLoadResults", false)]
-        public static int GetSpatialAnchorLoadResults(UInt64 requestId, out PxrSpatialAnchorLoadResult[] results)
-        {
-            results = null;
-
-            PxrSpatialAnchorLoadResults resultsCount = new PxrSpatialAnchorLoadResults()
-            {
-                resultCapacityInput = 0,
-                resultCountOutput = 0,
-                results = new IntPtr(0),
-            };
-            PXR_Plugin.MixedReality.UPxr_GetSpatialAnchorLoadResults(requestId, ref resultsCount);
-            int resultSize = Marshal.SizeOf(typeof(PxrSpatialAnchorLoadResult));
-            int resultBytesSize = resultsCount.resultCountOutput * resultSize;
-            PxrSpatialAnchorLoadResults anchorResults = new PxrSpatialAnchorLoadResults()
-            {
-                resultCapacityInput = resultsCount.resultCountOutput,
-                resultCountOutput = 0,
-                results = Marshal.AllocHGlobal(resultBytesSize),
-            };
-            int state = PXR_Plugin.MixedReality.UPxr_GetSpatialAnchorLoadResults(requestId, ref anchorResults);
-
-            results = new PxrSpatialAnchorLoadResult[resultsCount.resultCountOutput];
-            for (int i = 0; i < resultsCount.resultCountOutput; i++)
-            {
-                PxrSpatialAnchorLoadResult t = (PxrSpatialAnchorLoadResult)Marshal.PtrToStructure(anchorResults.results + (i * resultSize), typeof(PxrSpatialAnchorLoadResult));
-                results[i] = t;
-            }
-            Marshal.FreeHGlobal(anchorResults.results);
-
-            return state;
-        }
-        
-        [System.Obsolete("Deprecated. Please use GetAnchorPose", false)]
-        public static int GetSpatialAnchorPose(ulong handle, PxrReferenceType type, ref PxrPosef pose)
-        {
-            double predictDisplayTime = PXR_Plugin.System.UPxr_GetPredictedDisplayTime();
-            int result = PXR_Plugin.MixedReality.UPxr_GetSpatialAnchorPose(handle, predictDisplayTime, type, ref pose);
-            pose.position.z = -pose.position.z;
-            pose.orientation.z = -pose.orientation.z;
-            pose.orientation.w = -pose.orientation.w;
-            return result;
-        }
-        
-        [System.Obsolete("Deprecated. Please use GetAnchorEntityUuid", false)]
-        public static int GetSpatialAnchorUuid(ulong handle, ref PxrSpatialInstanceUuid uuid)
-        {
-            return PXR_Plugin.MixedReality.UPxr_GetSpatialAnchorUuid(handle, ref uuid);
-        }
-        
-        [System.Obsolete("Deprecated.", false)]
-        public static int LoadRoomScene(PxrRoomSceneLoadInfo loadInfo, ref ulong requestId)
-        {
-            return PXR_Plugin.MixedReality.UPxr_LoadRoomScene(ref loadInfo, ref requestId);
-        }
-        
-        [System.Obsolete("Deprecated.", false)]
-        public static int GetRoomSceneLoadResults(ulong requestId, out PxrRoomSceneLoadResult[] results)
-        {
-            results = null;
-            PxrRoomSceneLoadResults resultsCount = new PxrRoomSceneLoadResults()
-            {
-                resultCapacityInput = 0,
-                resultCountOutput = 0,
-                results = new IntPtr(0),
-            };
-            PXR_Plugin.MixedReality.UPxr_GetRoomSceneLoadResults(requestId, ref resultsCount);
-
-            int resultSize = Marshal.SizeOf(typeof(PxrRoomSceneLoadResult));
-            int resultBytesSize = resultsCount.resultCountOutput * resultSize;
-            PxrRoomSceneLoadResults sceneResults = new PxrRoomSceneLoadResults()
-            {
-                resultCapacityInput = resultsCount.resultCountOutput,
-                resultCountOutput = 0,
-                results = Marshal.AllocHGlobal(resultBytesSize),
-            };
-            var state = PXR_Plugin.MixedReality.UPxr_GetRoomSceneLoadResults(requestId, ref sceneResults);
-
-            results = new PxrRoomSceneLoadResult[resultsCount.resultCountOutput];
-            for (int i = 0; i < resultsCount.resultCountOutput; i++)
-            {
-                PxrRoomSceneLoadResult t = (PxrRoomSceneLoadResult)Marshal.PtrToStructure(sceneResults.results + (i * resultSize), typeof(PxrRoomSceneLoadResult));
-                results[i] = t;
-            }
-            Marshal.FreeHGlobal(sceneResults.results);
-            return state;
-        }
-        
-        [System.Obsolete("Deprecated.Please Use StartSpatialSceneCapture", false)]
-        public static int StartRoomCapture()
-        {
-            return PXR_Plugin.MixedReality.UPxr_StartRoomCapture();
-        }
-
-        [System.Obsolete]
-        public static int CreateRoomSceneData(PxrSpatialInstanceUuid anchorUuid, IntPtr roomSceneData, int dataLen,
-            ref ulong roomSceneDataHandle)
-        {
-            return PXR_Plugin.MixedReality.UPxr_CreateRoomSceneData(anchorUuid, roomSceneData, dataLen,
-                ref roomSceneDataHandle);
-        }
-        
-        [System.Obsolete]
-        public static int DestroyRoomSceneData(ulong roomSceneDataHandle)
-        {
-            return PXR_Plugin.MixedReality.UPxr_DestroyRoomSceneData(roomSceneDataHandle);
-        }
-        
-        [System.Obsolete]
-        public static int SaveRoomSceneData(PxrRoomSceneDataSaveInfo saveInfo, ref ulong requestId)
-        {
-            return PXR_Plugin.MixedReality.UPxr_SaveRoomSceneData(ref saveInfo, ref requestId);
-        }
-        
-        [System.Obsolete]
-        public static int DeleteRoomSceneData(PxrRoomSceneDataDeleteInfo deleteInfo, ref ulong requestId)
-        {
-            return PXR_Plugin.MixedReality.UPxr_DeleteRoomSceneData(ref deleteInfo, ref requestId);
         }
     }
 }

@@ -5,8 +5,10 @@
         "Unity.XR.Management",
         "Unity.InputSystem",
         "Unity.Subsystem.Registration",
+        "Unity.XR.PICO.LivePreview",
+        "Unity.XR.Interaction.Toolkit",
         "Unity.XR.Hands",
-        "Unity.XR.PICO.LivePreview"
+        "Unity.XR.ARSubsystems"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -35,6 +37,11 @@
             "name": "com.unity.pico.livepreview",
             "expression": "1.0.0",
             "define": "PICO_LIVE_PREVIEW"
+        },
+        {
+            "name": "com.unity.xr.arfoundation",
+            "expression": "5.1.2",
+            "define": "AR_FOUNDATION"
         }
     ],
     "noEngineReferences": false

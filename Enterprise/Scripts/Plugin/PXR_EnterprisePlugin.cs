@@ -14,7 +14,10 @@ PICO Technology Co., Ltd.
 #endif
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using LitJson;
 #if PICO_XR
 using Unity.XR.PXR;
 #else
@@ -97,7 +100,7 @@ namespace Unity.XR.PICO.TOBSupport
             return enumjo;
         }
         
-        public static bool UPxr_InitEnterpriseService()
+        public static bool UPxr_InitEnterpriseService(bool isCamera=false)
         {
 #if PICO_PLATFORM
                 tobHelperClass = new AndroidJavaClass("com.picoxr.tobservice.ToBServiceUtils");
@@ -106,7 +109,7 @@ namespace Unity.XR.PICO.TOBSupport
                 currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
                 BAuthLib = new AndroidJavaClass("com.pvr.tobauthlib.AuthCheckServer");
 #endif
-            return UPxr_GetToken();
+             return !isCamera || UPxr_GetToken();
         }
 
         public static void UPxr_SetBindCallBack(BindCallback mBoolCallback)
@@ -1757,6 +1760,14 @@ namespace Unity.XR.PICO.TOBSupport
 #endif
             return value;
         }
+        public static int UPxr_OpenTimingStartup(int hour, int minute, int repeat)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value =IToBService.Call<int>("openTimingStartup", hour, minute,repeat);
+#endif
+            return value;
+        }
         public static int UPxr_CloseTimingStartup()
         {
             int value = -1;
@@ -1770,6 +1781,14 @@ namespace Unity.XR.PICO.TOBSupport
             int value = -1;
 #if PICO_PLATFORM
             value =IToBService.Call<int>("openTimingShutdown", year, month, day, hour, minute);
+#endif
+            return value;
+        }
+        public static int UPxr_OpenTimingShutdown(int hour, int minute, int repeat)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value =IToBService.Call<int>("openTimingShutdown",  hour, minute,repeat);
 #endif
             return value;
         }
@@ -1809,6 +1828,886 @@ namespace Unity.XR.PICO.TOBSupport
 
         [DllImport(LibraryName,  CallingConvention = CallingConvention.Cdecl)]
         public static extern float oxr_get_trackingorigin_height();
+        public static int UPxr_SetSystemDate(int year, int month, int day)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value =IToBService.Call<int>("setSystemDate", year, month, day);
+#endif
+            return value;
+        }
+        public static int UPxr_SetSystemTime(int hourOfDay, int minute, int second)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value =IToBService.Call<int>("setSystemTime", hourOfDay, minute, second);
+#endif
+            return value;
+        }
+        public static int UPxr_KeepAliveBackground(int keepAlivePid, int flags, int level)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value =IToBService.Call<int>("keepAliveBackground", keepAlivePid, flags, level);
+#endif
+            return value;
+        }
+        public static int UPxr_OpenIPDDetectionPage()
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value =IToBService.Call<int>("openIPDDetectionPage");
+#endif
+            return value;
+        }
+        public static int UPxr_SetFloorHeight(float height)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value =IToBService.Call<int>("setFloorHeight",height);
+#endif
+            return value;
+        }
+        public static float UPxr_GetFloorHeight()
+        {
+            float value = -1;
+#if PICO_PLATFORM
+            value =IToBService.Call<float>("getFloorHeight");
+#endif
+            return value;
+        }
+        public static String UPxr_GetTimingStartupStatusTwo(int ext)
+        {
+            String value = "";
+#if PICO_PLATFORM
+            value =IToBService.Call<String>("pbsGetTimingStartupStatusTwo",ext);
+#endif
+            return value;
+        }
+        public static String UPxr_GetTimingShutDownStatusTwo(int ext)
+        {
+            String value = "";
+#if PICO_PLATFORM
+            value =IToBService.Call<String>("pbsGetTimingShutDownStatusTwo",ext);
+#endif
+            return value;
+        }
+        public static String[] UPxr_GetRunningAppProcesses()
+        {
+            String[] value = null;
+#if PICO_PLATFORM
+            value=tobHelper.Call<String[]>("pbsGetRunningAppProcesses");
+#endif
+            return value;
+        }
         
+        public static String UPxr_GetFocusedApp()
+        {
+            String value = "";
+#if PICO_PLATFORM
+            value = tobHelper.Call<String>("pbsGetFocusedApp");
+#endif
+            return value;
+        }
+
+        
+
+        public static String UPxr_StartService(AndroidJavaObject intent)
+        {
+            String value = "";
+#if PICO_PLATFORM
+            value = tobHelper.Call<String>("pbsStartService", intent);
+#endif
+            return value;
+        }
+        
+
+        public static String UPxr_StartForegroundService(AndroidJavaObject intent)
+        {
+            String value = "";
+#if PICO_PLATFORM
+            value = tobHelper.Call<String>("pbsStartForegroundService", intent);
+#endif
+            return value;
+        }
+        
+        public static int UPxr_SendBroadcast(AndroidJavaObject intent)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value = IToBService.Call<int>("sendBroadcast", intent);
+#endif
+            return value;
+        }
+        
+
+        public static int UPxr_SendOrderedBroadcast(AndroidJavaObject intent, String receiverPermission)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value = IToBService.Call<int>("sendOrderedBroadcast", intent,string.IsNullOrEmpty(receiverPermission)?null:receiverPermission);
+#endif
+            return value;
+        }
+        public static int UPxr_SetVirtualEnvironment(String envPath)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value = IToBService.Call<int>("setVirtualEnvironment",string.IsNullOrEmpty(envPath)?null:envPath);
+#endif
+            return value;
+        }
+        public static string UPxr_GetVirtualEnvironment()
+        {
+            string value = "";
+#if PICO_PLATFORM
+            value = IToBService.Call<string>("getVirtualEnvironment");
+#endif
+            return value;
+        }
+
+
+
+        private static IntPtr? _VirtualDisplayPlugin;
+        private static IntPtr createVirtualDisplayMethodId;
+        private static IntPtr startAppMethodId;
+        private static jvalue[] setUnityActivityParams;
+        private static IntPtr? _Activity;
+
+        private static IntPtr Activity
+        {
+            get
+            {
+                if (!_Activity.HasValue)
+                {
+                    try
+                    {
+                        IntPtr unityPlayerClass = AndroidJNI.FindClass("com/unity3d/player/UnityPlayer");
+                        IntPtr currentActivityField = AndroidJNI.GetStaticFieldID(unityPlayerClass, "currentActivity",
+                            "Landroid/app/Activity;");
+                        IntPtr activity = AndroidJNI.GetStaticObjectField(unityPlayerClass, currentActivityField);
+
+                        _Activity = AndroidJNI.NewGlobalRef(activity);
+
+                        AndroidJNI.DeleteLocalRef(activity);
+                        AndroidJNI.DeleteLocalRef(unityPlayerClass);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogException(ex);
+                        _Activity = IntPtr.Zero;
+                    }
+                }
+
+                return _Activity.GetValueOrDefault();
+            }
+        }
+
+        private static IntPtr VirtualDisplayPlugin
+        {
+            get
+            {
+                if (!_VirtualDisplayPlugin.HasValue)
+                {
+                    try
+                    {
+                        IntPtr myClass =
+                            AndroidJNI.FindClass("com/picoxr/tobservice/VirtualDisplay/VirtualDisplayPlugin");
+
+                        if (myClass != IntPtr.Zero)
+                        {
+                            _VirtualDisplayPlugin = AndroidJNI.NewGlobalRef(myClass);
+
+                            AndroidJNI.DeleteLocalRef(myClass);
+                        }
+                        else
+                        {
+                            Debug.LogError("Failed to find VirtualDisplayPlugin class");
+                            _VirtualDisplayPlugin = IntPtr.Zero;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError("Failed to find VirtualDisplayPlugin class");
+                        Debug.LogException(ex);
+                        _VirtualDisplayPlugin = IntPtr.Zero;
+                    }
+                }
+
+                return _VirtualDisplayPlugin.GetValueOrDefault();
+            }
+        }
+
+        private static IntPtr setUnityActivityMethodId;
+
+        public static void SetUnityActivity()
+        {
+            if (setUnityActivityMethodId == System.IntPtr.Zero)
+            {
+                setUnityActivityMethodId = AndroidJNI.GetStaticMethodID(VirtualDisplayPlugin, "setUnityActivity",
+                    "(Landroid/content/Context;)V");
+                setUnityActivityParams = new jvalue[1];
+            }
+
+            setUnityActivityParams[0].l = Activity;
+            AndroidJNI.CallStaticVoidMethod(VirtualDisplayPlugin, setUnityActivityMethodId, setUnityActivityParams);
+        }
+        private static jvalue[] CVDParams;
+        public static int UPxr_CreateVirtualDisplay(string displayName, IntPtr surfaceObj, int width, int height,
+            int densityDpi, int flags)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            // SetUnityActivity();
+            if (createVirtualDisplayMethodId == System.IntPtr.Zero)
+            {
+                createVirtualDisplayMethodId = AndroidJNI.GetStaticMethodID(VirtualDisplayPlugin,
+                    "CreateVirtualDisplay", "(Ljava/lang/String;Landroid/view/Surface;IIII)I");
+                CVDParams = new jvalue[6];
+            }
+
+            IntPtr displayNameString = AndroidJNI.NewStringUTF(displayName);
+
+            CVDParams[0].l = displayNameString;
+            CVDParams[1].l = surfaceObj;
+            CVDParams[2].i = width;
+            CVDParams[3].i = height;
+            CVDParams[4].i = densityDpi;
+            CVDParams[5].i = flags;
+            value = AndroidJNI.CallStaticIntMethod(VirtualDisplayPlugin, createVirtualDisplayMethodId, CVDParams);
+
+            AndroidJNI.DeleteLocalRef(displayNameString);
+#endif
+            return value;
+        }
+        private static jvalue[] SAParams;
+        public static int UPxr_StartApp(int displayId, AndroidJavaObject intent)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            if (startAppMethodId == IntPtr.Zero)
+            {
+                startAppMethodId =
+                    AndroidJNI.GetStaticMethodID(VirtualDisplayPlugin, "StartApp", "(ILandroid/content/Intent;)I");
+                SAParams = new jvalue[2];
+            }
+
+            SAParams[0].i = displayId;
+            SAParams[1].l = intent.GetRawObject();
+            value = AndroidJNI.CallStaticIntMethod(VirtualDisplayPlugin, startAppMethodId, SAParams);
+
+#endif
+            return value;
+        }
+        private static IntPtr releaseVirtualDisplayMethodId;
+        private static jvalue[] RVDParams;
+        public static int UPxr_ReleaseVirtualDisplay(int displayId)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            if (releaseVirtualDisplayMethodId == IntPtr.Zero)
+            {
+                releaseVirtualDisplayMethodId =
+                    AndroidJNI.GetStaticMethodID(VirtualDisplayPlugin, "ReleaseVirtualDisplay", "(I)I");
+                RVDParams = new jvalue[1];
+            }
+
+            RVDParams[0].i = displayId;
+            value = AndroidJNI.CallStaticIntMethod(VirtualDisplayPlugin, releaseVirtualDisplayMethodId, RVDParams);
+
+#endif
+            return value;
+        }
+        private static IntPtr setVirtualDisplaySurfaceMethodId;
+        private static jvalue[] SFParams;
+        public static int UPxr_SetVirtualDisplaySurface(int displayId, IntPtr surfaceObj)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            if (setVirtualDisplaySurfaceMethodId == IntPtr.Zero)
+            {
+                setVirtualDisplaySurfaceMethodId = AndroidJNI.GetStaticMethodID(VirtualDisplayPlugin,
+                    "SetVirtualDisplaySurface", "(ILandroid/view/Surface;)I");
+                SFParams = new jvalue[2];
+            }
+            
+            SFParams[0].i = displayId;
+            SFParams[1].l = surfaceObj;
+           
+            value = AndroidJNI.CallStaticIntMethod(VirtualDisplayPlugin, setVirtualDisplaySurfaceMethodId, SFParams);
+#endif
+            return value;
+        }
+        private static IntPtr injectEventMMethodId;
+        private static jvalue[] JEMParams;
+        public static int UPxr_InjectEvent(int displayId, int action, int source, float x, float y)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            if (injectEventMMethodId == IntPtr.Zero)
+            {
+                injectEventMMethodId =
+                    AndroidJNI.GetStaticMethodID(VirtualDisplayPlugin, "InjectEvent", "(IIIFF)I");
+                JEMParams = new jvalue[5];
+            }
+           
+            JEMParams[0].i = displayId;
+            JEMParams[1].i = action;
+            JEMParams[2].i = source;
+            JEMParams[3].f = x;
+            JEMParams[4].f = y;
+           
+            value = AndroidJNI.CallStaticIntMethod(VirtualDisplayPlugin, injectEventMMethodId, JEMParams);
+
+#endif
+            return value;
+        }
+        private static IntPtr injectEventKMethodId;
+        private static jvalue[] JEParams;
+        public static int UPxr_InjectEvent(int displayId, int action, int source, int keycode)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            if (injectEventKMethodId == IntPtr.Zero)
+            {
+                injectEventKMethodId =
+                    AndroidJNI.GetStaticMethodID(VirtualDisplayPlugin, "InjectEvent", "(IIII)I");
+                JEParams = new jvalue[4];
+            }
+
+            JEParams[0].i = displayId;
+            JEParams[1].i = action;
+            JEParams[2].i = source;
+            JEParams[3].i = keycode;
+           
+            value = AndroidJNI.CallStaticIntMethod(VirtualDisplayPlugin, injectEventKMethodId, JEParams);
+
+#endif
+            return value;
+        }
+        private static IntPtr resizeVirtualDisplayMethodId;
+        private static jvalue[] RVParams;
+        public static int UPxr_ResizeVirtualDisplay(int displayId, int width, int height, int densityDpi)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            if (resizeVirtualDisplayMethodId == IntPtr.Zero)
+            {
+                resizeVirtualDisplayMethodId =
+                    AndroidJNI.GetStaticMethodID(VirtualDisplayPlugin, "ResizeVirtualDisplay", "(IIII)I");
+                RVParams = new jvalue[4];
+            }
+
+            RVParams[0].i = displayId;
+            RVParams[1].i = width;
+            RVParams[2].i = height;
+            RVParams[3].i = densityDpi;
+           
+            value = AndroidJNI.CallStaticIntMethod(VirtualDisplayPlugin, resizeVirtualDisplayMethodId, RVParams);
+
+#endif
+            return value;
+        }
+
+        public static int UPxr_ShowGlobalMessageDialog(Texture2D icon, String title, String body, long time, int gap,
+            int position)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            if (icon == null)
+            {
+                value = tobHelper.Call<int>("pbsShowGlobalMessageDialog", null, 0, 0, title, body, time, gap, position);
+            }
+            else
+            {
+                Color[] colors = icon.GetPixels();
+                // Color[] colors=  new Color[icon.width * icon.height];
+                int[] colorint = new int[icon.width * icon.height * 4];
+                // for (int i = 0; i < colors.Length; i++)
+                // {
+                //     colors[i]=Color.red;
+                // }
+                for (int i = 0; i < colors.Length; i++)
+                {
+                    colorint[4 * i] = (int)(colors[i].a * 255);
+                    colorint[4 * i + 1] = (int)(colors[i].r * 255);
+                    colorint[4 * i + 2] = (int)(colors[i].g * 255);
+                    colorint[4 * i + 3] = (int)(colors[i].b * 255);
+                }
+
+                value = tobHelper.Call<int>("pbsShowGlobalMessageDialog", colorint, icon.width, icon.height, title,
+                    body, time, gap, position);
+            }
+#endif
+            return value;
+        }
+
+        public static Point3D[] UPxr_GetLargeSpaceBoundsInfo()
+        {
+            String[] value = null;
+            List<Point3D> ModelList = new List<Point3D>();
+#if PICO_PLATFORM
+            value = tobHelper.Call<String[]>("pbsGetLargeSpaceBoundsInfo");
+            // Point3D[] value1 = IToBService.Call<Point3D[]>("getLargeSpaceBoundsInfo");
+            foreach (var json in value)
+            {
+                JsonData jsonData = JsonMapper.ToObject(json);
+                Point3D model = new Point3D();
+                model.x = double.Parse(jsonData["x"].ToString());
+                model.y = double.Parse(jsonData["y"].ToString());
+                model.z = double.Parse(jsonData["z"].ToString());
+                ModelList.Add(model);
+           
+            }
+#endif
+            return ModelList.ToArray();
+        }
+        public static void UPxr_OpenLargeSpaceQuickMode(int length, int width, int originType, bool openVst, float distance, int timeout, Action<int> callback)
+        {
+#if PICO_PLATFORM
+            tobHelper.Call("pbsOpenLargeSpaceQuickMode",length,width,originType,openVst,distance,timeout,new IntCallback(callback));
+#endif
+        }
+        public static void UPxr_CloseLargeSpaceQuickMode()
+        {
+#if PICO_PLATFORM
+            IToBService.Call("closeLargeSpaceQuickMode");
+#endif
+        }
+        public static void UPxr_SetOriginOfLargeSpaceQuickMode(int originType, bool openVst, float distance, int timeout, Action<int> callback)
+        {
+#if PICO_PLATFORM
+            tobHelper.Call("pbsSetOriginOfLargeSpaceQuickMode",originType,openVst,distance,timeout,new IntCallback(callback));
+#endif
+        }
+        public static void UPxr_SetBoundaryOfLargeSpaceQuickMode(int length, int width,Action<int> callback)
+        {
+#if PICO_PLATFORM
+            tobHelper.Call("pbsSetBoundaryOfLargeSpaceQuickMode",length,width,new IntCallback(callback));
+#endif
+        }
+        public static LargeSpaceQuickModeInfo UPxr_GetLargeSpaceQuickModeInfo()
+        {
+            String value = "";
+            LargeSpaceQuickModeInfo model = new LargeSpaceQuickModeInfo();
+#if PICO_PLATFORM
+            value = tobHelper.Call<String>("pbsGetLargeSpaceQuickModeInfo");
+            JsonData jsonData = JsonMapper.ToObject(value);
+            model.length= int.Parse(jsonData["length"].ToString());
+            model.width = int.Parse(jsonData["width"].ToString());
+            model.originType = int.Parse(jsonData["originType"].ToString());
+            model.status = bool.Parse(jsonData["status"].ToString());
+#endif
+            return model;
+        }
+        
+        public static int UPxr_StartLeftControllerPair()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value=IToBService.Call<int>("startLeftControllerPair");
+#endif
+            return value;
+        }
+        public static int UPxr_MakeLeftControllerUnPair()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value=IToBService.Call<int>("makeLeftControllerUnPair");
+#endif
+            return value;
+        }
+        public static int UPxr_StartRightControllerPair()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value=IToBService.Call<int>("startRightControllerPair");
+#endif
+            return value;
+        }
+        public static int UPxr_MakeRightControllerUnPair()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value=IToBService.Call<int>("makeRightControllerUnPair");
+#endif
+            return value;
+        }
+        
+        public static int UPxr_StopControllerPair()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value=IToBService.Call<int>("stopControllerPair");
+#endif
+            return value;
+        }
+        public static int UPxr_SetControllerPreferHand(bool isLeft)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value=IToBService.Call<int>("setControllerPreferHand",isLeft);
+#endif
+            return value;
+        }
+        public static int UPxr_SetControllerVibrateAmplitude(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setControllerVibrateAmplitude",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetPowerManageMode(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setPowerManageMode",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_StartRoomMark()
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("startRoomMark");
+#endif
+            return value1;
+        }
+        public static int UPxr_ClearRoomMark()
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("clearRoomMark");
+#endif
+            return value1;
+        }
+        public static int UPxr_ClearEyeTrackData()
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("clearEyeTrackData");
+#endif
+            return value1;
+        }
+        public static int UPxr_SetEyeTrackRate(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setEyeTrackRate",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetTrackFrequency(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setTrackFrequency",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_StartSetSecureBorder()
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("startSetSecureBorder");
+#endif
+            return value1;
+        }
+        public static int UPxr_SetDistanceSensitivity(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setDistanceSensitivity",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetSpeedSensitivity(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setSpeedSensitivity",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetMotionTrackerPredictionCoefficient(float value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setMotionTrackerPredictionCoefficient",value);
+#endif
+            return value1;
+        }
+        public static float UPxr_GetMotionTrackerPredictionCoefficient()
+        {
+            float value1 = -1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<float>("getMotionTrackerPredictionCoefficient");
+#endif
+            return value1;
+        }
+        public static int UPxr_StartMotionTrackerApp(int failMode, int avatarMode)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("startMotionTrackerApp",failMode,avatarMode);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetSingleEyeSource(bool isLeft)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setSingleEyeSource",isLeft);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetViewVisual(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setViewVisual",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetAcceptCastMode(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setAcceptCastMode",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetScreenCastMode(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setScreenCastMode",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetScreenRecordShotRatio(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setScreenRecordShotRatio",value);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetScreenResolution(int width, int height)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setScreenResolution",width,height);
+#endif
+            return value1;
+        }
+        public static int UPxr_SetScreenRecordFrameRate(int value)
+        {
+            int value1 = 1;
+#if PICO_PLATFORM
+            value1=IToBService.Call<int>("setScreenRecordFrameRate",value);
+#endif
+            return value1;
+        }
+        public static void UPxr_HideGlobalMessageDialog()
+        {
+#if PICO_PLATFORM
+            IToBService.Call("hideGlobalMessageDialog");
+#endif
+        }
+        public static int UPxr_ShowGlobalTipsDialog(Texture2D icon, String title, long time, int position, int bgColor)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            if (icon == null)
+            {
+                value = tobHelper.Call<int>("pbsShowGlobalTipsDialog", null, 0, 0, title, time, position, bgColor);
+            }
+            else
+            {
+                Color[] colors = icon.GetPixels();
+                // Color[] colors=  new Color[icon.width * icon.height];
+                int[] colorint = new int[icon.width * icon.height * 4];
+                // for (int i = 0; i < colors.Length; i++)
+                // {
+                //     colors[i]=Color.red;
+                // }
+                for (int i = 0; i < colors.Length; i++)
+                {
+                    colorint[4 * i] = (int)(colors[i].a * 255);
+                    colorint[4 * i + 1] = (int)(colors[i].r * 255);
+                    colorint[4 * i + 2] = (int)(colors[i].g * 255);
+                    colorint[4 * i + 3] = (int)(colors[i].b * 255);
+                }
+
+                value = tobHelper.Call<int>("pbsShowGlobalTipsDialog", colorint, icon.width, icon.height,  title, time, position, bgColor);
+            }
+#endif
+            return value;
+        }
+        public static void UPxr_HideGlobalTipsDialog()
+        {
+#if PICO_PLATFORM
+            IToBService.Call("hideGlobalTipsDialog");
+#endif
+        }
+        public static int UPxr_ShowGlobalBigStatusDialog(Texture2D icon,String title, String body, long time, int gap, int position)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            if (icon == null)
+            {
+                value = tobHelper.Call<int>("pbsShowGlobalBigStatusDialog", null, 0, 0, title,body, time,gap, position);
+            }
+            else
+            {
+                Color[] colors = icon.GetPixels();
+                // Color[] colors=  new Color[icon.width * icon.height];
+                int[] colorint = new int[icon.width * icon.height * 4];
+                // for (int i = 0; i < colors.Length; i++)
+                // {
+                //     colors[i]=Color.red;
+                // }
+                for (int i = 0; i < colors.Length; i++)
+                {
+                    colorint[4 * i] = (int)(colors[i].a * 255);
+                    colorint[4 * i + 1] = (int)(colors[i].r * 255);
+                    colorint[4 * i + 2] = (int)(colors[i].g * 255);
+                    colorint[4 * i + 3] = (int)(colors[i].b * 255);
+                }
+
+                value = tobHelper.Call<int>("pbsShowGlobalBigStatusDialog", colorint, icon.width, icon.height,  title,body, time,gap, position);
+            }
+#endif
+            return value;
+        }
+        public static void UPxr_HideGlobalBigStatusDialog()
+        {
+#if PICO_PLATFORM
+            IToBService.Call("hideGlobalBigStatusDialog");
+#endif
+        }
+        public static int UPxr_ShowGlobalSmallStatusDialog(Texture2D icon,String title,  long time, int gap, int position)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            if (icon == null)
+            {
+                value = tobHelper.Call<int>("pbsShowGlobalSmallStatusDialog", null, 0, 0, title, time,gap, position);
+            }
+            else
+            {
+                Color[] colors = icon.GetPixels();
+                // Color[] colors=  new Color[icon.width * icon.height];
+                int[] colorint = new int[icon.width * icon.height * 4];
+                // for (int i = 0; i < colors.Length; i++)
+                // {
+                //     colors[i]=Color.red;
+                // }
+                for (int i = 0; i < colors.Length; i++)
+                {
+                    colorint[4 * i] = (int)(colors[i].a * 255);
+                    colorint[4 * i + 1] = (int)(colors[i].r * 255);
+                    colorint[4 * i + 2] = (int)(colors[i].g * 255);
+                    colorint[4 * i + 3] = (int)(colors[i].b * 255);
+                }
+
+                value = tobHelper.Call<int>("pbsShowGlobalSmallStatusDialog", colorint, icon.width, icon.height,  title,time,gap, position);
+            }
+#endif
+            return value;
+        }
+        public static void UPxr_HideGlobalSmallStatusDialog()
+        {
+#if PICO_PLATFORM
+            IToBService.Call("hideGlobalSmallStatusDialog");
+#endif
+        }
+        
+        public static int UPxr_ShowGlobalDialogByType(String type,Texture2D icon,String title, String body, long time, int gap, int position, int bgColor)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            if (icon == null)
+            {
+                value = tobHelper.Call<int>("pbsShowGlobalDialogByType", type,null, 0, 0, title,body, time,gap, position,bgColor);
+            }
+            else
+            {
+                Color[] colors = icon.GetPixels();
+                // Color[] colors=  new Color[icon.width * icon.height];
+                int[] colorint = new int[icon.width * icon.height * 4];
+                // for (int i = 0; i < colors.Length; i++)
+                // {
+                //     colors[i]=Color.red;
+                // }
+                for (int i = 0; i < colors.Length; i++)
+                {
+                    colorint[4 * i] = (int)(colors[i].a * 255);
+                    colorint[4 * i + 1] = (int)(colors[i].r * 255);
+                    colorint[4 * i + 2] = (int)(colors[i].g * 255);
+                    colorint[4 * i + 3] = (int)(colors[i].b * 255);
+                }
+
+                value = tobHelper.Call<int>("pbsShowGlobalDialogByType", type,colorint, icon.width, icon.height,  title,body, time,gap, position,bgColor);
+            }
+#endif
+            return value;
+        }
+        public static void UPxr_HideGlobalDialogByType(String type)
+        {
+#if PICO_PLATFORM
+            IToBService.Call("hideGlobalDialogByType",type);
+#endif
+        }
+
+        public static int UPxr_Recenter()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("recenter");
+#endif
+            return value;
+        }
+
+        public static void UPxr_ScanQRCode(Action<string> callback)
+        {
+#if PICO_PLATFORM
+            tobHelper.Call("pbsScanQRCode", new StringCallback(callback));
+#endif
+        }
+
+        public static int UPxr_OnlineSystemUpdate(SystemUpdateCallback callback)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value = tobHelper.Call<int>("pbsSonlineSystemUpdate", callback);
+#endif
+            return value;
+        }
+        public static int UPxr_OfflineSystemUpdate(OffLineSystemUpdateConfig systemUpdateConfig,SystemUpdateCallback callback)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            if (systemUpdateConfig != null)
+            {
+                if (string.IsNullOrEmpty(systemUpdateConfig.otaFilePath))
+                {
+                   Debug.LogError("systemUpdateConfig.otaFilePath is null");
+                }
+                else
+                {
+                    value = tobHelper.Call<int>("pbsOfflineSystemUpdate", systemUpdateConfig.otaFilePath, systemUpdateConfig.autoReboot, systemUpdateConfig.showProgress, callback);
+                }
+               
+            }
+            else
+            {
+                Debug.LogError("systemUpdateConfig is null");
+            }
+#endif
+            return value;
+        }
     }
 }

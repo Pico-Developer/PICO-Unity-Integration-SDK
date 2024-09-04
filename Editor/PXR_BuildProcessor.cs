@@ -82,8 +82,8 @@ namespace Unity.XR.PXR.Editor
                 throw new BuildFailedException($"PICO Plugin on mobile platforms nonsupport the {firstGfxType}");
             if (PxrSettings.stereoRenderingModeAndroid == PXR_Settings.StereoRenderingModeAndroid.Multiview && firstGfxType == GraphicsDeviceType.OpenGLES2)
                 PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new GraphicsDeviceType[] { GraphicsDeviceType.OpenGLES3 });
-            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel26)
-                throw new BuildFailedException("Android Minimum API must be set to 26 or higher for PICO Plugin.");
+            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel29)
+                throw new BuildFailedException("Android Minimum API must be set to 29 or higher for PICO Plugin.");
             base.OnPreprocessBuild(report);
         }
     }
@@ -95,6 +95,9 @@ namespace Unity.XR.PXR.Editor
 
         private static readonly Dictionary<string, string> AndroidBootConfigVars = new Dictionary<string, string>()
         {
+            { "xr-usable-core-mask-enabled", "1"},
+            { "xr-require-backbuffer-textures", "0" },
+            { "xr-hide-memoryless-render-texture", "1" }
         };
 
         public void OnPreprocessBuild(BuildReport report)
@@ -220,10 +223,12 @@ namespace Unity.XR.PXR.Editor
             var settings = PXR_XmlTools.GetSettings();
             doc.InsertAttributeInTargetTag(applicationTagPath,null, new Dictionary<string, string>() {{"requestLegacyExternalStorage", "true"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.app.type"}},new Dictionary<string, string>{{"value","vr"}});
-            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.sdk.version"}},new Dictionary<string, string>{{"value","XR Platform_2.5.3"}});
-            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pxr.sdk.version_code"}},new Dictionary<string, string>{{"value", "5900"}});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.sdk.version"}},new Dictionary<string, string>{{"value","XR Platform_3.0.4"}});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pxr.sdk.version_code"}},new Dictionary<string, string>{{"value", "5110"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","enable_cpt"}},new Dictionary<string, string>{{"value",PXR_ProjectSetting.GetProjectConfig().useContentProtect ? "1" : "0"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","handtracking"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().handTracking ? "1" : "0" }});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","Enable_AdaptiveHandModel"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().adaptiveHand ? "1" : "0" }});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","Hand_Tracking_HighFrequency"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().highFrequencyHand ? "1" : "0" }});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","rendering_mode"}},new Dictionary<string, string>{{"value",((int)settings.stereoRenderingModeAndroid).ToString()}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","display_rate"}},new Dictionary<string, string>{{"value",((int)settings.systemDisplayFrequency).ToString()}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","color_Space"}},new Dictionary<string, string>{{"value",QualitySettings.activeColorSpace == ColorSpace.Linear ? "1" : "0"}});
@@ -233,11 +238,14 @@ namespace Unity.XR.PXR.Editor
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.app.splash"} },new Dictionary<string, string>{{"value",settings.GetSystemSplashScreen(path)}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","PICO.swift.feature"}},new Dictionary<string, string>{{"value",PXR_ProjectSetting.GetProjectConfig().bodyTracking ? "1" : "0" }});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","adaptive_resolution"}},new Dictionary<string, string>{{"value",PXR_ProjectSetting.GetProjectConfig().adaptiveResolution ? "1" : "0" }});
-            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "mr_map_require" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().spatialAnchor ? "1" : "0" } });
-            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_mr" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().spatialAnchor ? "1" : "0" } });
+            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_mr_safeguard" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().mrSafeguard ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_vst" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().videoSeeThrough ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_anchor" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().spatialAnchor ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "mr_map_mgr_auto_start" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().spatialAnchor ? "1" : "0" } });
+            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_spatial_anchor" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().spatialAnchor ? "1" : "0" } });
+            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_cloud_anchor" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().sharedAnchor ? "1" : "0" } });
+            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_mesh_anchor" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().spatialMesh ? "1" : "0" } });
+            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_scene_anchor" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().sceneCapture ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.SuperResolution" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().superResolution ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.NormalSharpening" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().normalSharpening ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.QualitySharpening" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().qualitySharpening ? "1" : "0" } });
@@ -252,6 +260,22 @@ namespace Unity.XR.PXR.Editor
                 doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "eyetracking_calibration" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().eyetrackingCalibration ? "true" : "false" } });
             }
 
+            if (PXR_ProjectSetting.GetProjectConfig().spatialAnchor || PXR_ProjectSetting.GetProjectConfig().sceneCapture || PXR_ProjectSetting.GetProjectConfig().spatialMesh || PXR_ProjectSetting.GetProjectConfig().sharedAnchor)
+            {
+                doc.CreateElementInTag(manifestTagPath, usesPermissionTagName,
+                    new Dictionary<string, string> { { "name", "com.picovr.permission.SPATIAL_DATA" } });
+            }
+
+            if (PXR_ProjectSetting.GetProjectConfig().handTracking)
+            {
+                doc.CreateElementInTag(manifestTagPath, usesPermissionTagName,
+                    new Dictionary<string, string> { { "name", "com.picovr.permission.HAND_TRACKING" } });
+            }
+            else
+            {
+                doc.RemoveNameValueElementInTag(manifestTagPath, usesPermissionTagName,
+                    "android:name", "com.picovr.permission.HAND_TRACKING");
+            }
             if (PXR_ProjectSetting.GetProjectConfig().faceTracking) { doc.CreateElementInTag(manifestTagPath, usesPermissionTagName, new Dictionary<string, string> { { "name", "com.picovr.permission.FACE_TRACKING" } }); }
             if (PXR_ProjectSetting.GetProjectConfig().lipsyncTracking) { doc.CreateElementInTag(manifestTagPath, usesPermissionTagName, new Dictionary<string, string> { { "name", "android.permission.RECORD_AUDIO" } }); }
             if (PXR_ProjectSetting.GetProjectConfig().faceTracking) { doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "picovr.software.face_tracking" } }, new Dictionary<string, string> { { "value", "false/true" } }); }
@@ -295,6 +319,24 @@ namespace Unity.XR.PXR.Editor
             else UpdateOrCreateAttribute(targetElement, attributeDic);
         }
 
+        public static void RemoveNameValueElementInTag(this XmlDocument doc, string parentPath, string tag, string name,
+            string value)
+        {
+            var xmlNodeList = doc.SelectNodes(parentPath + "/" + tag);
+
+            foreach (XmlNode node in xmlNodeList)
+            {
+                var attributeList = ((XmlElement)node).Attributes;
+
+                foreach (XmlAttribute attrib in attributeList)
+                {
+                    if (attrib.Name == name && attrib.Value == value)
+                    {
+                        node.ParentNode?.RemoveChild(node);
+                    }
+                }
+            }
+        }
         public static void CreateElementInTag(this XmlDocument doc, string parentPath, string tagName,
             Dictionary<string, string> attributeDic)
         {

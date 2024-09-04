@@ -50,7 +50,7 @@ namespace Unity.XR.PXR
         [SerializeField, Tooltip("Enable Application SpaceWarp")]
         public bool enableAppSpaceWarp;
 
-        [SerializeField, Tooltip("Set the system splash screen picture in PNG format")]
+        [SerializeField, Tooltip("Set the system splash screen picture in PNG format. [width,height] < [1024, 1024]")]
         public Texture2D systemSplashScreen;
 
         private string splashPath = string.Empty;
@@ -85,12 +85,20 @@ namespace Unity.XR.PXR
                 return;
             }
 
+            if(systemSplashScreen.width > 1024 || systemSplashScreen.height > 1024)
+            {
+                systemSplashScreen = null;
+                splashPath = string.Empty;
+                Debug.LogError("The width and height of the System Splash Screen are invalid. They should be at least 1024 pixels in width and height.");
+                return;
+            }
+
             splashPath = AssetDatabase.GetAssetPath(systemSplashScreen);
             if (!string.Equals(Path.GetExtension(splashPath), ".png", StringComparison.OrdinalIgnoreCase))
             {
                 systemSplashScreen = null;
                 Debug.LogError("Invalid file format of System Splash Screen, only PNG format is supported. The asset path: " + splashPath); 
-                 splashPath = string.Empty;
+                splashPath = string.Empty;
             }
         }
 
