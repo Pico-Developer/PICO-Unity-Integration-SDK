@@ -18,6 +18,7 @@ Since version 3.0.0, the PICO Unity Integration SDK supports Unity 2023.
 | Enterprise Service <br>  | * Added a number of APIs. For details, refer to the PXR_Enterprise class (from `SetSystemDate` to `OfflineSystemUpdate`) in the API reference. <br> * Added new enumeration values for `SwitchSystemFunction` and `GetSwitchSystemFunctionStatus`. For details, refer to the enumeration values list from `SFS_SYSTEM_VIBRATION_ENABLED` to `SFS_RETRIEVE_MAP_BY_MARKER_FIRST` in the descriptions of these two APIs.  |
 | Developer Tools | The PICO Unity Live Preview Plugin has supported previewing Unity XR Hands in real time. |
 | Others | Added the Project Validation feature. This feature can display the validation rules required by the installed XR package. For any validation rules that are not properly set up, you can use this feature to automatically fix them with a single click. |
+
 **Modify & Optimize**
 | **Module** | **Description** |
 | --- | --- |
@@ -25,5 +26,7 @@ Since version 3.0.0, the PICO Unity Integration SDK supports Unity 2023.
 |  | Refactorred scene capture APIs, thereby providing a quicker workflow for you to retrieve scene anchor data. For details, refer to "[Compatibility & porting guide for MR features](/document/unity/compatibility-and-porting-guide-for-mr-features/)". |
 |  | Once video seethrough is enabled, it works throughout the lifecycle of the app. |
 | Interaction | Optimized body tracking APIs. For details, refer to "[Motion tracking API compatibility information](/document/unity/motion-tracker-api-compatibility/)". |
+
 **Known issues**
+
 In Unity 2023, when using overlay layers in the Multiview Rendering mode, the layers will not be displayed or be incorrectly displayed. This issue is expected to be resolved in future engine updates.
