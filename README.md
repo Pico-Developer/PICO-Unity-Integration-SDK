@@ -1,32 +1,19 @@
-This article records the changes to the PICO Unity Integration SDK in version 3.0.0.
+This article records the changes to the PICO Unity Integration SDK in version 3.0.5.
 ## Download the SDK
 Download the latest version of the PICO Unity Integration SDK from the [Download](https://developer-global.pico-interactive.com/resources/#sdk) screen.
 ## What's new
-Released on: September 02, 2024
-Required PICO device's system version: 5.11.0 or later
-Since version 3.0.0, the PICO Unity Integration SDK supports Unity 2023.
-
+Released on: November 05, 2024
+Required PICO device's system version: 5.12.0 or later
 **Add**
 | **Module** | **Description** |
 | --- | --- |
-| Sense Pack | Added the Shared Spatial Anchor feature. In the same physical environment, when different users play the same app, they can share content using shared spatial anchors. |
-|  | Added the Spatial Mesh feature. It supports dynamically scanning the physical environment in real time and then converting the scene content into spatial meshes. You can PICO SDK to retrieve and use spatial meshed in your app. |
-|  | Added the MR Safeguard feature. When the distance between the objects in the virtual scene and the PICO headset or controllers is within a certain range, the virtual scene will become semi-transparent, revealing the real-world scene. |
-|  | Added control over spatial data permission. For PICO apps, users can decide whether to authorize your app to use their spatial data. |
-| Interaction <br>  | Below are the updates to the Hand Tracking feature: <br>  <br> * Added the High Frequency Tracking mode. It supports tracking a user's hands at 60Hz to capture faster hand movements. This improves the accuracy of hand tracking data. <br> * Added the Adaptive Hand Model feature. It supports automatically adjusting the size of virtual hand models with the change to the size of a user's hands. <br> * Provided new hand models, which provide a more realistic representation of the human hand. |
-|  | Below are the updates to motion tracking: <br>  <br> * Added the Object Tracking feature. It supports tracking PICO Motion Trackers and outputs 6DoF data for them. You can use this feature to track PICO Motion Trackers or the objects they attach to.  <br> * Added the callback function for the button event of the PICO Motion Tracker. <br> * Supported dynamically switching the motion tracking mode. <br> * Supported stepping recognition. <br> * Supported passing through data between PICO devices and external devices. |
-| Enterprise Service <br>  | * Added a number of APIs. For details, refer to the PXR_Enterprise class (from `SetSystemDate` to `OfflineSystemUpdate`) in the API reference. <br> * Added new enumeration values for `SwitchSystemFunction` and `GetSwitchSystemFunctionStatus`. For details, refer to the enumeration values list from `SFS_SYSTEM_VIBRATION_ENABLED` to `SFS_RETRIEVE_MAP_BY_MARKER_FIRST` in the descriptions of these two APIs.  |
-| Developer Tools | The PICO Unity Live Preview Plugin has supported previewing Unity XR Hands in real time. |
-| Others | Added the Project Validation feature. This feature can display the validation rules required by the installed XR package. For any validation rules that are not properly set up, you can use this feature to automatically fix them with a single click. |
+| General | Added the PICO Building Blocks system, which can help you quickly set up features with one click. The features are either provided by the PICO Unity Integration SDK or Unity itself. |
+| Sense Pack | Added the following new semantic labels for Scene Capture: `Curtain`, `Cabinet`, `Bed`, `Plant`, `Screen`, `Refrigerator`, `WashingMachine`, `AirConditioner`, `Lamp`, `WallArt`. |
+| Project Validation | Project Validation supports checking whether your project has correctly set up the keystore and key. |
+| Input | * Added the `GetControllerStatus` API for retrieving the connection status of controller. <br> * Added the `InputDeviceChanged` event for receiving the notification when the input device (hand poses / controllers) has changed. |
+| Spatial Audio | The PICO Spatial Audio Plugin combines the Spatial Mesh capability with spatial audio rendering, allowing virtual sound sources to interact with the user's real environment. |
+| Enterprise Service | * Added value `LARGESPACE_MAP_INFO ` to enumeration`SystemInfoEnum`, which is used to get the information of the large space map. <br> * Added the following APIs: <br>    * `GetControllerVibrateAmplitude`: Gets the vibration amplitude of controllers; <br>    * `SetHMDVolumeKeyFunc`: Sets a functionality for the volume button of the HMD; <br>    * `GetHMDVolumeKeyFunc`: Gets the functionality of the volume button of the HMD; <br>    * `GetPowerManageMode`: Gets the device's power management mode; <br>    * `GetEyeTrackRate`: Gets the frame rate of eye tracking; <br>    * `GetTrackFrequency`: Gets the tracking frequency; <br>    * `GetDistanceSensitivity`: Gets the device's distance sensing sensitivity; <br>    * `GetSpeedSensitivity`: Gets the device's speed sensing sensitivity; <br>    * `SetMRCollisionAlertSensitivity`: Sets the device's collision alert sensitivity;l <br>    * `GetMRCollisionAlertSensitivity`: Gets the device's collision alert sensitivity; <br>    * `ConnectWifi`: Connects to a WiFi; <br>    * `SetStaticIpConfigurationtoConnectWifi`: Sets up WifiConfiguration and connects to the WiFi; <br>    * `GetSingleEyeSource`: Gets the eye that serves as the image source; <br>    * `GetViewVisual`: Gets the device's view mode; <br>    * `GetAcceptCastMode`: Gets whether the device accepts screen sharing from the external device; <br>    * `GetScreenCastMode`: Gets whether the device allows the sharing of its screen to the external device; <br>    * `GetScreenRecordShotRatio`: Gets the aspect ratio for screen recording and screenshots; <br>    * `GetScreenResolution`: Gets the resolution for screen recording and screenshots; <br>    * `GetScreenRecordFrameRate`:Gets the frame rate for screen recording. |
+**Bugfix**
 
-**Modify & Optimize**
-| **Module** | **Description** |
-| --- | --- |
-| Sense Pack | Refactorred spatial anchor APIs, thereby providing a more easy-to-use spatial anchor system. For details, refer to "[Compatibility & porting guide for MR features](/document/unity/compatibility-and-porting-guide-for-mr-features/)". |
-|  | Refactorred scene capture APIs, thereby providing a quicker workflow for you to retrieve scene anchor data. For details, refer to "[Compatibility & porting guide for MR features](/document/unity/compatibility-and-porting-guide-for-mr-features/)". |
-|  | Once video seethrough is enabled, it works throughout the lifecycle of the app. |
-| Interaction | Optimized body tracking APIs. For details, refer to "[Motion tracking API compatibility information](/document/unity/motion-tracker-api-compatibility/)". |
-
-**Known issues**
-
-In Unity 2023, when using overlay layers in the Multiview Rendering mode, the layers will not be displayed or be incorrectly displayed. This issue is expected to be resolved in future engine updates.
+* Fixed the issue that the controllers' battery level couldn't be updated immediately after switching between controllers and hand poses for input.
+* Fixed the issue that the battery level of the left controller was incorrectly displayed as that of the right controller.
