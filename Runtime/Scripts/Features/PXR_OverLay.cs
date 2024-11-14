@@ -76,7 +76,7 @@ namespace Unity.XR.PXR
 
         public float blurredQuadScale = 0.5f;
         public float blurredQuadShift = 0.01f;
-        public float blurredQuadFOV = 70.0f;
+        public float blurredQuadFOV = 61.05f;
         public float blurredQuadIPD = 0.064f;
         #endregion
 

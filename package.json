@@ -1,7 +1,7 @@
 {
   "name": "com.unity.xr.picoxr",
   "displayName": "PICO Integration",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "unity": "2020.3",
   "description": "Provides display and input support for PICO devices.",
   "keywords": [

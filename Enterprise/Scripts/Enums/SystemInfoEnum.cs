@@ -62,5 +62,7 @@
 
         //相机温度单位华氏度
         CAMERA_TEMPERATURE_FAHRENHEIT = 18,
+        //大空间地图信息：
+        LARGESPACE_MAP_INFO=19,
     }
 }

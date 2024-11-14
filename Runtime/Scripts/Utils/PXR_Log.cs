@@ -33,40 +33,64 @@ namespace Unity.XR.PXR
             LogVerbose,
         }
 
-        public static void v(string tag, string message)
+        public static void v(string tag, string message, bool showFrameCount = true)
         {
             if (LogLevel.LogVerbose <= logLevel)
-                Debug.Log(string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message));
+            {
+                Debug.Log(showFrameCount
+                    ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
+                    : string.Format("{0}>>>>>>{1}", tag, message));
+            }
         }
 
-        public static void d(string tag, string message)
+        public static void d(string tag, string message, bool showFrameCount = true)
         {
             if (LogLevel.LogDebug <= logLevel)
-                Debug.Log(string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message));
+            {
+                Debug.Log(showFrameCount
+                    ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
+                    : string.Format("{0}>>>>>>{1}", tag, message));
+            }
         }
 
-        public static void i(string tag, string message)
+        public static void i(string tag, string message, bool showFrameCount = true)
         {
             if (LogLevel.LogInfo <= logLevel)
-                Debug.Log(string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message));
+            {
+                Debug.Log(showFrameCount
+                    ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
+                    : string.Format("{0}>>>>>>{1}", tag, message));
+            }
         }
 
-        public static void w(string tag, string message)
+        public static void w(string tag, string message, bool showFrameCount = true)
         {
             if (LogLevel.LogWarn <= logLevel)
-                Debug.LogWarning(string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message));
+            {
+                Debug.Log(showFrameCount
+                    ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
+                    : string.Format("{0}>>>>>>{1}", tag, message));
+            }
         }
 
-        public static void e(string tag, string message)
+        public static void e(string tag, string message, bool showFrameCount = true)
         {
             if (LogLevel.LogError <= logLevel)
-                Debug.LogError(string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message));
+            {
+                Debug.Log(showFrameCount
+                    ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
+                    : string.Format("{0}>>>>>>{1}", tag, message));
+            }
         }
 
-        public static void f(string tag, string message)
+        public static void f(string tag, string message, bool showFrameCount = true)
         {
             if (LogLevel.LogFatal <= logLevel)
-                Debug.LogError(string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message));
+            {
+                Debug.Log(showFrameCount
+                    ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
+                    : string.Format("{0}>>>>>>{1}", tag, message));
+            }
         }
     }
 }

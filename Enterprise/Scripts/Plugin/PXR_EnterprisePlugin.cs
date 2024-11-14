@@ -2709,5 +2709,155 @@ namespace Unity.XR.PICO.TOBSupport
 #endif
             return value;
         }
+        public static int UPxr_GetControllerVibrateAmplitude()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getControllerVibrateAmplitude");
+#endif
+            return value;
+        }
+        public static int UPxr_SetHMDVolumeKeyFunc(int func)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("setHMDVolumeKeyFunc",func);
+#endif
+            return value;
+        }
+        public static int UPxr_GetHMDVolumeKeyFunc()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getHMDVolumeKeyFunc");
+#endif
+            return value;
+        }
+        public static int UPxr_GetPowerManageMode()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getPowerManageMode");
+#endif
+            return value;
+        }
+        public static int UPxr_GetEyeTrackRate()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getEyeTrackRate");
+#endif
+            return value;
+        }
+        public static int UPxr_GetTrackFrequency()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getTrackFrequency");
+#endif
+            return value;
+        }
+        public static int UPxr_GetDistanceSensitivity()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getDistanceSensitivity");
+#endif
+            return value;
+        }
+        public static int UPxr_GetSpeedSensitivity()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getSpeedSensitivity");
+#endif
+            return value;
+        }
+        public static int UPxr_SetMRCollisionAlertSensitivity(float v)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("setMRCollisionAlertSensitivity",v);
+#endif
+            return value;
+        }
+        public static float UPxr_GetMRCollisionAlertSensitivity()
+        {
+            float value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<float>("getMRCollisionAlertSensitivity");
+#endif
+            return value;
+        }
+        public static void UPxr_ConnectWifi(WifiConfiguration configuration,Action<int> callback)
+        {
+#if PICO_PLATFORM
+            tobHelper.Call("pbsConnectWifi", configuration.ssid,configuration.password,configuration.isClient,new IntCallback(callback));
+#endif
+        }
+        public static void UPxr_SetStaticIpConfigurationtoConnectWifi(WifiConfiguration configuration,string staticIP,string subnet_mask,string gateway,string[] DNS,Action<int> callback)
+        {
+#if PICO_PLATFORM
+            tobHelper.Call("pbsSetStaticIpConfigurationtoConnectWifi", configuration.ssid,configuration.password,staticIP,subnet_mask,gateway,DNS,new IntCallback(callback));
+#endif
+        }
+        public static int UPxr_GetSingleEyeSource()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getSingleEyeSource");
+#endif
+            return value;
+        }
+        public static int UPxr_GetViewVisual()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getViewVisual");
+#endif
+            return value;
+        }
+        public static int UPxr_GetAcceptCastMode()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getAcceptCastMode");
+#endif
+            return value;
+        }
+        public static int UPxr_GetScreenCastMode()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getScreenCastMode");
+#endif
+            return value;
+        }
+      
+        public static int UPxr_GetScreenRecordShotRatio()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getScreenRecordShotRatio");
+#endif
+            return value;
+        }
+        public static int[] UPxr_GetScreenResolution()
+        {
+            int[] value = new[] {-2, -2}; 
+#if PICO_PLATFORM
+            value= IToBService.Call<int[]>("getScreenResolution");
+#endif
+            return value;
+        }
+        public static int UPxr_GetScreenRecordFrameRate()
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getScreenRecordFrameRate");
+#endif
+            return value;
+        }
     }
+   
 }

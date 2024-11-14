@@ -130,9 +130,11 @@ namespace Unity.XR.PXR
         /// @note If the app is paused, this function will cease. Therefore, you need to call this function again after the app has been resumed.
         /// </summary>
         /// <param name="value">Whether to enable SeeThrough: `true`-enable; `false`-do not enable.</param>
+        /// <see cref="PXR_Manager.EnableVideoSeeThrough"/> is preferred over this method.
+        [Obsolete("Deprecated.Please use PXR_Manager.EnableVideoSeeThrough instead", true)]
         public static void EnableSeeThroughManual(bool value)
         {
-            PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(value);
+            
         }
 
         /// <summary>

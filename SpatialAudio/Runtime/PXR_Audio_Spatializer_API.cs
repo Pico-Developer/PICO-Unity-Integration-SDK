@@ -47,7 +47,20 @@ namespace PXR_Audio
                 ref MeshConfig config,
                 ref int geometryId);
 
+            public abstract Result UpdateMesh(
+                IntPtr ctx,
+                int geometryId, 
+                float[] newVertices,
+                int newVerticesCount,
+                int[] newIndices,
+                int newIndicesCount,
+                ref MeshConfig config,
+                ref int newGeometryId,
+                bool isAsync = false);
+
             public abstract Result RemoveMesh(IntPtr ctx, int geometryId);
+
+            public abstract int GetNumOfGeometries(IntPtr ctx);
 
             public abstract Result SetMeshConfig(
                 IntPtr ctx,
@@ -304,7 +317,7 @@ namespace PXR_Audio
             private static extern Result SubmitMeshWithConfigImport(IntPtr ctx, float[] vertices, int verticesCount,
                 int[] indices,
                 int indicesCount,
-                ref MeshConfig config, ref int geometryId);
+                ref MeshConfig config, ref int geometryId, bool isAsync);
 
             public override Result SubmitMeshWithConfig(IntPtr ctx, float[] vertices, int verticesCount, int[] indices,
                 int indicesCount,
@@ -312,7 +325,19 @@ namespace PXR_Audio
             {
                 PXR_Plugin.System.UPxr_LogSdkApi("pico_spatial_audio_submit_mesh_with_config|unity_native");
                 return SubmitMeshWithConfigImport(ctx, vertices, verticesCount, indices, indicesCount, ref config,
-                    ref geometryId);
+                    ref geometryId, false);
+            }
+            
+            [DllImport(DLLNAME, EntryPoint = "yggdrasil_audio_update_mesh")]
+            private static extern Result UpdateMeshImport(IntPtr ctx, int geometryId, float[] newVertices, int newVerticesCount, int[] newIndices,
+                int newIndicesCount, ref MeshConfig config, ref int newGeometryId, bool isAsync = false);
+
+            public override Result UpdateMesh(IntPtr ctx, int geometryId, float[] newVertices, int newVerticesCount, int[] newIndices,
+                int newIndicesCount, ref MeshConfig config, ref int newGeometryId, bool isAsync = false)
+            {
+                PXR_Plugin.System.UPxr_LogSdkApi("pico_spatial_audio_update_mesh|unity_native");
+                return UpdateMeshImport(ctx, geometryId, newVertices, newVerticesCount, newIndices, newIndicesCount,
+                    ref config, ref newGeometryId, isAsync);
             }
 
             [DllImport(DLLNAME, EntryPoint = "yggdrasil_audio_remove_mesh")]
@@ -321,6 +346,14 @@ namespace PXR_Audio
             public override Result RemoveMesh(IntPtr ctx, int geometryId)
             {
                 return RemoveMeshImport(ctx, geometryId);
+            }
+            
+            [DllImport(DLLNAME, EntryPoint = "yggdrasil_audio_get_num_of_geometries")]
+            private static extern int GetNumOfGeometriesImport(IntPtr ctx);
+
+            public override int GetNumOfGeometries(IntPtr ctx)
+            {
+                return GetNumOfGeometriesImport(ctx);
             }
 
             [DllImport(DLLNAME, EntryPoint = "yggdrasil_audio_set_mesh_config")]
@@ -905,12 +938,23 @@ namespace PXR_Audio
                     ref geometryId);
             }
 
+            public override Result UpdateMesh(IntPtr ctx, int geometryId, float[] newVertices, int newVerticesCount, int[] newIndices,
+                int newIndicesCount, ref MeshConfig config, ref int newGeometryId, bool isAsync = false)
+            {
+                throw new NotImplementedException();
+            }
+
             [DllImport(DLLNAME, EntryPoint = "CSharp_PicoSpatializerWwise_RemoveMesh")]
             private static extern Result RemoveMeshImport(IntPtr ctx, int geometryId);
 
             public override Result RemoveMesh(IntPtr ctx, int geometryId)
             {
                 return RemoveMeshImport(ctx, geometryId);
+            }
+
+            public override int GetNumOfGeometries(IntPtr ctx)
+            {
+                throw new NotImplementedException();
             }
 
             [DllImport(DLLNAME, EntryPoint = "CSharp_PicoSpatializerWwise_SetMeshConfig")]

@@ -65,8 +65,16 @@ namespace Unity.XR.PXR.Editor
                 manager.foveationLevel = (FoveationLevel)EditorGUILayout.EnumPopup("Foveated Rendering Level", manager.foveationLevel);
                 if (FoveationLevel.None != manager.foveationLevel)
                 {
-                    projectConfig.enableSubsampled = EditorGUILayout.Toggle("  Subsampling", projectConfig.enableSubsampled);
-                    projectConfig.recommendSubsamping = true;
+                    if (GraphicsDeviceType.OpenGLES3 == PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget)[0] && PlayerSettings.colorSpace == ColorSpace.Gamma)
+                    {
+                        projectConfig.enableSubsampled = false;
+                        projectConfig.recommendSubsamping = false;
+                    }
+                    else
+                    {
+                        projectConfig.enableSubsampled = EditorGUILayout.Toggle("  Subsampling", projectConfig.enableSubsampled);
+                        projectConfig.recommendSubsamping = true;
+                    }
                 }
             }
             else if (FoveatedRenderingMode.EyeTrackedFoveatedRendering == manager.foveatedRenderingMode) //etfr
@@ -76,8 +84,16 @@ namespace Unity.XR.PXR.Editor
                 manager.eyeFoveationLevel = (FoveationLevel)EditorGUILayout.EnumPopup("Foveated Rendering Level", manager.eyeFoveationLevel);
                 if (FoveationLevel.None != manager.eyeFoveationLevel)
                 {
-                    projectConfig.enableSubsampled = EditorGUILayout.Toggle("  Subsampling", projectConfig.enableSubsampled);
-                    projectConfig.recommendSubsamping = true;
+                    if (GraphicsDeviceType.OpenGLES3 == PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget)[0] && PlayerSettings.colorSpace == ColorSpace.Gamma)
+                    {
+                        projectConfig.enableSubsampled = false;
+                        projectConfig.recommendSubsamping = false;
+                    }
+                    else
+                    {
+                        projectConfig.enableSubsampled = EditorGUILayout.Toggle("  Subsampling", projectConfig.enableSubsampled);
+                        projectConfig.recommendSubsamping = true;
+                    }
                 }
             }
 
@@ -347,5 +363,10 @@ namespace Unity.XR.PXR.Editor
             serializedObject.ApplyModifiedProperties();
         }
 
+        private void OnDisable()
+        {
+            EditorUtility.SetDirty(PXR_ProjectSetting.GetProjectConfig());
+            UnityEditor.AssetDatabase.SaveAssets();
+        }
     }
 }

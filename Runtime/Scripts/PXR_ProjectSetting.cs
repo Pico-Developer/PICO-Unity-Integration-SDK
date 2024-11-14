@@ -11,6 +11,7 @@ PICO Technology Co., Ltd.
 *******************************************************************************/
 
 using System.IO;
+using UnityEditor;
 using UnityEngine;
 
 namespace Unity.XR.PXR
@@ -106,5 +107,13 @@ namespace Unity.XR.PXR
 #endif
             return projectConfig;
         }
+
+#if UNITY_EDITOR
+        public static void SaveAssets()
+        {
+            EditorUtility.SetDirty(GetProjectConfig());
+            UnityEditor.AssetDatabase.SaveAssets();
+        }
+#endif
     }
 }

@@ -12,30 +12,33 @@ using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.XR.Management;
 using Unity.XR.CoreUtils;
+using UnityEditor.PackageManager.UI;
 #if URP
 using UnityEngine.Rendering.Universal;
 #endif
 #if AR_FOUNDATION
 using UnityEngine.XR.ARFoundation;
 #endif
-
-static class PXR_ProjectValidationRequired
+namespace Unity.XR.PXR
 {
-    const string k_Catergory = "PICO XR Required";
-
-    [InitializeOnLoadMethod]
-    static void AddRequiredRules()
+    static class PXR_ProjectValidationRequired
     {
+        const string k_Catergory = "PICO XR Required";
+
+        [InitializeOnLoadMethod]
+        static void AddRequiredRules()
+        {
 #if UNITY_2021_1_OR_NEWER
-        NamedBuildTarget recommendedBuildTarget = NamedBuildTarget.Android;
+            NamedBuildTarget recommendedBuildTarget = NamedBuildTarget.Android;
 #else
         BuildTargetGroup recommendedBuildTarget = BuildTargetGroup.Android;
 #endif
-        const int minSdkVersionInEditor = 29;
-        const string minSdkNameInEditor = "Android 10.0";
+            const AndroidSdkVersions minSdkVersionInEditor = AndroidSdkVersions.AndroidApiLevel29;
+            const AndroidSdkVersions maxSdkVersionInEditor = (AndroidSdkVersions)32;
+            const string minSdkNameInEditor = "Android 10.0";
 
-        var androidGlobalRules = new[]
-        {                
+            var androidGlobalRules = new[]
+            {
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
@@ -43,12 +46,51 @@ static class PXR_ProjectValidationRequired
                     IsRuleEnabled = IsPXRPluginEnabled,
                     CheckPredicate = () =>
                     {
-                        return (int)PlayerSettings.Android.minSdkVersion >= minSdkVersionInEditor;
+                        return PlayerSettings.Android.minSdkVersion >= minSdkVersionInEditor;
                     },
                     FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > Android tab to set PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel29.",
                     FixIt = () =>
                     {
-                        PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel29;
+                        PlayerSettings.Android.minSdkVersion = minSdkVersionInEditor;
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = $"When setting 'Write Permission' to 'External(SDCard)', the Android API level needs to be <= 32.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PlayerSettings.Android.forceSDCardPermission)
+                        {
+                            if(PlayerSettings.Android.minSdkVersion > maxSdkVersionInEditor)
+                            {
+                                return false;
+                            }
+
+                            if(PlayerSettings.Android.targetSdkVersion > maxSdkVersionInEditor)
+                            {
+                                return false;
+                            }
+
+                            if (PlayerSettings.Android.targetSdkVersion == AndroidSdkVersions.AndroidApiLevelAuto)
+                            {
+                                return false;
+                            }
+                            return true;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "You can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it. ",
+                    FixIt = () =>
+                    {
+                         if(PlayerSettings.Android.minSdkVersion > maxSdkVersionInEditor)
+                         {
+                            PlayerSettings.Android.minSdkVersion = minSdkVersionInEditor;
+                         }
+                         string url = "https://developer.picoxr.com/zh/document/unity/set-up-read-and-write-permission-for-pico-4-ultra/";
+                         Application.OpenURL(url);
                     },
                     Error = true
                 },
@@ -108,7 +150,7 @@ static class PXR_ProjectValidationRequired
                     },
                     FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > Allow 'unsafe' Code",
                     FixIt = () =>
-                    {                        
+                    {
                         if (PXR_ProjectSetting.GetProjectConfig().faceTracking)
                         {
                             PlayerSettings.allowUnsafeCode = true;
@@ -269,7 +311,9 @@ static class PXR_ProjectValidationRequired
                             }
                             else
                             {
-                                gameObject.tag = $"Camera{i}";
+                                string newTag = $"Camera{i}";
+                                PXR_Utils.AddNewTag(newTag);
+                                gameObject.tag = newTag;
                                 gameObject.SetActive(false);
                             }
                         }
@@ -373,7 +417,7 @@ static class PXR_ProjectValidationRequired
                     Category = k_Catergory,
                     Message = "PICO XR plugin needs to be enabled and unique.",
                     CheckPredicate = () =>
-                    {                        
+                    {
                         var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
                         if (!generalSettings)
                         {
@@ -409,8 +453,7 @@ static class PXR_ProjectValidationRequired
                         }
                     },
                     Error = true
-                },
-                
+                },                
 #if URP
 #if UNITY_2021_3_OR_NEWER || UNITY_2022_3_OR_NEWER
             new BuildValidationRule
@@ -456,7 +499,7 @@ static class PXR_ProjectValidationRequired
                         }
                         return true;
                     },
-                    FixItMessage = "Build Settings > uncheck 'Development Build'",
+                    FixItMessage = "Open Universal Render Pipeline Asset > Quality > Anti Aliasing(MSAA) > Disabled.",
                     FixIt = () =>
                     {
                             UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.renderPipelineAsset;
@@ -486,35 +529,90 @@ static class PXR_ProjectValidationRequired
                     },
                     Error = true
                 },
-#endif
+#endif                
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "Project Keystore needs to be set up.",
+                    CheckPredicate = () =>
+                    {
+                        string keystorePath = PlayerSettings.Android.keystoreName;
+                        string keystorePass = PlayerSettings.Android.keystorePass;
+
+                        if (string.IsNullOrEmpty(keystorePath) || string.IsNullOrEmpty(keystorePass))
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+
+                    },
+                    FixItMessage = "You can refer to the following path: Open Project Settings > Player Settings > Player > Publishing Settings > to set 'Project Keystore'. \nIf you are not clear about how to set it, you can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it. ",
+                    FixIt = () =>
+                    {
+                        string url = "https://developer-cn.picoxr.com/document/unity/number-of-apks-associated-with-a-key-exceeds-limit/";
+                        Application.OpenURL(url);
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "Project Key needs to be set up.",
+                    CheckPredicate = () =>
+                    {
+                        string keyaliasName = PlayerSettings.Android.keyaliasName;
+                        string keyaliasPass = PlayerSettings.Android.keyaliasPass;
+
+                        if (string.IsNullOrEmpty(keyaliasName) || string.IsNullOrEmpty(keyaliasPass))
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+
+                    },
+                    FixItMessage = "You can refer to the following path: Open Project Settings > Player Settings > Player > Publishing Settings > to set 'Project Key'. \nIf you are not clear about how to set it, you can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it. ",
+                    FixIt = () =>
+                    {
+                        string url = "https://developer-cn.picoxr.com/document/unity/number-of-apks-associated-with-a-key-exceeds-limit/";
+                        Application.OpenURL(url);
+                    },
+                    Error = true
+                },
         };
-        BuildValidator.AddRules(BuildTargetGroup.Android, androidGlobalRules);
-    }
-
-    static bool IsPXRPluginEnabled()
-    {
-        var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(
-            BuildTargetGroup.Android);
-        if (generalSettings == null)
-            return false;
-
-        var managerSettings = generalSettings.AssignedSettings;
-
-        return managerSettings != null && managerSettings.activeLoaders.Any(loader => loader is PXR_Loader);
-    }
-
-    public static List<T> FindComponentsInScene<T>() where T : Component
-    {
-        var activeScene = SceneManager.GetActiveScene();
-        var foundComponents = new List<T>();
-
-        var rootObjects = activeScene.GetRootGameObjects();
-        foreach (var rootObject in rootObjects)
-        {
-            var components = rootObject.GetComponentsInChildren<T>(true);
-            foundComponents.AddRange(components);
+            BuildValidator.AddRules(BuildTargetGroup.Android, androidGlobalRules);
         }
 
-        return foundComponents;
+        static bool IsPXRPluginEnabled()
+        {
+            var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(
+                BuildTargetGroup.Android);
+            if (generalSettings == null)
+                return false;
+
+            var managerSettings = generalSettings.AssignedSettings;
+
+            return managerSettings != null && managerSettings.activeLoaders.Any(loader => loader is PXR_Loader);
+        }
+
+        public static List<T> FindComponentsInScene<T>() where T : Component
+        {
+            var activeScene = SceneManager.GetActiveScene();
+            var foundComponents = new List<T>();
+
+            var rootObjects = activeScene.GetRootGameObjects();
+            foreach (var rootObject in rootObjects)
+            {
+                var components = rootObject.GetComponentsInChildren<T>(true);
+                foundComponents.AddRange(components);
+            }
+
+            return foundComponents;
+        }
     }
 }

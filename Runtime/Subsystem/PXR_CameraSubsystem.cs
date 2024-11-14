@@ -25,7 +25,7 @@ public class PXR_CameraSubsystem : XRCameraSubsystem
         public override void Start()
         {
             Debug.Log($"{k_SubsystemId} Start().");
-            PXR_Boundary.EnableSeeThroughManual(true);
+            PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(true);
             PXR_Plugin.System.SessionStateChanged += EnableVST;
         }
 
@@ -35,7 +35,7 @@ public class PXR_CameraSubsystem : XRCameraSubsystem
         public override void Stop()
         {
             Debug.Log($"{k_SubsystemId} Stop().");
-            PXR_Boundary.EnableSeeThroughManual(false);
+            PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(false);
             PXR_Plugin.System.SessionStateChanged -= EnableVST;
         }
 
@@ -48,7 +48,7 @@ public class PXR_CameraSubsystem : XRCameraSubsystem
         {
             if (state == 2)
             {
-                PXR_Boundary.EnableSeeThroughManual(true);
+                PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(true);
             }
         }
     }

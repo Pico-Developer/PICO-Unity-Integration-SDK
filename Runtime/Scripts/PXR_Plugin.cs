@@ -431,14 +431,21 @@ namespace Unity.XR.PXR
         /// A chair.
         /// </summary>
         Chair,
-        /// <summary>
-        /// Currently not available.
-        /// </summary>
         Human = 10,
+        Curtain = 13,
+        Cabinet,
+        Bed,
+        Plant,
+        Screen,
         /// <summary>
         /// Virtual walls are generated when scene capture is automatically closed. They are not associated with real-world walls, and you can not draw doors or windows on them.
         /// </summary>
         VirtualWall = 18,
+        Refrigerator,
+        WashingMachine,
+        AirConditioner,
+        Lamp,
+        WallArt = 23,
     }
 
     public enum PxrMeshLod
@@ -1118,7 +1125,6 @@ namespace Unity.XR.PXR
         ERROR_HANDLE_INVALID = -12,
         ERROR_POSE_INVALID = -39,
 
-        ERROR_PERMISSION_INSUFFICIENT = -1000710000,
         ERROR_SPATIAL_LOCALIZATION_RUNNING = -1000,
         ERROR_SPATIAL_LOCALIZATION_NOT_RUNNING = -1001,
         ERROR_SPATIAL_MAP_CREATED = -1002,
@@ -1130,12 +1136,14 @@ namespace Unity.XR.PXR
         ERROR_COMPONENT_ADDED = -504,
         ERROR_ANCHOR_ENTITY_NOT_FOUND = -505,
         ERROR_TRACKING_STATE_INVALID = -506,
+        PXR_ERROR_SPACE_LOCATING = -507,
 
         ERROR_ANCHOR_SHARING_NETWORK_TIMEOUT = -601,
         ERROR_ANCHOR_SHARING_AUTHENTICATION_FAILURE = -602,
         ERROR_ANCHOR_SHARING_NETWORK_FAILURE = -603,
         ERROR_ANCHOR_SHARING_LOCALIZATION_FAIL = -604,
         ERROR_ANCHOR_SHARING_MAP_INSUFFICIENT = -605,
+        ERROR_PERMISSION_INSUFFICIENT = -1000710000,
     }
 
     public enum PxrEventLevel
@@ -2132,7 +2140,7 @@ namespace Unity.XR.PXR
 
     public static class PXR_Plugin
     {
-        private const string PXR_SDK_Version = "3.0.4";
+        private const string PXR_SDK_Version = "3.0.5";
         public const string PXR_PLATFORM_DLL = "PxrPlatform";
         public const string PXR_API_DLL = "pxr_api";
         private static int PXR_API_Version = 0;
@@ -2141,6 +2149,8 @@ namespace Unity.XR.PXR
         //MR
 
         #region 3.0 api
+        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int Pxr_GetSpatialEntityLocationInfo(ulong snapshotHandle, ref PxrSpatialEntityLocationGetInfo locationGetInfo, ref PxrSpatialEntityLocationInfo locationInfo);
         [DllImport(PXR_API_DLL, CallingConvention = CallingConvention.Cdecl)]
         private static extern int Pxr_PollFutureEXT(ref PxrFuturePollInfo pollInfo, ref PxrFuturePollResult pollResult);
         [DllImport(PXR_API_DLL, CallingConvention = CallingConvention.Cdecl)]
@@ -2974,12 +2984,12 @@ namespace Unity.XR.PXR
 
             public static double UPxr_GetPredictedDisplayTime()
             {
-                PLog.d(TAG, "UPxr_GetPredictedDisplayTime()");
+                PLog.d(TAG, "UPxr_GetPredictedDisplayTime()",false);
                 double predictedDisplayTime = 0;
 #if UNITY_ANDROID && !UNITY_EDITOR
                 Pxr_GetPredictedDisplayTime(ref predictedDisplayTime);
 #endif
-                PLog.d(TAG, "UPxr_GetPredictedDisplayTime() predictedDisplayTime：" + predictedDisplayTime);
+                PLog.d(TAG, "UPxr_GetPredictedDisplayTime() predictedDisplayTime：" + predictedDisplayTime, false);
                 return predictedDisplayTime;
             }
 
@@ -6174,37 +6184,25 @@ namespace Unity.XR.PXR
                     baseSpace = (ulong)originMode,
                     time = 0,
                 };
-                IntPtr componentGetInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PxrSpatialEntityLocationGetInfo)));
-                Marshal.StructureToPtr(getInfo,componentGetInfo,false);
-                PxrSpatialEntityComponentInfoGetInfoBaseHeader getBaseHeader = Marshal.PtrToStructure<PxrSpatialEntityComponentInfoGetInfoBaseHeader>(componentGetInfo);
                 PxrSpatialEntityLocationInfo locationInfo = new PxrSpatialEntityLocationInfo()
                 {
                     type = PxrStructureType.SpatialEntityLocationInfo
                 };
-                IntPtr componentInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PxrSpatialEntityLocationInfo)));
-                Marshal.StructureToPtr(locationInfo, componentInfo, false);
-                PxrSpatialEntityComponentInfoBaseHeader baseHeader = Marshal.PtrToStructure<PxrSpatialEntityComponentInfoBaseHeader>(componentInfo);
-                var result = (PxrResult)Pxr_GetSpatialEntityComponentInfo(snapshotHandle, ref getBaseHeader, ref baseHeader);
+                var result = (PxrResult)Pxr_GetSpatialEntityLocationInfo(snapshotHandle, ref getInfo, ref locationInfo);
                 if (result == PxrResult.SUCCESS)
                 {
-                    IntPtr temp = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PxrSpatialEntityComponentInfoBaseHeader)));
-                    Marshal.StructureToPtr(baseHeader, temp, false);
-                    var location = (PxrSpatialEntityLocationInfo)Marshal.PtrToStructure(temp, typeof(PxrSpatialEntityLocationInfo));
                     foreach (PxrSpaceLocationFlags value in Enum.GetValues(typeof(PxrSpaceLocationFlags)))
                     {
-                        if ((location.locationFlags & (ulong)value) != (ulong)value)
+                        if ((locationInfo.locationFlags & (ulong)value) != (ulong)value)
                         {
                             position = Vector3.zero;
                             rotation = Quaternion.identity;
                             return PxrResult.ERROR_POSE_INVALID;
                         }
                     }
-                    Marshal.FreeHGlobal(temp);
-                    rotation = new Quaternion(location.pose.orientation.x, location.pose.orientation.y, -location.pose.orientation.z, -location.pose.orientation.w);
-                    position = new Vector3(location.pose.position.x, location.pose.position.y, -location.pose.position.z);
+                    rotation = new Quaternion(locationInfo.pose.orientation.x, locationInfo.pose.orientation.y, -locationInfo.pose.orientation.z, -locationInfo.pose.orientation.w);
+                    position = new Vector3(locationInfo.pose.position.x, locationInfo.pose.position.y, -locationInfo.pose.position.z);
                 }
-                Marshal.FreeHGlobal(componentGetInfo);
-                Marshal.FreeHGlobal(componentInfo);
                 return result;
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;

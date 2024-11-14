@@ -49,9 +49,15 @@ public class PXR_VstModelPosCheck : MonoBehaviour
 
     private void UpdatePos()
     {
-        mHeadRotation = mMainCamTrans.localRotation;
-        mOffsetDirection = mHeadRotation * (-1f * mStartDirection);
-        mOffsetPos = mOffsetDirection * mVirtualWorldOffset;
+        if(mMainCamTrans==null){
+             mMainCamTrans = Camera.main.transform;
+        }
+        if(mMainCamTrans!=null){
+             mHeadRotation = mMainCamTrans.localRotation;
+             mOffsetDirection = mHeadRotation * (-1f * mStartDirection);
+             mOffsetPos = mOffsetDirection * mVirtualWorldOffset;
+        }
+       
     }
 
     private void CheckPos()
@@ -60,7 +66,12 @@ public class PXR_VstModelPosCheck : MonoBehaviour
         if (IsController)
         {
             UpdatePos();
-            transform.localPosition = mXRBaseController.currentControllerState.position + mOffsetPos;
+            if(mXRBaseController == null){
+                mXRBaseController = GetComponent<XRBaseController>();
+            }
+            if(mXRBaseController != null){
+                transform.localPosition = mXRBaseController.currentControllerState.position + mOffsetPos;
+            }  
         }
     }
 

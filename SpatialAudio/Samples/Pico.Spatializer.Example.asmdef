@@ -1,7 +1,9 @@
 {
     "name": "Pico.Spatializer.Example",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "GUID:b3d620f74d91148829d3deb288af824d"
+    ],
     "includePlatforms": [
         "Android",
         "Editor",

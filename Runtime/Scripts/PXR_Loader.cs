@@ -460,6 +460,10 @@ namespace Unity.XR.PXR
                             {
                                 PXR_Plugin.System.InputDeviceChanged(status);
                             }
+                            if (PXR_Input.InputDeviceChanged != null)
+                            {
+                                PXR_Input.InputDeviceChanged((ActiveInputDevice)status);
+                            }
                             break;
                         case PxrDeviceEventType.MOTION_TRACKER_STATE:
                             if (status == 0 || status == 1)

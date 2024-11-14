@@ -496,6 +496,26 @@ static class PXR_ProjectValidationRecommend
                     },
                     Error = false
                 },
+            new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When the URP package is installed but not set up and used, it is recommended to use or delete it.",
+                    CheckPredicate = () =>
+                    {
+                        if (QualitySettings.renderPipeline == null && GraphicsSettings.currentRenderPipeline == null)
+                        {
+                            return false;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "If you are not clear about how to set it, you can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it.",
+                    FixIt = () =>
+                    {
+                        string url = "https://developer-cn.picoxr.com/document/unity/universal-render-pipeline/";
+                        Application.OpenURL(url);
+                    },
+                    Error = false
+                },
 #endif
 
         };

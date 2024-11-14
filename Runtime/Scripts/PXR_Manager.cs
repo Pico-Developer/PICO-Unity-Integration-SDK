@@ -179,7 +179,7 @@ namespace Unity.XR.PXR
                 if (_enableVideoSeeThrough != value)
                 {
                     _enableVideoSeeThrough = value;
-                    PXR_MixedReality.EnableVideoSeeThrough(value);
+                    PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(value);
 
                     if (EnableVideoSeeThroughAction != null)
                     {
@@ -280,7 +280,7 @@ namespace Unity.XR.PXR
         {
             if (!pause)
             {
-                PXR_MixedReality.EnableVideoSeeThrough(EnableVideoSeeThrough);
+                PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(EnableVideoSeeThrough);
                 if (isNeedResume)
                 {
                     StartCoroutine("StartXR");
@@ -551,7 +551,7 @@ namespace Unity.XR.PXR
                                 }
                             }
                             break;
-                        case PxrStructureType.DataSpatialMapMemLimited:
+                        case PxrStructureType.SpatialMapSizeLimited:
                             {
                                 if (SpatialMapSizeLimited != null)
                                 {

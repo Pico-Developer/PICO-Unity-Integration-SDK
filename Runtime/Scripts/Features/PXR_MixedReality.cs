@@ -1839,9 +1839,11 @@ namespace Unity.XR.PXR
         /// * `false`: disable
         /// </param>
         /// <returns>Returns `0` for success and other values for failure.</returns>
+        /// <see cref="PXR_Manager.EnableVideoSeeThrough"/> is preferred over this method.
+        [Obsolete("Deprecated.Please use PXR_Manager.EnableVideoSeeThrough instead", true)]
         public static int EnableVideoSeeThrough(bool state)
         {
-            return PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(state);
+            return -1;
         }
 
         /// <summary>

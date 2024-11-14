@@ -5,7 +5,12 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.XR;
+
+#if !XRI_300
 using UnityEngine.XR.Interaction.Toolkit;
+#else
+using UnityEngine.XR.Interaction.Toolkit.Interactors;
+#endif
 
 public class VirtualDisplayEvent : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler,
     IInitializePotentialDragHandler
@@ -14,6 +19,7 @@ public class VirtualDisplayEvent : MonoBehaviour, IPointerDownHandler, IPointerU
     public XRRayInteractor xrLeftRayInteractor;
     public XRRayInteractor xrRightRayInteractor;
     public VirtualDisplayDemo virtualDisplayController;
+   
     public Text mylog;
     private XRRayInteractor currentRayInteractor;
     private GameObject mDisplay;

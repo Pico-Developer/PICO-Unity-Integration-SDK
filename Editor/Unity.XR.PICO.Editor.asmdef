@@ -8,7 +8,11 @@
         "Unity.XR.ARFoundation",
         "Unity.XR.CoreUtils",
         "Unity.XR.CoreUtils.Editor",
-        "Unity.RenderPipelines.Universal.Runtime"
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.XR.Interaction.Toolkit",
+        "Unity.InputSystem",
+        "Unity.XR.Hands.Samples.VisualizerSample",
+        "Unity.XR.Hands"
     ],
     "includePlatforms": [
         "Editor"
@@ -28,7 +32,14 @@
         {
             "name": "com.unity.xr.arfoundation",
             "expression": "5.1.2",
-            "define": "AR_FOUNDATION",
+            "define": "AR_FOUNDATION"
+        },
+        {
+            "name": "com.unity.xr.hands",
+            "expression": "1.3.0",
+            "define": "XR_HAND"
+        },
+        {
             "name": "com.unity.render-pipelines.universal",
             "expression": "12.1.12",
             "define": "URP"

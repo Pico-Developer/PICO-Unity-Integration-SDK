@@ -101,12 +101,26 @@ public class PXR_Audio_Spatializer_SceneGeometry : MonoBehaviour
 
     private void OnDestroy()
     {
+        RemoveMeshFromContext();
+    }
+
+    private void RemoveMeshFromContext()
+    {
         if (PXR_Audio_Spatializer_Context.Instance == null) return;
         if (PXR_Audio_Spatializer_Context.Instance.UUID != currentContextUuid) return;
         if (geometryId >= 0)
+        {
             PXR_Audio_Spatializer_Context.Instance.RemoveMesh(geometryId);
+            Debug.LogFormat("Removed geometry #{0}, gameObject name is {1}", geometryId.ToString(),
+                name);
+        }
+
         if (staticGeometryID >= 0)
+        {
             PXR_Audio_Spatializer_Context.Instance.RemoveMesh(staticGeometryID);
+            Debug.LogFormat("Removed static geometry #{0}, gameObject name is {1}", staticGeometryID.ToString(),
+                name);
+        }
     }
 
     private void Update()
@@ -214,6 +228,9 @@ public class PXR_Audio_Spatializer_SceneGeometry : MonoBehaviour
 
     private static Mesh CombineMeshes(List<MeshFilter> meshFilterList, Transform rootTransform)
     {
+        if (meshFilterList.Count == 1)
+            return meshFilterList[0].mesh;
+        
         Mesh combinedMesh = new Mesh
         {
             name = "combined meshes",
@@ -269,7 +286,7 @@ public class PXR_Audio_Spatializer_SceneGeometry : MonoBehaviour
     /// Submit non-static mesh of this geometry and its material into spatializer engine context
     /// </summary>
     /// <returns>Result of static mesh submission</returns>
-    public PXR_Audio.Spatializer.Result SubmitMeshToContext()
+    public PXR_Audio.Spatializer.Result SubmitMeshToContext(bool showLog = true)
     {
         // find all meshes
         var meshFilterList = new List<MeshFilter>();
@@ -289,11 +306,14 @@ public class PXR_Audio_Spatializer_SceneGeometry : MonoBehaviour
             combinedMesh.triangles, combinedMesh.triangles.Length / 3,
             ref meshConfig, ref geometryId);
 
-        if (result != Result.Success)
-            Debug.LogError("Failed to submit audio mesh: " + gameObject.name + ", Error code is: " + result);
-        else
-            Debug.LogFormat("Submitted geometry #{0}, gameObject name is {1}", geometryId.ToString(),
-                name);
+        if (showLog)
+        {
+            if (result != Result.Success)
+                Debug.LogError("Failed to submit audio mesh: " + gameObject.name + ", Error code is: " + result);
+            else
+                Debug.LogFormat("Submitted geometry #{0}, gameObject name is {1}", geometryId.ToString(),
+                    name);
+        }
 
         if (result == Result.Success)
             currentContextUuid = PXR_Audio_Spatializer_Context.Instance.UUID;
@@ -305,7 +325,7 @@ public class PXR_Audio_Spatializer_SceneGeometry : MonoBehaviour
     /// Submit static mesh of this geometry and its material into spatializer engine context
     /// </summary>
     /// <returns>Result of static mesh submission</returns>
-    public PXR_Audio.Spatializer.Result SubmitStaticMeshToContext()
+    public PXR_Audio.Spatializer.Result SubmitStaticMeshToContext(bool showLog = true)
     {
         PXR_Audio.Spatializer.Result result = Result.Success;
         if (bakedStaticMesh != null)
@@ -319,12 +339,42 @@ public class PXR_Audio_Spatializer_SceneGeometry : MonoBehaviour
                 bakedStaticMesh.triangles.Length / 3, ref meshConfig,
                 ref staticGeometryID);
 
-            if (result != Result.Success)
-                Debug.LogError("Failed to submit static audio mesh: " + gameObject.name + ", Error code is: " + result);
-            else
-                Debug.LogFormat("Submitted static geometry #{0}, gameObject name is {1}", staticGeometryID.ToString(),
-                    name);
+            if (showLog)
+            {
+                if (result != Result.Success)
+                    Debug.LogError("Failed to submit static audio mesh: " + gameObject.name + ", Error code is: " +
+                                   result);
+                else
+                    Debug.LogFormat("Submitted static geometry #{0}, gameObject name is {1}", staticGeometryID.ToString(),
+                        name);
+            }
         }
+
+        if (result == Result.Success)
+            currentContextUuid = PXR_Audio_Spatializer_Context.Instance.UUID;
+
+        return result;
+    }
+
+    public Result UpdateMeshInContext()
+    {
+        // find all meshes
+        var meshFilterList = new List<MeshFilter>();
+        GetAllMeshFilter(transform, includeChildren, meshFilterList, false, ~0);
+
+        //  Combine all meshes
+        Mesh combinedMesh = CombineMeshes(meshFilterList, transform);
+
+        //  flatten vertices buffer into a float array
+        float[] vertices = FlattenVerticesBuffer(combinedMesh.vertices);
+
+        meshConfig = new MeshConfig(enabled, Material, transform.localToWorldMatrix);
+
+        //  Submit all meshes
+        Result result = PXR_Audio_Spatializer_Context.Instance.UpdateMesh(geometryId,
+            vertices, vertices.Length / 3,
+            combinedMesh.triangles, combinedMesh.triangles.Length / 3,
+            ref meshConfig, ref geometryId);
 
         if (result == Result.Success)
             currentContextUuid = PXR_Audio_Spatializer_Context.Instance.UUID;

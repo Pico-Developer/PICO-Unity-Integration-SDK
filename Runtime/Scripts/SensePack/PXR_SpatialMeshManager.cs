@@ -20,6 +20,8 @@ namespace Unity.XR.PXR
         private XRMeshSubsystem subsystem;
         private int objectPoolMaxSize = 200;
         private Queue<GameObject> meshObjectsPool;
+        private const float frameCount = 15.0f;
+        
 
         /// <summary>
         /// The drawing of the new spatial mesh is complete.
@@ -44,11 +46,6 @@ namespace Unity.XR.PXR
 
             PXR_Manager.EnableVideoSeeThrough = true;
             InitializePool();
-        }
-
-        void Update()
-        {
-            DrawMesh();
         }
 
         void OnEnable()
@@ -79,7 +76,10 @@ namespace Unity.XR.PXR
         void OnDisable()
         {
             if (subsystem != null && subsystem.running)
+            {
                 subsystem.Stop();
+                PXR_Manager.SpatialMeshDataUpdated -= SpatialMeshDataUpdated;
+            }
         }
 
         private void InitializePool()
@@ -96,89 +96,51 @@ namespace Unity.XR.PXR
             }
         }
 
-        private void DrawMesh()
+        void SpatialMeshDataUpdated(List<PxrSpatialMeshInfo> meshInfos)
         {
             if (meshPrefab != null)
             {
-                StartCoroutine(ForeachLoopCoroutine());
-            }
-        }
-
-        private IEnumerator ForeachLoopCoroutine()
-        {
-            int totalWork = spatialMeshNeedingDraw.Count;
-            if (totalWork > 0 )
-            {
-                var meshList = spatialMeshNeedingDraw.Values.ToList();
-                int workPerFrame = Mathf.CeilToInt(totalWork / 15f);
-                int currentIndex = 0;
-
-                while (currentIndex < totalWork)
+                for (int i = 0; i < meshInfos.Count; i++)
                 {
-                    int workThisFrame = 0;
-                    while (workThisFrame < workPerFrame && currentIndex < totalWork)
+                    switch (meshInfos[i].state)
                     {
-                        CreateMeshRoutine(meshList[currentIndex]);
-                        currentIndex++;
-                        workThisFrame++;
+                        case MeshChangeState.Added:
+                            {
+                                CreateMeshRoutine(meshInfos[i]);
+                            }
+                            break;
+                        case MeshChangeState.Updated:
+                            {
+                                CreateMeshRoutine(meshInfos[i]);
+                            }
+                            break;
+                        case MeshChangeState.Removed:
+                            {
+                                MeshRemoved?.Invoke(meshInfos[i].uuid);
+
+                                if (meshIDToGameobject.TryGetValue(meshInfos[i].uuid, out var go))
+                                {
+                                    if (meshObjectsPool.Count < objectPoolMaxSize)
+                                    {
+                                        go.SetActive(false);
+                                        meshObjectsPool.Enqueue(go);
+                                    }
+                                    else
+                                    {
+                                        Destroy(go);
+                                    }
+                                    meshIDToGameobject.Remove(meshInfos[i].uuid);
+                                }
+                            }
+                            break;
+                        case MeshChangeState.Unchanged:
+                            {
+                                spatialMeshNeedingDraw.Remove(meshInfos[i].uuid);
+                            }
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
                     }
-
-                    yield return null;
-                }
-            }
-        }
-
-        void SpatialMeshDataUpdated(List<PxrSpatialMeshInfo> meshInfos)
-        {
-            for (int i = 0; i < meshInfos.Count; i++)
-            {
-                switch (meshInfos[i].state)
-                {
-                    case MeshChangeState.Added:
-                        {
-                            spatialMeshNeedingDraw.Add(meshInfos[i].uuid, meshInfos[i]);
-                        }
-                        break;
-                    case MeshChangeState.Updated:
-                        {
-                            if (!spatialMeshNeedingDraw.ContainsKey(meshInfos[i].uuid))
-                            {
-                                spatialMeshNeedingDraw.Add(meshInfos[i].uuid, meshInfos[i]);
-                            }
-                            else
-                            {
-                                spatialMeshNeedingDraw[meshInfos[i].uuid] = meshInfos[i];
-                            }
-                        }
-                        break;
-                    case MeshChangeState.Removed:
-                        {
-                            MeshRemoved?.Invoke(meshInfos[i].uuid);
-
-                            spatialMeshNeedingDraw.Remove(meshInfos[i].uuid);
-                            GameObject removedGo;
-                            if (meshIDToGameobject.TryGetValue(meshInfos[i].uuid, out removedGo))
-                            {
-                                if (meshObjectsPool.Count < objectPoolMaxSize)
-                                {
-                                    removedGo.SetActive(false);
-                                    meshObjectsPool.Enqueue(removedGo);
-                                }
-                                else
-                                {
-                                    Destroy(removedGo);
-                                }
-                                meshIDToGameobject.Remove(meshInfos[i].uuid);
-                            }
-                        }
-                        break;
-                    case MeshChangeState.Unchanged:
-                        {
-                            spatialMeshNeedingDraw.Remove(meshInfos[i].uuid);
-                        }
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
                 }
             }
         }
@@ -198,14 +160,11 @@ namespace Unity.XR.PXR
                 mesh = meshFilter.mesh;
                 mesh.Clear();
             }
-
             Color[] normalizedColors = new Color[block.vertices.Length];
             for (int i = 0; i < block.vertices.Length; i++)
             {
-                int flag = (int)block.labels[i];
-                normalizedColors[i] = MeshColor[flag];
+                normalizedColors[i] = GetMeshColorBySemanticLabel(block.labels[i]);
             }
-
             mesh.SetVertices(block.vertices);
             mesh.SetColors(normalizedColors);
             mesh.SetTriangles(block.indices, 0);
@@ -216,7 +175,6 @@ namespace Unity.XR.PXR
             }
             meshGameObject.transform.position = block.position;
             meshGameObject.transform.rotation = block.rotation;
-
             switch (block.state)
             {
                 case MeshChangeState.Added:
@@ -254,19 +212,46 @@ namespace Unity.XR.PXR
             return go;
         }
 
-        private readonly Color[] MeshColor = {
-        Color.black,
-        Color.red,
-        Color.green,
-        Color.blue,
-        Color.white,
-        Color.yellow,
-        Color.cyan,
-        Color.magenta,
-        Color.gray,
-        Color.grey,
-        new Color(0.8f,0.2f,0.6f)
-        };
+        private Color GetMeshColorBySemanticLabel(PxrSemanticLabel label)
+        {
+            return label switch
+            {
+                PxrSemanticLabel.Unknown => Color.white,
+                PxrSemanticLabel.Floor => Color.red,
+                PxrSemanticLabel.Ceiling => Color.green,
+                PxrSemanticLabel.Wall => Color.blue,
+                PxrSemanticLabel.Door => Color.cyan,
+                PxrSemanticLabel.Window => Color.magenta,
+                PxrSemanticLabel.Opening => Color.yellow,
+                PxrSemanticLabel.Table => Color.magenta,
+                PxrSemanticLabel.Sofa => Color.gray,
+                //Dark Red
+                PxrSemanticLabel.Chair => new Color(0.5f, 0f, 0f),
+                //Dark Green
+                PxrSemanticLabel.Human => new Color(0f, 0.5f, 0f),
+                //Dark Blue
+                PxrSemanticLabel.Curtain => new Color(0f, 0f, 0.5f),
+                //Orange
+                PxrSemanticLabel.Cabinet => new Color(1f, 0.5f, 0f),
+                //Pink
+                PxrSemanticLabel.Bed => new Color(1f, 0.75f, 0.8f),
+                //Purple
+                PxrSemanticLabel.Plant => new Color(0.5f, 0f, 0.5f),
+                //Brown
+                PxrSemanticLabel.Screen => new Color(0.5f, 0.25f, 0f),
+                //Olive Green
+                PxrSemanticLabel.Refrigerator => new Color(0.5f, 0.5f, 0f),
+                //Gold
+                PxrSemanticLabel.WashingMachine => new Color(1f, 0.84f, 0f),
+                //Silver
+                PxrSemanticLabel.AirConditioner => new Color(0.75f, 0.75f, 0.75f),
+                //Mint Green
+                PxrSemanticLabel.Lamp => new Color(0.5f, 1f, 0.5f),
+                //Dark Purple
+                PxrSemanticLabel.WallArt => new Color(0.5f, 0f, 0.25f),
+                _ => Color.white,
+            };
+        }
     }
 
 }

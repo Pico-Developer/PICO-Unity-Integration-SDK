@@ -152,10 +152,23 @@ public partial class PXR_Audio_Spatializer_Context : MonoBehaviour
             ref config, ref geometryId);
     }
 
+    public Result UpdateMesh(int geometryId, float[] newVertices, int newVerticesCount, int[] newIndices,
+        int newIndicesCount, ref MeshConfig config, ref int newGeometryId)
+    {
+        isSceneDirty = true;
+        return PXR_Audio_Spatializer_Api.UpdateMesh(context, geometryId, newVertices, newVerticesCount, newIndices,
+            newIndicesCount, ref config, ref newGeometryId);
+    }
+
     public Result RemoveMesh(int geometryId)
     {
         isSceneDirty = true;
         return PXR_Audio_Spatializer_Api.RemoveMesh(context, geometryId);
+    }
+
+    public int GetNumOfGeometries()
+    {
+        return PXR_Audio_Spatializer_Api.GetNumOfGeometries(context);
     }
 
     public Result SetMeshConfig(int geometryId, ref MeshConfig config, uint propertyMask)
@@ -429,6 +442,24 @@ public partial class PXR_Audio_Spatializer_Context : MonoBehaviour
     public PXR_Audio.Spatializer.Result SetDopplerEffect(int sourceId, bool on)
     {
         return PXR_Audio_Spatializer_Api.SetDopplerEffect(context, sourceId, on);
+    }
+
+    public Result GetAbsorptionFactors(AcousticsMaterial material,
+        float[] absorptionFactor)
+    {
+        return PXR_Audio_Spatializer_Api.GetAbsorptionFactor(material, absorptionFactor);
+    }
+
+    public Result GetScatteringFactors(AcousticsMaterial material,
+        ref float scatteringFactor)
+    {
+        return PXR_Audio_Spatializer_Api.GetScatteringFactor(material, ref scatteringFactor);
+    }
+    
+    public Result GetTransmissionFactors(AcousticsMaterial material,
+        ref float transmissionFactor)
+    {
+        return PXR_Audio_Spatializer_Api.GetTransmissionFactor(material, ref transmissionFactor);
     }
 
     void OnAudioConfigurationChangedEventHandler(bool deviceWasChanged)

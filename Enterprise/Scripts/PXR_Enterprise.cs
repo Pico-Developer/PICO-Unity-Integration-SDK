@@ -85,6 +85,7 @@ namespace Unity.XR.PICO.TOBSupport
         /// * `BLUETOOTH_INFO_CONNECTED`: information about the bluetooth connected
         /// * `CAMERA_TEMPERATURE_CELSIUS`: camera's temperature in Celsius
         /// * `CAMERA_TEMPERATURE_FAHRENHEIT`: camera's temperature in Fahrenheit
+        /// * `LARGESPACE_MAP_INFO`: large space map information
         /// </param>
         /// <param name="ext">Reserved parameter. Default to `0`.</param>
         /// <returns>The specified type of device information. For `CHARGING_STATUS`, an int value will be returned: `2`-charging; `3`-not charging.</returns>
@@ -3364,6 +3365,303 @@ namespace Unity.XR.PICO.TOBSupport
         {
             return PXR_EnterprisePlugin.UPxr_OfflineSystemUpdate(systemUpdateConfig,callback);
         }
-
+        
+        /// <summary>
+        /// Gets the vibration amplitude of controllers.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, PICO G3, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// The vibration amplitude that ranges from `0` to `6`. The greater the value, the stronger the amplitude. Returning `-2` indicates that the device does not support this API.
+        /// </returns>
+        public static int GetControllerVibrateAmplitude()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetControllerVibrateAmplitude();
+        }
+        
+        /// <summary>
+        /// Sets a functionality for the volume button of the HMD.
+        /// @note Only supported by PICO 4 Enterprise and PICO 4 Ultra.
+        /// </summary>
+        /// <param name="func">Specifies the functionality:
+        /// - `0`: default (i.e., use the functionality set in system settings)
+        /// - `1`: for adjusting the volume
+        /// - `2`: for adjusting the IPD
+        /// </param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// - `-2`: the device does not support this API
+        /// - `-3`: the value specified for the parameter is invalid
+        /// </returns>
+        public static int SetHMDVolumeKeyFunc(int func)
+        {
+            return PXR_EnterprisePlugin.UPxr_SetHMDVolumeKeyFunc(func);
+        }
+        
+        /// <summary>
+        /// Gets the functionality of the volume button of the HMD.
+        /// @note Only supported by PICO 4 Enterprise and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// - `0`: default (i.e., use the functionality set in system settings)
+        /// - `1`: for adjusting the volume
+        /// - `2`: for adjusting the IPD
+        /// - `-2`: the device does not support this API
+        /// </returns>
+        public static int GetHMDVolumeKeyFunc()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetHMDVolumeKeyFunc();
+        }
+        
+        /// <summary>
+        /// Gets the device's power management mode.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, PICO G3, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// - For PICO 4 Ultra: `0` (power-saving mode); `1` (ensure the display quality first); `3` (ensure that multiple windows can work normally first)
+        /// - For other device models: `0` (power-saving mode); `1` (standard mode); `2` (performance mode)
+        /// - `-2`: the device does not support this API
+        /// </returns>
+        public static int GetPowerManageMode()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetPowerManageMode();
+        }
+        
+        /// <summary>
+        /// Gets the frame rate of eye tracking.
+        /// @note Only supported by PICO Neo3 Pro Eye, PICO 4 Pro, and PICO 4 Enterprise.
+        /// </summary>
+        /// <returns>
+        /// - `60`: 60Hz
+        /// - `90`: 90Hz
+        /// - `-2`: the device does not support this API
+        /// </returns>
+        public static int GetEyeTrackRate()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetEyeTrackRate();
+        }
+        
+        /// <summary>
+        /// Gets the tracking frequency for camera and seethrough.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// - `0`: auto-adjusted frequency
+        /// - `50`: 50Hz
+        /// - `60`: 60Hz
+        /// - `-2`: the device does not support this API
+        /// </returns>
+        public static int GetTrackFrequency()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetTrackFrequency();
+        }
+   
+        /// <summary>
+        /// Gets the device's distance sensing sensitivity.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// A sensitivity value that ranges from `150` to `800`. The greater value, the higher the sensitivity. Returning `-2` indicates that the device does not support this API.
+        /// </returns>
+        public static int GetDistanceSensitivity()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetDistanceSensitivity();
+        }
+        
+        /// <summary>
+        /// Gets the device's speed sensing sensitivity.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, and PICO 4 Ultra.
+        /// </summary>
+        /// - A sensitivity value that ranges from `0` to `100`. The greater the value, the higher the sensitivity.
+        /// - `-1`: the speed sensing switch is toggled off
+        /// - `-2`: the device does not support this API
+        /// <returns></returns>
+        public static int GetSpeedSensitivity()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetSpeedSensitivity();
+        }
+        
+        /// <summary>
+        /// Set the device's collision alert sensitivity.
+        /// @note Only supported by PICO 4 Ultra.
+        /// </summary>
+        /// <param name="value">Specifies the sensitivity value. Value range: [0.0, 1.0]. The greater the value, the higher the sensitivity.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// - `-2`: the device does not support this API
+        /// - `-3`: the specified value is out of the valid range
+        /// </returns>
+        public static int SetMRCollisionAlertSensitivity(float value)
+        {
+            return PXR_EnterprisePlugin.UPxr_SetMRCollisionAlertSensitivity(value);
+        }
+        
+        /// <summary>
+        /// Gest the device's collision alert sensitivity.
+        /// @note Only supported by PICO 4 Ultra.
+        /// </summary>
+        /// <returns>The sensitivity value that ranges from `0.0` to `1.0`. Returning `-2` indicates that the device does not support this API.</returns>
+        public static float  GetMRCollisionAlertSensitivity()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetMRCollisionAlertSensitivity();
+        }
+        
+        /// <summary>
+        /// Sets up the WiFi that the device connects to.
+        /// </summary>
+        /// <param name="configuration">Specifies the WiFi configuration. See [here](https://developer.android.com/reference/android/net/wifi/WifiConfiguration) for details.</param>
+        /// <param name="callback">The result callback:
+        /// - `0`: connected to the network
+        /// - `4`: connection timeout
+        /// - `102`: this network is disabled due to multiple association rejections
+        /// - `103`: this network is disabled due to multiple authentication failures
+        /// - `104`: this network is disabled due to multiple DHCP failures
+        /// - `105`: this network is disabled due to a secure network, but no credentials are provided
+        /// - `106`: this network is temporarily disabled because it cannot access the Internet
+        /// - `107`: this network is disabled because WPS is started
+        /// - `108`: this network is disabled due to an EAP-TLS failure
+        /// - `109`: this network is disabled due to a lack of user credentials
+        /// - `110`: this network is permanently disabled because it cannot access the Internet and the user does not want to stay connected
+        /// - `111`: this network is disabled because the WifiManager disables it explicitly
+        /// - `112`: this network is disabled due to user switching
+        /// - `113`: this network is disabled due to the wrong password
+        /// - `114`: this network is disabled due to a lack of subscription
+        /// </param>
+        public static void ConnectWifi(WifiConfiguration configuration,Action<int> callback)
+        {
+             PXR_EnterprisePlugin.UPxr_ConnectWifi(configuration,callback);
+        }
+        
+        /// <summary>
+        /// Sets up WifiConfiguration and connects the device to this WiFi.
+        /// </summary>
+        /// <param name="configuration">Specifies the WiFi configuration. See [here](https://developer.android.com/reference/android/net/wifi/WifiConfiguration) for details.</param>
+        /// <param name="staticIP">Specifies the static IP address.</param>
+        /// <param name="subnet_mask">Specifies the subnet mask.</param>
+        /// <param name="gateway">Specifies the gateway.</param>
+        /// <param name="DNS">Specifies the domain name system.</param>
+        /// <param name="callback">The result callback:
+        /// - `0`: connected to the network
+        /// - `4`: connection timeout
+        /// - `102`: this network is disabled due to multiple association rejections
+        /// - `103`: this network is disabled due to multiple authentication failures
+        /// - `104`: this network is disabled due to multiple DHCP failures
+        /// - `105`: this network is disabled due to a secure network, but no credentials are provided
+        /// - `106`: this network is temporarily disabled because it cannot access the Internet
+        /// - `107`: this network is disabled because WPS is started
+        /// - `108`: this network is disabled due to an EAP-TLS failure
+        /// - `109`: this network is disabled due to a lack of user credentials
+        /// - `110`: this network is permanently disabled because it cannot access the Internet and the user does not want to stay connected
+        /// - `111`: this network is disabled because the WifiManager disables it explicitly
+        /// - `112`: this network is disabled due to user switching
+        /// - `113`: this network is disabled due to the wrong password
+        /// - `114`: this network is disabled due to a lack of subscription
+        /// </param>
+        /// <returns>The WifiConfiguration that includes fields like the static ID address and more.</returns>
+        public static void SetStaticIpConfigurationtoConnectWifi(WifiConfiguration configuration,string staticIP,string subnet_mask,string gateway,string[] DNS,Action<int> callback)
+        {
+            PXR_EnterprisePlugin.UPxr_SetStaticIpConfigurationtoConnectWifi(configuration,staticIP,subnet_mask,gateway,DNS,callback);
+        }
+        
+        /// <summary>
+        /// Gets the eye that serves as the source of the monocular image.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, PICO G3, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// - `0`: the left eye
+        /// - `1`: the right eye
+        /// - `-2`: the device does not support this API
+        /// </returns>
+        public static int GetSingleEyeSource()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetSingleEyeSource();
+        }
+        
+        /// <summary>
+        /// Gets the device's view mode.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, PICO G3, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// - `0`: wide-angle mode
+        /// - `1`: standard mode
+        /// - `-2`: the device does not support this API
+        /// </returns>
+        public static int GetViewVisual()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetViewVisual();
+        }
+        
+        /// <summary>
+        /// Gets whether the device accepts screen sharing from the external device. 
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, PICO G3, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// - `0`: ask every time
+        /// - `1`: always allow
+        /// - `2`: always reject
+        /// - `-2`: the device does not support this API
+        /// </returns>
+        public static int GetAcceptCastMode()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetAcceptCastMode();
+        }
+        
+        /// <summary>
+        /// Gets whether the device allows the sharing of its screen to the external device.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, PICO G3, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// - `0`: ask every time
+        /// - `1`: always allow
+        /// - `2`: always reject
+        /// - `-2`: the device does not support this API
+        /// </returns>
+        public static int GetScreenCastMode()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetScreenCastMode();
+        }
+        
+        /// <summary>
+        /// Gets the aspect ratio for screen recording and screenshots.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, PICO G3, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>The aspect ratio:
+        /// - `0` (1:1)
+        /// - `1` (16:9) 
+        /// - `2` (9:16)
+        /// - `-2` (the device does not support this API)
+        /// </returns>
+        public static int GetScreenRecordShotRatio()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetScreenRecordShotRatio();
+        }
+        
+        /// <summary>
+        /// Gets the resolution for screen recording and screenshots.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, PICO G3, and PICO 4 Ultra.
+        /// </summary>
+        /// <returns>
+        /// The resolution. The format is [width, height]. Returning [-2, -2] indicates that the device does not support this API.
+        /// </returns>
+        public static int[] GetScreenResolution()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetScreenResolution();
+        }
+        
+        /// <summary>
+        /// Gets the frame rate for screen recording.
+        /// @note Only supported by PICO Neo3 Pro/Pro Eye/Enterprise, PICO 4 Enterprise, and PICO G3.
+        /// </summary>
+        /// <returns>The frame rate:
+        /// - `24`: 24fps
+        /// - `30`: 30fps
+        /// - `36`: 36fps
+        /// - `-2`: the device does not support this API
+        /// </returns>
+        public static int GetScreenRecordFrameRate()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetScreenRecordFrameRate();
+        }
     }
 }
