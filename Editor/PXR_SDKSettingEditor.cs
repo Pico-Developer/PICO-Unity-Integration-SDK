@@ -114,7 +114,10 @@ namespace Unity.XR.PXR.Editor
             if (File.Exists(path))
             {
                 PXR_SDKSettingAsset asset = AssetDatabase.LoadAssetAtPath<PXR_SDKSettingAsset>(path);
-                return asset.ignoreSDKSetting;
+                if (asset)
+                {
+                    return asset.ignoreSDKSetting;
+                }
             }
             return false;
         }

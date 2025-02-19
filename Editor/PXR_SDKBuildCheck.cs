@@ -12,6 +12,7 @@ PICO Technology Co., Ltd.
 
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -56,6 +57,13 @@ namespace Unity.XR.PXR.Editor
 
         public static void OnBuild(BuildPlayerOptions options)
         {
+#if UNITY_2021_1_OR_NEWER
+            NamedBuildTarget recommendedBuildTarget = NamedBuildTarget.Android;
+#else
+            BuildTargetGroup recommendedBuildTarget = BuildTargetGroup.Android;
+#endif
+            PlayerSettings.SetScriptingBackend(recommendedBuildTarget, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
             BuildPlayerWindow.DefaultBuildMethods.BuildPlayer(options);
         }
     }

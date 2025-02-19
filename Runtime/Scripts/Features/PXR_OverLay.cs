@@ -125,6 +125,27 @@ namespace Unity.XR.PXR
         public APIExecutionStatus Cylinder2Status = APIExecutionStatus.None;
         public APIExecutionStatus Equirect2Status = APIExecutionStatus.None;
 
+
+        [HideInInspector]
+        public SuperSamplingMode supersamplingMode = SuperSamplingMode.None;
+        [HideInInspector]
+        public SuperSamplingEnhance supersamplingEnhance = SuperSamplingEnhance.None;
+
+        [HideInInspector]
+        public SharpeningMode sharpeningMode = SharpeningMode.None;
+        [HideInInspector]
+        public SharpeningEnhance sharpeningEnhance = SharpeningEnhance.None;
+        //Super Resolution
+        public bool superResolution;
+        public bool normalSupersampling;
+        public bool qualitySupersampling;
+        public bool fixedFoveatedSupersampling;
+        public bool normalSharpening;
+        public bool qualitySharpening;
+        public bool fixedFoveatedSharpening;
+        public bool selfAdaptiveSharpening;
+
+
         private bool toCreateSwapChain = false;
         private bool toCopyRT = false;
         private bool copiedRT = false;

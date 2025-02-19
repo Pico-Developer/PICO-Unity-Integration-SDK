@@ -11,6 +11,7 @@ PICO Technology Co., Ltd.
 *******************************************************************************/
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -19,36 +20,47 @@ namespace Unity.XR.PXR
 {
     public class PXR_OverlayManager : MonoBehaviour
     {
+        bool isURP = false;
         private void OnEnable()
         {
-#if UNITY_2019_1_OR_NEWER
+#if UNITY_6000_0_OR_NEWER
+            if (GraphicsSettings.defaultRenderPipeline != null)
+#else
             if (GraphicsSettings.renderPipelineAsset != null)
+#endif
             {
+#if UNITY_2023_3_OR_NEWER
+                RenderPipelineManager.beginContextRendering += BeginRendering;
+#else
                 RenderPipelineManager.beginFrameRendering += BeginRendering;
-                RenderPipelineManager.endFrameRendering += EndRendering;
+#endif
+                isURP = true;
             }
             else
             {
                 Camera.onPreRender += OnPreRenderCallBack;
-                Camera.onPostRender += OnPostRenderCallBack;
+                isURP = false;
             }
-#endif
         }
 
         private void OnDisable()
         {
-#if UNITY_2019_1_OR_NEWER
+#if UNITY_6000_0_OR_NEWER
+            if (GraphicsSettings.defaultRenderPipeline != null)
+#else
             if (GraphicsSettings.renderPipelineAsset != null)
+#endif
             {
+#if UNITY_2023_3_OR_NEWER
+                RenderPipelineManager.beginContextRendering -= BeginRendering;
+#else
                 RenderPipelineManager.beginFrameRendering -= BeginRendering;
-                RenderPipelineManager.endFrameRendering -= EndRendering;
+#endif
             }
             else
             {
                 Camera.onPreRender -= OnPreRenderCallBack;
-                Camera.onPostRender -= OnPostRenderCallBack;
             }
-#endif
         }
 
         private void Start()
@@ -65,25 +77,17 @@ namespace Unity.XR.PXR
                 }
             }
         }
-
+#if UNITY_2023_3_OR_NEWER
+        private void BeginRendering(ScriptableRenderContext arg1, List<Camera> arg2)
+#else
         private void BeginRendering(ScriptableRenderContext arg1, Camera[] arg2)
+#endif
         {
             foreach (Camera cam in arg2)
             {
                 if (cam != null && Camera.main == cam)
                 {
                     OnPreRenderCallBack(cam);
-                }
-            }
-        }
-
-        private void EndRendering(ScriptableRenderContext arg1, Camera[] arg2)
-        {
-            foreach (Camera cam in arg2)
-            {
-                if (cam != null && Camera.main == cam)
-                {
-                    OnPostRenderCallBack(cam);
                 }
             }
         }
@@ -116,14 +120,12 @@ namespace Unity.XR.PXR
                     }
                 }
             }
+
+            Submitlayers();
         }
 
-        private void OnPostRenderCallBack(Camera cam)
+        void Submitlayers()
         {
-            // There is only one XR main camera in the scene.
-            if (null == Camera.main) return;
-            if (cam == null || cam != Camera.main || cam.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right) return;
-
             int boundaryState = PXR_Plugin.Boundary.seeThroughState;
             if (null == PXR_OverLay.Instances) return;
             if (PXR_OverLay.Instances.Count > 0 && boundaryState != 2)
@@ -237,6 +239,46 @@ namespace Unity.XR.PXR
                     if (!compositeLayer.enableSubmitLayer)
                     {
                         header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagFixLayer);
+                    }
+
+                    if (compositeLayer.superResolution)
+                    {
+                        header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagEnableSuperResolution);
+                    }
+
+                    if (compositeLayer.normalSupersampling)
+                    {
+                        header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagEnableNormalSupersampling);
+                    }
+
+                    if (compositeLayer.qualitySupersampling)
+                    {
+                        header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagEnableQualitySupersampling);
+                    }
+
+                    if (compositeLayer.fixedFoveatedSupersampling)
+                    {
+                        header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagEnableFixedFoveatedSupersampling);
+                    }
+
+                    if (compositeLayer.normalSharpening)
+                    {
+                        header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagEnableNormalSharpening);
+                    }
+
+                    if (compositeLayer.qualitySharpening)
+                    {
+                        header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagEnableQualitySharpening);
+                    }
+
+                    if (compositeLayer.fixedFoveatedSharpening)
+                    {
+                        header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagEnableFixedFoveatedSharpening);
+                    }
+
+                    if (compositeLayer.selfAdaptiveSharpening)
+                    {
+                        header.layerFlags |= (UInt32)(PxrLayerSubmitFlags.PxrLayerFlagEnableSelfAdaptiveSharpening);
                     }
 
                     if (compositeLayer.overlayShape == PXR_OverLay.OverlayShape.Quad)

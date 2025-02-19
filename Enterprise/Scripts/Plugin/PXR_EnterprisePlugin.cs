@@ -1644,7 +1644,7 @@ namespace Unity.XR.PICO.TOBSupport
             return predictedDisplayTime;
         }
 
-        public static SensorState UPxr_GetPredictedMainSensorState(double predictTime)
+        public static SensorState UPxr_GetPredictedMainSensorState(double predictTime,bool isGlobal)
         {
             SensorState sensorState = new SensorState();
             PxrSensorState2 sensorState2 = new PxrSensorState2();
@@ -1653,13 +1653,26 @@ namespace Unity.XR.PICO.TOBSupport
             Pxr_GetPredictedMainSensorState2(predictTime, ref sensorState2, ref sensorFrameIndex);
 #endif
             sensorState.status = sensorState2.status == 3 ? 1 : 0;
-            sensorState.pose.position.x = sensorState2.globalPose.position.x;
-            sensorState.pose.position.y = sensorState2.globalPose.position.y;
-            sensorState.pose.position.z = sensorState2.globalPose.position.z;
-            sensorState.pose.rotation.x = sensorState2.globalPose.orientation.x;
-            sensorState.pose.rotation.y = sensorState2.globalPose.orientation.y;
-            sensorState.pose.rotation.z = sensorState2.globalPose.orientation.z;
-            sensorState.pose.rotation.w = sensorState2.globalPose.orientation.w;
+            if (isGlobal)
+            {
+                sensorState.pose.position.x = sensorState2.globalPose.position.x;
+                sensorState.pose.position.y = sensorState2.globalPose.position.y;
+                sensorState.pose.position.z = sensorState2.globalPose.position.z;
+                sensorState.pose.rotation.x = sensorState2.globalPose.orientation.x;
+                sensorState.pose.rotation.y = sensorState2.globalPose.orientation.y;
+                sensorState.pose.rotation.z = sensorState2.globalPose.orientation.z;
+                sensorState.pose.rotation.w = sensorState2.globalPose.orientation.w;
+            }
+            else
+            {
+                sensorState.pose.position.x = sensorState2.pose.position.x;
+                sensorState.pose.position.y = sensorState2.pose.position.y;
+                sensorState.pose.position.z = sensorState2.pose.position.z;
+                sensorState.pose.rotation.x = sensorState2.pose.orientation.x;
+                sensorState.pose.rotation.y = sensorState2.pose.orientation.y;
+                sensorState.pose.rotation.z = sensorState2.pose.orientation.z;
+                sensorState.pose.rotation.w = sensorState2.pose.orientation.w;
+            }
             return sensorState;
         }
         
@@ -1747,7 +1760,7 @@ namespace Unity.XR.PICO.TOBSupport
             int value = -1;
 
 #if PICO_PLATFORM
-             value = IToBService.Call<int>("setLauncher", GetEnumType(delayTimeEnum));
+             value = IToBService.Call<int>("setSystemAutoSleepTime", GetEnumType(delayTimeEnum));
 #endif
             return value;
         }
@@ -2857,6 +2870,145 @@ namespace Unity.XR.PICO.TOBSupport
             value= IToBService.Call<int>("getScreenRecordFrameRate");
 #endif
             return value;
+        }
+        public delegate void CapturelibCallBack(int type);
+        [DllImport("CameraRenderingPlugin")]
+        public static extern void setCameraFrameBuffer(ref CameraFrame t);
+        [DllImport("CameraRenderingPlugin")]
+        public static extern void setCapturelibCallBack(CapturelibCallBack callback);
+        [DllImport("CameraRenderingPlugin")]
+        public static extern bool getCameraIntrinsics(int width, int height, double h_fov, double v_fov,ref int configCount, ref IntPtr configArray);
+        [DllImport("CameraRenderingPlugin")]
+        public static extern bool getCameraExtrinsics(ref int leftCount, ref IntPtr leftExtrinsics,ref int rightCount, ref IntPtr rightExtrinsics);
+        [DllImport("CameraRenderingPlugin")]
+        public static extern bool getCameraParametersNew(int width, int height, ref RGBCameraParamsNew paramsNew);
+        [DllImport("CameraRenderingPlugin")]
+        public static extern void setCconfigure(bool enableMvHevc,int videoFps);
+        [DllImport("CameraRenderingPlugin")]
+        public static extern void setConfigureDefault();
+        [DllImport("CameraRenderingPlugin")]
+        public static extern bool openCameraAsync();
+        [DllImport("CameraRenderingPlugin")]
+        public static extern bool closeCamera();
+        [DllImport("CameraRenderingPlugin")]
+        public static extern bool startPerformance(int mode,int width, int height);
+
+        [DllImport("CameraRenderingPlugin")]
+        public static extern bool startPreview(IntPtr androidSurface,int mode,int width, int height);
+        // 0: success, -1: error
+        public static bool OpenCameraAsync()
+        {
+            bool value = false;
+            if (Application.platform == RuntimePlatform.Android)
+            {
+                value = openCameraAsync();
+            }
+            return value;
+        }
+        
+
+        public static bool StartPreview(IntPtr surfaceObj,PXRCaptureRenderMode mode)
+        {
+            bool value = false;
+            if (Application.platform == RuntimePlatform.Android)
+            {
+                value=startPreview(surfaceObj,(int)mode,1024,1024);
+            }
+            return value;
+        }
+        
+        public static void Configure()
+        {
+            if (Application.platform == RuntimePlatform.Android)
+            {
+                setConfigureDefault();
+            }
+        }
+        public static void Configure(bool enableMvHevc,int videoFps)
+        {
+            if (Application.platform == RuntimePlatform.Android)
+            {
+                setCconfigure(enableMvHevc, videoFps);
+            }
+        }
+        public static bool StartPerformance(PXRCaptureRenderMode mode,int width, int height)
+        {
+            bool value = false;
+            if (Application.platform == RuntimePlatform.Android)
+            {
+                value=startPerformance((int)mode,width,height);
+            }
+            return value;
+        }
+
+        public static bool CloseCamera()
+        {
+            bool value = false;
+            if (Application.platform == RuntimePlatform.Android)
+            {
+                value=closeCamera();
+            }
+            return value;
+        }
+        public static bool GetCameraExtrinsics(out double[] leftExtrinsics, out double[] rightExtrinsics)
+        {
+            int leftCount = 0;
+            int rightCount = 0;
+            IntPtr leftHandle = IntPtr.Zero;
+            IntPtr rightHandle = IntPtr.Zero;
+            if (UPxr_GetToken())
+            {
+                bool ret = getCameraExtrinsics(ref leftCount, ref leftHandle, ref rightCount, ref rightHandle);
+                leftExtrinsics = new Double[leftCount];
+                rightExtrinsics = new Double[rightCount];
+                Marshal.Copy(leftHandle, leftExtrinsics, 0, leftCount);
+                Marshal.Copy(rightHandle, rightExtrinsics, 0, rightCount);
+                return ret;
+            }
+            else
+            {
+                leftExtrinsics = null;
+                rightExtrinsics = null;
+                return false;
+            }
+        }
+        public static double[] GetCameraIntrinsics(int width, int height, double h_fov, double v_fov)
+        {
+            double[] configArray = null;
+            int configCount = 0;
+            IntPtr configHandle = IntPtr.Zero;
+            if (UPxr_GetToken())
+            {
+                getCameraIntrinsics(width ,height,h_fov,v_fov,ref configCount, ref configHandle);
+                configArray = new Double[configCount];
+                Marshal.Copy(configHandle, configArray, 0, configCount);
+            }
+            return configArray;
+        }
+        public static Matrix4x4 DoubleArrayToMatrix4x4(double[] array)
+        {
+            if (array.Length != 16)
+            {
+                Debug.LogError("The double array must have exactly 16 elements for a 4x4 matrix.");
+                return Matrix4x4.identity;
+            }
+            return new Matrix4x4(
+                new Vector4((float)array[0], (float)array[4], (float)array[8], (float)array[12]),
+                new Vector4((float)array[1], (float)array[5], (float)array[9], (float)array[13]),
+                new Vector4((float)array[2], (float)array[6], (float)array[10], (float)array[14]),
+                new Vector4((float)array[3], (float)array[7], (float)array[11], (float)array[15])
+            );
+        }
+        public static bool GetCameraParametersNew(int width, int height, ref RGBCameraParamsNew paramsNew)
+        {
+            if (UPxr_GetToken())
+            {
+                return getCameraParametersNew(width,height,ref paramsNew);
+            }
+            else
+            {
+                return false;
+            }
         }
     }
    

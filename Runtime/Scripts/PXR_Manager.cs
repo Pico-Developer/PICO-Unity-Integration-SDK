@@ -32,7 +32,11 @@ namespace Unity.XR.PXR
             {
                 if (instance == null)
                 {
+#if UNITY_6000_0_OR_NEWER
+                    instance = FindFirstObjectByType<PXR_Manager>();
+#else
                     instance = FindObjectOfType<PXR_Manager>();
+#endif
                     if (instance == null)
                     {
                         GameObject go = new GameObject("[PXR_Manager]");
@@ -189,6 +193,7 @@ namespace Unity.XR.PXR
             }
         }
 
+        bool isURP = false;
 
 
         void Awake()
@@ -224,36 +229,42 @@ namespace Unity.XR.PXR
 
             StartCoroutine("SetFoveationLevel");
 
-            if (GraphicsSettings.renderPipelineAsset == null || QualitySettings.renderPipeline == null)
+            if (GraphicsSettings.defaultRenderPipeline == null || QualitySettings.renderPipeline == null)
             {
                 int recommendedAntiAliasingLevel = PXR_Plugin.System.UPxr_GetConfigInt(ConfigType.AntiAliasingLevelRecommended);
                 if (useRecommendedAntiAliasingLevel && QualitySettings.antiAliasing != recommendedAntiAliasingLevel)
                 {
                     QualitySettings.antiAliasing = recommendedAntiAliasingLevel;
                     List<XRDisplaySubsystem> displaySubsystems = new List<XRDisplaySubsystem>();
+
+#if UNITY_6000_0_OR_NEWER
+                    SubsystemManager.GetSubsystems(displaySubsystems);
+#else
                     SubsystemManager.GetInstances(displaySubsystems);
+#endif
 
                     if (displaySubsystems.Count > 0)
                     {
                         displaySubsystems[0].SetMSAALevel(recommendedAntiAliasingLevel);
                     }
                 }
-                if (eyeTracking)
-                {
-                    PXR_Plugin.MotionTracking.UPxr_WantEyeTrackingService();
-                }
-                if (faceTracking || lipsyncTracking)
-                {
-                    PXR_Plugin.MotionTracking.UPxr_WantFaceTrackingService();
-                }
-                if (bodyTracking)
-                {
-                    PXR_Plugin.MotionTracking.UPxr_WantBodyTrackingService();
-                }
-
-                Debug.LogFormat(TAG_MRC + "Awake openMRC = {0} ,MRCInitSucceed = {1}.", openMRC, initMRCSucceed);
-                PXR_Plugin.System.UPxr_LogSdkApi("pico_msaa|" + QualitySettings.antiAliasing.ToString());
             }
+
+            if (eyeTracking)
+            {
+                PXR_Plugin.MotionTracking.UPxr_WantEyeTrackingService();
+            }
+            if (faceTracking || lipsyncTracking)
+            {
+                PXR_Plugin.MotionTracking.UPxr_WantFaceTrackingService();
+            }
+            if (bodyTracking)
+            {
+                PXR_Plugin.MotionTracking.UPxr_WantBodyTrackingService();
+            }
+
+            Debug.LogFormat(TAG_MRC + "Awake openMRC = {0} ,MRCInitSucceed = {1}.", openMRC, initMRCSucceed);
+            PXR_Plugin.System.UPxr_LogSdkApi("pico_msaa|" + QualitySettings.antiAliasing.ToString());
         }
 
         IEnumerator SetFoveationLevel()
@@ -402,14 +413,26 @@ namespace Unity.XR.PXR
                     PXR_Plugin.Sensor.UPxr_HMDUpdateSwitch(false);
                 }
 
+#if UNITY_6000_0_OR_NEWER
+                if (GraphicsSettings.defaultRenderPipeline != null)
+#else
                 if (GraphicsSettings.renderPipelineAsset != null)
+#endif
                 {
-                    RenderPipelineManager.endFrameRendering += EndRendering;
+#if UNITY_2023_3_OR_NEWER
+                    RenderPipelineManager.beginContextRendering += BeginRendering;
+#else
+                    RenderPipelineManager.beginFrameRendering += BeginRendering;
+#endif
+                    isURP = true;
                 }
                 else
                 {
-                    Camera.onPostRender += OnPostRenderCallBack;
+                    Camera.onPreRender += OnPreRenderCallBack;
+                    isURP = false;
                 }
+
+
             }
         }
 
@@ -701,14 +724,21 @@ namespace Unity.XR.PXR
                 {
                     PXR_Plugin.Sensor.UPxr_HMDUpdateSwitch(true);
                 }
-
+#if UNITY_6000_0_OR_NEWER
+                if (GraphicsSettings.defaultRenderPipeline != null)
+#else
                 if (GraphicsSettings.renderPipelineAsset != null)
+#endif
                 {
-                    RenderPipelineManager.endFrameRendering -= EndRendering;
+#if UNITY_2023_3_OR_NEWER
+                    RenderPipelineManager.beginContextRendering -= BeginRendering;
+#else
+                    RenderPipelineManager.beginFrameRendering -= BeginRendering;
+#endif
                 }
                 else
                 {
-                    Camera.onPostRender -= OnPostRenderCallBack;
+                    Camera.onPreRender -= OnPreRenderCallBack;
                 }
             }
         }
@@ -724,18 +754,22 @@ namespace Unity.XR.PXR
         private const int LAYER_MRC = 99999;
         private GameObject mrcCube;
 
-        private void EndRendering(ScriptableRenderContext arg1, Camera[] arg2)
+#if UNITY_2023_3_OR_NEWER
+        private void BeginRendering(ScriptableRenderContext arg1, List<Camera> arg2)
+#else
+        private void BeginRendering(ScriptableRenderContext arg1, Camera[] arg2)
+#endif
         {
             foreach (Camera cam in arg2)
             {
                 if (cam != null && Camera.main == cam)
                 {
-                    OnPostRenderCallBack(cam);
+                    OnPreRenderCallBack(cam);
                 }
             }
         }
 
-        public void OnPostRenderCallBack(Camera cam)
+        public void OnPreRenderCallBack(Camera cam)
         {
             if (cam == null || cam != Camera.main || cam.stereoActiveEye == Camera.MonoOrStereoscopicEye.Right) return;
 
@@ -745,7 +779,6 @@ namespace Unity.XR.PXR
                 CopyAndSubmitMRCLayer();
             }
         }
-
 
         private void CreateMRCOverlay()
         {
@@ -947,7 +980,7 @@ namespace Unity.XR.PXR
                     mrcCube.transform.localEulerAngles = Vector3.zero;
                     PLog.d(TAG_MRC, "create background camera object cube.");
 
-                    if (GraphicsSettings.renderPipelineAsset != null)
+                    if (GraphicsSettings.defaultRenderPipeline != null)
                     {
                         Material material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
                         Renderer renderer = mrcCube.GetComponent<Renderer>();

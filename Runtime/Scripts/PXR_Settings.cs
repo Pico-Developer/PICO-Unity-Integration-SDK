@@ -114,5 +114,17 @@ namespace Unity.XR.PXR
             return "1";
         }
 #endif
+
+        public static PXR_Settings GetSettings()
+        {
+            PXR_Settings settings = null;
+#if UNITY_EDITOR
+            UnityEditor.EditorBuildSettings.TryGetConfigObject<PXR_Settings>("Unity.XR.PXR.Settings", out settings);
+#endif
+#if UNITY_ANDROID && !UNITY_EDITOR
+            settings = PXR_Settings.settings;
+#endif
+            return settings;
+        }
     }
 }

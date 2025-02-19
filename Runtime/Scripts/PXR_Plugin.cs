@@ -454,7 +454,11 @@ namespace Unity.XR.PXR
         Medium,
         High
     }
-
+    public enum HandTrackingSupport
+    {
+        ControllersAndHands,
+        HandsOnly
+    }
     [System.Flags]
     public enum PxrMeshConfigFlags : ulong
     {
@@ -1105,6 +1109,7 @@ namespace Unity.XR.PXR
     /// </summary>
     public enum PxrResult
     {
+        Unknown = int.MaxValue, 
         SUCCESS = 0,
         TIMEOUT_EXPIRED = 1,
         SESSION_LOSS_PENDING = 3,
@@ -1371,14 +1376,15 @@ namespace Unity.XR.PXR
         PxrLayerFlagSourceAlpha_1_0 = 1 << 10,
         PxrLayerFlagUseFrameExtrapolation = 1 << 11,
         PxrLayerFlagQuickSeethrough = 1 << 12,
-        PxrLayerFlagEnableNormalSuperSampling = 1 << 13,
-        PxrLayerFlagEnableQualitySuperSampling = 1 << 14,
+        PxrLayerFlagEnableNormalSupersampling = 1 << 13,
+        PxrLayerFlagEnableQualitySupersampling = 1 << 14,
         PxrLayerFlagEnableNormalSharpening = 1 << 15,
         PxrLayerFlagEnableQualitySharpening = 1 << 16,
-        PxrLayerFlagEnableFixedFoveatedSuperSampling = 1 << 17,
+        PxrLayerFlagEnableFixedFoveatedSupersampling = 1 << 17,
         PxrLayerFlagEnableFixedFoveatedSharpening = 1 << 18,
         PxrLayerFlagEnableSelfAdaptiveSharpening = 1 << 19,
         PxrLayerFlagPremultipliedAlpha = 1 << 20,
+        PxrLayerFlagEnableSuperResolution = 1 << 21,
         PxrLayerFlagColorSpaceHdrPQ = 1 << 22,
         PxrLayerFlagColorSpaceHdrHLG = 1 << 23,
         PxrLayerFlagFixLayer = 1 << 25,
@@ -1781,12 +1787,27 @@ namespace Unity.XR.PXR
         Elbow,
         Shoulder
     }
+
+    public enum SuperSamplingMode
+    {
+        None,
+        Normal,
+        Quality
+    }
+
+    public enum SuperSamplingEnhance
+    {
+        None,
+        FixedFoveated
+    }
+
     public enum SharpeningMode
     {
         None,
         Normal,
         Quality
     }
+
     public enum SharpeningEnhance
     {
         None,
@@ -2140,7 +2161,7 @@ namespace Unity.XR.PXR
 
     public static class PXR_Plugin
     {
-        private const string PXR_SDK_Version = "3.0.5";
+        private const string PXR_SDK_Version = "3.1.2";
         public const string PXR_PLATFORM_DLL = "PxrPlatform";
         public const string PXR_API_DLL = "pxr_api";
         private static int PXR_API_Version = 0;
@@ -5773,11 +5794,23 @@ namespace Unity.XR.PXR
                 }
             }
 
+            public static PxrResult UPxr_ConvertIntToPxrResult(int value)
+            {
+                if (Enum.IsDefined(typeof(PxrResult), value))
+                {
+                    return (PxrResult)value;
+                }
+                else
+                {
+                    return PxrResult.Unknown;
+                }
+            }
+
             public static PxrResult UPxr_CreateSenseDataProvider(ref PxrSenseDataProviderCreateInfoBaseHeader info,out ulong providerHandle )
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_CreateSenseDataProvider(ref info, out providerHandle);
-                return pxrResult;
+                var pxrResult = Pxr_CreateSenseDataProvider(ref info, out providerHandle);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 providerHandle = ulong.MinValue;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -5895,8 +5928,8 @@ namespace Unity.XR.PXR
             {
                 future = UInt64.MinValue;
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_StartSenseDataProviderAsync(providerHandle, out future);
-                return pxrResult;
+                var pxrResult = Pxr_StartSenseDataProviderAsync(providerHandle, out future);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -5909,8 +5942,8 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SenseDataProviderStartCompletion,
                 };
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_StartSenseDataProviderComplete(future, ref completion);
-                return pxrResult;
+                var pxrResult = Pxr_StartSenseDataProviderComplete(future, ref completion);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -5920,8 +5953,8 @@ namespace Unity.XR.PXR
             {
                 state = PxrSenseDataProviderState.Stopped;
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_GetSenseDataProviderState(providerHandle,ref state);
-                return pxrResult;
+                var pxrResult = Pxr_GetSenseDataProviderState(providerHandle,ref state);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #endif
                 return PxrResult.ERROR_RUNTIME_FAILURE;
             }
@@ -5929,17 +5962,18 @@ namespace Unity.XR.PXR
             public static PxrResult UPxr_StopSenseDataProvide(ulong providerHandle)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_StopSenseDataProvider(providerHandle);
-                return pxrResult;
-#endif
+                var pxrResult = Pxr_StopSenseDataProvider(providerHandle);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
+#else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
+#endif
             }
 
             public static PxrResult UPxr_DestroySenseDataProvider(ulong providerHandle)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_DestroySenseDataProvider(providerHandle);
-                return pxrResult;
+                var pxrResult = Pxr_DestroySenseDataProvider(providerHandle);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -5949,8 +5983,8 @@ namespace Unity.XR.PXR
             public static PxrResult UPxr_QuerySenseDataAsync(ulong providerHandle,ref PxrSenseDataQueryInfo info, out ulong future)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_QuerySenseDataAsync(providerHandle, ref info, out future);
-                return pxrResult;
+                var pxrResult = Pxr_QuerySenseDataAsync(providerHandle, ref info, out future);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 future = ulong.MinValue;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -5960,8 +5994,8 @@ namespace Unity.XR.PXR
             public static PxrResult UPxr_DestroySenseDataQueryResult(ulong queryResultHandle)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_DestroySenseDataQueryResult(queryResultHandle);
-                return pxrResult;
+                var pxrResult = Pxr_DestroySenseDataQueryResult(queryResultHandle);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6048,8 +6082,8 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SenseDataQueryCompletion,
                 };
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_QuerySenseDataComplete(providerHandle, future,ref completion);
-                return pxrResult;
+                var pxrResult = Pxr_QuerySenseDataComplete(providerHandle, future,ref completion);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6072,8 +6106,8 @@ namespace Unity.XR.PXR
                     queriedSpatialEntityCountOutput = 0,
                 };
                 
-                var getResultFirst = (PxrResult)Pxr_GetQueriedSenseData(providerHandle, ref info, ref senseDataFirst);
-                if (getResultFirst == PxrResult.SUCCESS)
+                var getResultFirst = Pxr_GetQueriedSenseData(providerHandle, ref info, ref senseDataFirst);
+                if (UPxr_ConvertIntToPxrResult(getResultFirst) == PxrResult.SUCCESS)
                 {
                     PxrQueriedSenseData senseDataSecond = new PxrQueriedSenseData()
                     {
@@ -6084,7 +6118,7 @@ namespace Unity.XR.PXR
                     int resultSize = Marshal.SizeOf<PxrQueriedSpatialEntityInfo>();
                     int bytesSize = (int)senseDataFirst.queriedSpatialEntityCountOutput * resultSize;
                     senseDataSecond.queriedSpatialEntities = Marshal.AllocHGlobal(bytesSize);
-                    var getResultSecond = (PxrResult)Pxr_GetQueriedSenseData(providerHandle, ref info, ref senseDataSecond);
+                    var getResultSecond = Pxr_GetQueriedSenseData(providerHandle, ref info, ref senseDataSecond);
                     entityinfos = new List<PxrQueriedSpatialEntityInfo>();
                     for (int i = 0; i < senseDataFirst.queriedSpatialEntityCountOutput; i++)
                     {
@@ -6092,12 +6126,12 @@ namespace Unity.XR.PXR
                         entityinfos.Add(t);
                     }
                     Marshal.FreeHGlobal(senseDataSecond.queriedSpatialEntities);
-                    return getResultSecond;
+                    return UPxr_ConvertIntToPxrResult(getResultSecond);
                 }
                 else
                 {
                     entityinfos = new List<PxrQueriedSpatialEntityInfo>();
-                    return getResultFirst;
+                    return UPxr_ConvertIntToPxrResult(getResultFirst);
                 }
 #else
                 entityinfos = new List<PxrQueriedSpatialEntityInfo>();
@@ -6108,12 +6142,12 @@ namespace Unity.XR.PXR
             public static PxrResult UPxr_GetSpatialEntityUuid(ulong entityHandle,out Guid uuid)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_GetSpatialEntityUuid(entityHandle, out var pUuid);
+                var pxrResult = Pxr_GetSpatialEntityUuid(entityHandle, out var pUuid);
                 byte[] byteArray = new byte[16];
                 BitConverter.GetBytes(pUuid.value0).CopyTo(byteArray, 0);
                 BitConverter.GetBytes(pUuid.value1).CopyTo(byteArray, 8);
                 uuid = new Guid(byteArray);
-                return pxrResult;
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 uuid = Guid.Empty;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -6125,13 +6159,13 @@ namespace Unity.XR.PXR
 #if UNITY_ANDROID && !UNITY_EDITOR
                 var componentTypes = IntPtr.Zero;
                 types = Array.Empty<PxrSceneComponentType>();
-                var firstResult = (PxrResult)Pxr_EnumerateSpatialEntityComponentTypes(snapshotHandle, spatialEntityHandle, 0, out var firstOutputCount, componentTypes);
-                if (firstResult == PxrResult.SUCCESS)
+                var firstResult = Pxr_EnumerateSpatialEntityComponentTypes(snapshotHandle, spatialEntityHandle, 0, out var firstOutputCount, componentTypes);
+                if (UPxr_ConvertIntToPxrResult(firstResult) == PxrResult.SUCCESS)
                 {
                     int size = (int)firstOutputCount * Marshal.SizeOf(typeof(int));
                     componentTypes = Marshal.AllocHGlobal(size);
-                    var secondResult = (PxrResult)Pxr_EnumerateSpatialEntityComponentTypes(snapshotHandle, spatialEntityHandle, firstOutputCount, out var outputCount, componentTypes);
-                    if (secondResult == PxrResult.SUCCESS)
+                    var secondResult = Pxr_EnumerateSpatialEntityComponentTypes(snapshotHandle, spatialEntityHandle, firstOutputCount, out var outputCount, componentTypes);
+                    if (UPxr_ConvertIntToPxrResult(secondResult) == PxrResult.SUCCESS)
                     {
                         types = new PxrSceneComponentType[outputCount];
                         int[] typesInts = new int[outputCount];
@@ -6146,13 +6180,13 @@ namespace Unity.XR.PXR
                     else
                     {
                         types = Array.Empty<PxrSceneComponentType>();
-                        return secondResult;
+                        return UPxr_ConvertIntToPxrResult(secondResult);
                     }
                 }
                 else
                 {
                     types = Array.Empty<PxrSceneComponentType>();
-                    return firstResult;
+                    return UPxr_ConvertIntToPxrResult(firstResult);
                 }
 #else
                 types = Array.Empty<PxrSceneComponentType>();
@@ -6163,8 +6197,8 @@ namespace Unity.XR.PXR
             public static PxrResult UPxr_GetSpatialEntityComponentInfo(ulong snapshotHandle, ref PxrSpatialEntityComponentInfoGetInfoBaseHeader getInfo,ref PxrSpatialEntityComponentInfoBaseHeader componentInfo)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_GetSpatialEntityComponentInfo(snapshotHandle, ref getInfo,ref componentInfo);
-                return pxrResult;
+                var pxrResult = Pxr_GetSpatialEntityComponentInfo(snapshotHandle, ref getInfo,ref componentInfo);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6188,8 +6222,8 @@ namespace Unity.XR.PXR
                 {
                     type = PxrStructureType.SpatialEntityLocationInfo
                 };
-                var result = (PxrResult)Pxr_GetSpatialEntityLocationInfo(snapshotHandle, ref getInfo, ref locationInfo);
-                if (result == PxrResult.SUCCESS)
+                var result = Pxr_GetSpatialEntityLocationInfo(snapshotHandle, ref getInfo, ref locationInfo);
+                if (UPxr_ConvertIntToPxrResult(result) == PxrResult.SUCCESS)
                 {
                     foreach (PxrSpaceLocationFlags value in Enum.GetValues(typeof(PxrSpaceLocationFlags)))
                     {
@@ -6203,7 +6237,7 @@ namespace Unity.XR.PXR
                     rotation = new Quaternion(locationInfo.pose.orientation.x, locationInfo.pose.orientation.y, -locationInfo.pose.orientation.z, -locationInfo.pose.orientation.w);
                     position = new Vector3(locationInfo.pose.position.x, locationInfo.pose.position.y, -locationInfo.pose.position.z);
                 }
-                return result;
+                return UPxr_ConvertIntToPxrResult(result);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6351,8 +6385,8 @@ namespace Unity.XR.PXR
                 Marshal.StructureToPtr(semanticInfo, componentInfo, false);
                 PxrSpatialEntityComponentInfoBaseHeader baseHeader = Marshal.PtrToStructure<PxrSpatialEntityComponentInfoBaseHeader>(componentInfo);
                 
-                var result = (PxrResult)Pxr_GetSpatialEntityComponentInfo(snapshotHandle, ref getInfo, ref baseHeader);
-                if (result == PxrResult.SUCCESS)
+                var result = Pxr_GetSpatialEntityComponentInfo(snapshotHandle, ref getInfo, ref baseHeader);
+                if (UPxr_ConvertIntToPxrResult(result) == PxrResult.SUCCESS)
                 {
                     IntPtr temp = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PxrSpatialEntityComponentInfoBaseHeader)));
                     Marshal.StructureToPtr(baseHeader, temp, false);
@@ -6364,8 +6398,8 @@ namespace Unity.XR.PXR
                     componentInfo = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PxrSpatialEntitySemanticInfo)));
                     Marshal.StructureToPtr(semanticInfo, componentInfo, false);
                     baseHeader = Marshal.PtrToStructure<PxrSpatialEntityComponentInfoBaseHeader>(componentInfo);
-                    result = (PxrResult)Pxr_GetSpatialEntityComponentInfo(snapshotHandle, ref getInfo, ref baseHeader);
-                    if (result == PxrResult.SUCCESS)
+                    result = Pxr_GetSpatialEntityComponentInfo(snapshotHandle, ref getInfo, ref baseHeader);
+                    if (UPxr_ConvertIntToPxrResult(result) == PxrResult.SUCCESS)
                     {
                         temp = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PxrSpatialEntityComponentInfoBaseHeader)));
                         Marshal.StructureToPtr(baseHeader, temp, false);
@@ -6378,9 +6412,9 @@ namespace Unity.XR.PXR
                     }
                     Marshal.FreeHGlobal(componentInfo);
                     Marshal.FreeHGlobal(semanticInfo.semanticLabels);
-                    return result;
+                    return UPxr_ConvertIntToPxrResult(result);
                 }
-                return result;
+                return UPxr_ConvertIntToPxrResult(result);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6408,15 +6442,15 @@ namespace Unity.XR.PXR
                 Marshal.StructureToPtr(semanticInfo, componentInfo, false);
                 PxrSpatialEntityComponentInfoBaseHeader baseHeader = Marshal.PtrToStructure<PxrSpatialEntityComponentInfoBaseHeader>(componentInfo);
                 
-                var result = (PxrResult)Pxr_GetSpatialEntityComponentInfo(snapshotHandle, ref getInfo, ref baseHeader);
-                if (result == PxrResult.SUCCESS)
+                var result = Pxr_GetSpatialEntityComponentInfo(snapshotHandle, ref getInfo, ref baseHeader);
+                if (UPxr_ConvertIntToPxrResult(result) == PxrResult.SUCCESS)
                 {
                     var semantic = (PxrSpatialEntitySemanticInfo)Marshal.PtrToStructure(componentInfo,typeof(PxrSpatialEntitySemanticInfo));
                     label = (PxrSemanticLabel)Marshal.ReadInt32(semantic.semanticLabels);
                 }
                 Marshal.FreeHGlobal(semanticInfo.semanticLabels);
                 Marshal.FreeHGlobal(componentInfo);
-                return result;
+                return UPxr_ConvertIntToPxrResult(result);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6560,8 +6594,8 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SpatialEntityAnchorRetrieveInfo,
                     spatialEntity = spatialEntityHandle,
                 };
-                var pxrResult = (PxrResult)Pxr_RetrieveSpatialEntityAnchor(snapshotHandle, ref info,out anchorHandle);
-                return pxrResult;
+                var pxrResult = Pxr_RetrieveSpatialEntityAnchor(snapshotHandle, ref info,out anchorHandle);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 anchorHandle = ulong.MinValue;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -6580,10 +6614,10 @@ namespace Unity.XR.PXR
                 {
                     type = PxrStructureType.FuturePollResult,
                 };
-                var pxrResult =  (PxrResult)Pxr_PollFutureEXT(ref pollInfo, ref pollResult);
+                var pxrResult =  Pxr_PollFutureEXT(ref pollInfo, ref pollResult);
                 futureState = pollResult.state;
 
-                return pxrResult;
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 futureState = PxrFutureState.Pending;
                 return PxrResult.SUCCESS;
@@ -6617,8 +6651,8 @@ namespace Unity.XR.PXR
                     time = System.UPxr_GetPredictedDisplayTime()
 
                 };
-                var pxrResult = (PxrResult)Pxr_CreateSpatialAnchorAsync(providerHandle, ref createInfo, out future);
-                return pxrResult;
+                var pxrResult = Pxr_CreateSpatialAnchorAsync(providerHandle, ref createInfo, out future);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 future = ulong.MinValue;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -6632,8 +6666,8 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SpatialAnchorCreateCompletion
                 };
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_CreateSpatialAnchorComplete(providerHandle, future, ref completion);
-                return pxrResult;
+                var pxrResult = Pxr_CreateSpatialAnchorComplete(providerHandle, future, ref completion);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6642,21 +6676,22 @@ namespace Unity.XR.PXR
             public static PxrResult UPxr_DestroyAnchor(ulong anchorHandle)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_DestroyAnchor(anchorHandle);
-                return pxrResult;
-#endif
+                var pxrResult = Pxr_DestroyAnchor(anchorHandle);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
+#else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
+#endif
             }
 
             public static PxrResult UPxr_GetAnchorUuid(ulong anchorHandle, out Guid uuid)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_GetAnchorUuid(anchorHandle,out var pUuid);
+                var pxrResult = Pxr_GetAnchorUuid(anchorHandle,out var pUuid);
                 byte[] byteArray = new byte[16];
                 BitConverter.GetBytes(pUuid.value0).CopyTo(byteArray, 0);
                 BitConverter.GetBytes(pUuid.value1).CopyTo(byteArray, 8);
                 uuid = new Guid(byteArray);
-                return pxrResult;
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 uuid = Guid.Empty;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -6678,8 +6713,8 @@ namespace Unity.XR.PXR
                 {
                     type = PxrStructureType.AnchorLocationInfo,
                 };
-                var pxrResult = (PxrResult)Pxr_LocateAnchor(ref locateInfo, ref location);
-                if (pxrResult == PxrResult.SUCCESS)
+                var pxrResult = Pxr_LocateAnchor(ref locateInfo, ref location);
+                if (UPxr_ConvertIntToPxrResult(pxrResult) == PxrResult.SUCCESS)
                 {
                     foreach (PxrSpaceLocationFlags value in Enum.GetValues(typeof(PxrSpaceLocationFlags)))
                     {
@@ -6692,13 +6727,13 @@ namespace Unity.XR.PXR
                     }
                     rotation = new Quaternion(location.pose.orientation.x, location.pose.orientation.y, -location.pose.orientation.z, -location.pose.orientation.w);
                     position = new Vector3(location.pose.position.x, location.pose.position.y, -location.pose.position.z);
-                    return pxrResult;
+                    return UPxr_ConvertIntToPxrResult(pxrResult);
                 }
                 else
                 {
                     position = Vector3.zero;
                     rotation = Quaternion.identity;
-                    return pxrResult;
+                    return UPxr_ConvertIntToPxrResult(pxrResult);
                 }
 #else
                 position = Vector3.zero;
@@ -6716,8 +6751,8 @@ namespace Unity.XR.PXR
                     location = PxrPersistenceLocation.Local,
                     anchorHandle = anchorHandle
                 };
-                var pxrResult = (PxrResult)Pxr_PersistSpatialAnchorAsync(providerHandle, ref persistInfo, out future);
-                return pxrResult;
+                var pxrResult = Pxr_PersistSpatialAnchorAsync(providerHandle, ref persistInfo, out future);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 future = ulong.MinValue;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -6731,8 +6766,8 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SpatialAnchorPersistCompletion,
                 };
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_PersistSpatialAnchorComplete(providerHandle, future, ref completion);
-                return pxrResult;
+                var pxrResult = Pxr_PersistSpatialAnchorComplete(providerHandle, future, ref completion);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6747,8 +6782,8 @@ namespace Unity.XR.PXR
                     location = PxrPersistenceLocation.Local,
                     anchorHandle = anchorHandle
                 };
-                var pxrResult = (PxrResult)Pxr_UnpersistSpatialAnchorAsync(providerHandle, ref unPersistInfo, out future);
-                return pxrResult;
+                var pxrResult = Pxr_UnpersistSpatialAnchorAsync(providerHandle, ref unPersistInfo, out future);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 future = ulong.MinValue;
                 return PxrResult.SUCCESS;
@@ -6762,8 +6797,8 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SpatialAnchorUnPersistCompletion,
                 };
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_UnpersistSpatialAnchorComplete(providerHandle, future, ref completion);
-                return pxrResult;
+                var pxrResult = Pxr_UnpersistSpatialAnchorComplete(providerHandle, future, ref completion);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.SUCCESS;
 #endif
@@ -6772,8 +6807,8 @@ namespace Unity.XR.PXR
             public static PxrResult UPxr_StartSceneCaptureAsync(out ulong future)
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_StartSceneCaptureAsync(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture), out future);
-                return pxrResult;
+                var pxrResult = Pxr_StartSceneCaptureAsync(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture), out future);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 future = ulong.MinValue;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -6787,8 +6822,8 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SceneCaptureStartSceneCaptureCompletion
                 };
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_StartSceneCaptureComplete(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture), future,ref completion);
-                return pxrResult;
+                var pxrResult = Pxr_StartSceneCaptureComplete(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture), future,ref completion);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6802,9 +6837,9 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SpatialAnchorShareInfo,
                     anchorHandle = anchorHandle,
                 };
-                var pxrResult = (PxrResult)Pxr_ShareSpatialAnchorAsync(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), ref info, out future);
+                var pxrResult = Pxr_ShareSpatialAnchorAsync(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), ref info, out future);
 
-                return pxrResult;
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 future = ulong.MinValue;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -6818,8 +6853,8 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SpatialAnchorShareCompletion,
                 };
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_ShareSpatialAnchorComplete(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), future, ref completion);
-                return pxrResult;
+                var pxrResult = Pxr_ShareSpatialAnchorComplete(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), future, ref completion);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
@@ -6838,9 +6873,9 @@ namespace Unity.XR.PXR
                         value1 = BitConverter.ToUInt64(bytes, 8)
                     },
                 };
-                var pxrResult = (PxrResult)Pxr_DownloadSharedSpatialAnchorAsync(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), ref info, out future);
+                var pxrResult = Pxr_DownloadSharedSpatialAnchorAsync(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), ref info, out future);
 
-                return pxrResult;
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 future = ulong.MinValue;
                 return PxrResult.ERROR_RUNTIME_FAILURE;
@@ -6854,8 +6889,8 @@ namespace Unity.XR.PXR
                     type = PxrStructureType.SpatialAnchorDownloadCompletion,
                 };
 #if UNITY_ANDROID && !UNITY_EDITOR
-                var pxrResult = (PxrResult)Pxr_DownloadSharedSpatialAnchorComplete(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), future, ref completion);
-                return pxrResult;
+                var pxrResult = Pxr_DownloadSharedSpatialAnchorComplete(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), future, ref completion);
+                return UPxr_ConvertIntToPxrResult(pxrResult);
 #else
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif

@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using Unity.XR.CoreUtils;
 using Unity.XR.PXR;
 using UnityEditor;
 using UnityEngine;
@@ -62,9 +63,12 @@ namespace Unity.XR.PXR.Editor
             {
                 projectConfig.enableETFR = false;
                 projectConfig.recommendSubsamping = false;
+                projectConfig.validationFFREnabled = false;
+                projectConfig.validationETFREnabled = false;
                 manager.foveationLevel = (FoveationLevel)EditorGUILayout.EnumPopup("Foveated Rendering Level", manager.foveationLevel);
                 if (FoveationLevel.None != manager.foveationLevel)
                 {
+                    projectConfig.validationFFREnabled = true;
                     if (GraphicsDeviceType.OpenGLES3 == PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget)[0] && PlayerSettings.colorSpace == ColorSpace.Gamma)
                     {
                         projectConfig.enableSubsampled = false;
@@ -81,9 +85,12 @@ namespace Unity.XR.PXR.Editor
             {
                 projectConfig.enableETFR = true;
                 projectConfig.recommendSubsamping = false;
+                projectConfig.validationFFREnabled = false;
+                projectConfig.validationETFREnabled = false;
                 manager.eyeFoveationLevel = (FoveationLevel)EditorGUILayout.EnumPopup("Foveated Rendering Level", manager.eyeFoveationLevel);
                 if (FoveationLevel.None != manager.eyeFoveationLevel)
                 {
+                    projectConfig.validationETFREnabled = true;
                     if (GraphicsDeviceType.OpenGLES3 == PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget)[0] && PlayerSettings.colorSpace == ColorSpace.Gamma)
                     {
                         projectConfig.enableSubsampled = false;
@@ -148,6 +155,14 @@ namespace Unity.XR.PXR.Editor
             var handContent = new GUIContent();
             handContent.text = "Hand Tracking";
             projectConfig.handTracking = EditorGUILayout.Toggle(handContent, projectConfig.handTracking);
+            if (projectConfig.handTracking)
+            {
+                //hand tracking Support
+                var handSupport = new GUIContent();
+                handSupport.text = "Hand Tracking Support";
+                projectConfig.handTrackingSupportType =(HandTrackingSupport)EditorGUILayout.EnumPopup(handSupport, projectConfig.handTrackingSupportType); 
+            }
+          
             //Adaptive Hand Model
             var adaptiveContent = new GUIContent();
             adaptiveContent.text = "Adaptive Hand Model(PICO)";
@@ -254,7 +269,21 @@ namespace Unity.XR.PXR.Editor
 
             }
 
-            projectConfig.stageMode = EditorGUILayout.Toggle("Stage Mode", projectConfig.stageMode);
+#if UNITY_2021_1_OR_NEWER
+            XROrigin xrOrigin = FindAnyObjectByType<XROrigin>();
+#else
+            XROrigin xrOrigin = FindObjectOfType<XROrigin>();
+#endif
+            if (xrOrigin.RequestedTrackingOriginMode != XROrigin.TrackingOriginMode.Floor)
+            {
+                GUI.enabled = false;
+                projectConfig.stageMode = EditorGUILayout.Toggle("Stage Mode", false);
+                GUI.enabled = true;
+            }
+            else
+            {
+                projectConfig.stageMode = EditorGUILayout.Toggle("Stage Mode", projectConfig.stageMode);
+            }
 
             //mr
             EditorGUILayout.BeginVertical("frameBox");

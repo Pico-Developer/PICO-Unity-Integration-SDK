@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager.UI;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static Unity.XR.CoreUtils.XROrigin;
@@ -16,16 +17,27 @@ namespace Unity.XR.PXR
     [InitializeOnLoad]
     internal static class PXR_Utils
     {
-        public static string BuildingBlock = "Building Block";
+        public static string BuildingBlock = "[Building Block]";
         public static string sdkPackageName = "Packages/com.unity.xr.picoxr/";
 
         public static string xriPackageName = "com.unity.xr.interaction.toolkit";
         public static string xriVersion = "2.5.4";
         public static PackageVersion xriPackageVersion250 = new PackageVersion("2.5.0");
+        public static PackageVersion xriPackageVersion300 = new PackageVersion("3.0.0");
         public static string xriCategory = "XR Interaction Toolkit";
         public static string xriSamplesPath = "Assets/Samples/XR Interaction Toolkit";
         public static string xriStarterAssetsSampleName = "Starter Assets";
         public static string xriHandsInteractionDemoSampleName = "Hands Interaction Demo";
+        public static string xri2HandsSetupPefabName = "XR Interaction Hands Setup";
+        public static string xri3HandsSetupPefabName = "XR Origin Hands (XR Rig)";
+
+        public static PackageVersion XRICurPackageVersion
+        {
+            get
+            {
+                return new PackageVersion(xriVersion);
+            }
+        }
         public static string XRIDefaultInputActions
         {
             get
@@ -38,8 +50,7 @@ namespace Unity.XR.PXR
         {
             get
             {
-                var xriPackageVersion = new PackageVersion(xriVersion);
-                if (xriPackageVersion >= xriPackageVersion250)
+                if (XRICurPackageVersion >= xriPackageVersion250)
                 {
                     return $"{xriSamplesPath}/{xriVersion}/Starter Assets/Presets/XRI Default Left Controller.preset";
                 }
@@ -54,8 +65,7 @@ namespace Unity.XR.PXR
         {
             get
             {
-                var xriPackageVersion = new PackageVersion(xriVersion);
-                if (xriPackageVersion >= xriPackageVersion250)
+                if (XRICurPackageVersion >= xriPackageVersion250)
                 {
                     return $"{xriSamplesPath}/{xriVersion}/Starter Assets/Presets/XRI Default Right Controller.preset";
                 }
@@ -70,14 +80,17 @@ namespace Unity.XR.PXR
         {
             get
             {
-                var xriPackageVersion = new PackageVersion(xriVersion);
-                if (xriPackageVersion >= xriPackageVersion250)
+                if (XRICurPackageVersion >= xriPackageVersion300)
                 {
-                    return $"{xriSamplesPath}/{xriVersion}/{xriHandsInteractionDemoSampleName}/Prefabs/XR Interaction Hands Setup.prefab";
+                    return $"{xriSamplesPath}/{xriVersion}/{xriHandsInteractionDemoSampleName}/Prefabs/{xri3HandsSetupPefabName}.prefab";
+                }
+                else if (XRICurPackageVersion >= xriPackageVersion250 && XRICurPackageVersion < xriPackageVersion300)
+                {
+                    return $"{xriSamplesPath}/{xriVersion}/{xriHandsInteractionDemoSampleName}/Prefabs/{xri2HandsSetupPefabName}.prefab";
                 }
                 else
                 {
-                    return $"{xriSamplesPath}/{xriVersion}/{xriHandsInteractionDemoSampleName}/Runtime/Prefabs/XR Interaction Hands Setup.prefab";
+                    return $"{xriSamplesPath}/{xriVersion}/{xriHandsInteractionDemoSampleName}/Runtime/Prefabs/{xri2HandsSetupPefabName}.prefab";
                 }
             }
         }
@@ -85,14 +98,28 @@ namespace Unity.XR.PXR
         {
             get
             {
-                var xriPackageVersion = new PackageVersion(xriVersion);
-                if (xriPackageVersion >= xriPackageVersion250)
+                if (XRICurPackageVersion >= xriPackageVersion250)
                 {
                     return $"{xriSamplesPath}/{xriVersion}/{xriHandsInteractionDemoSampleName}/HandsDemoSceneAssets/Prefabs/PokeButton.prefab";
                 }
                 else
                 {
                     return $"{xriSamplesPath}/{xriVersion}/{xriHandsInteractionDemoSampleName}/Runtime/Prefabs/PokeButton.prefab";
+                }
+            }
+        }
+
+        public static string XRInteractionXRI300OriginPath
+        {
+            get
+            {
+                if (XRICurPackageVersion >= xriPackageVersion250)
+                {
+                    return $"{xriSamplesPath}/{xriVersion}/{xriStarterAssetsSampleName}/Prefabs/XR Origin (XR Rig).prefab";
+                }
+                else
+                {
+                    return $"{xriSamplesPath}/{xriVersion}/{xriStarterAssetsSampleName}/Runtime/Prefabs/XR Origin (XR Rig).prefab";
                 }
             }
         }
@@ -233,7 +260,65 @@ namespace Unity.XR.PXR
                 }
             }
         }
+#if XRI_TOOLKIT_3
+        public static GameObject CheckAndCreateXROriginXRI300()
+        {
+            GameObject cameraOrigin;
+            string k_BuildingBlocksXRI300OriginName = BuildingBlock + " XR Origin (XR Rig) XRI300";
 
+            List<Transform> transforms = FindComponentsInScene<Transform>().Where(component => component.name == k_BuildingBlocksXRI300OriginName).ToList();
+            if (transforms.Count == 0)
+            {
+                GameObject buildingBlockGO = new GameObject();
+                Selection.activeGameObject = buildingBlockGO;
+
+                List<XROrigin> components = FindComponentsInScene<XROrigin>().Where(component => component.isActiveAndEnabled).ToList();
+                if (components.Count != 0)
+                {
+                    foreach (var c in components)
+                    {
+                        c.gameObject.SetActive(false);
+                    }
+                }
+
+                GameObject ob = PrefabUtility.LoadPrefabContents(XRInteractionXRI300OriginPath);
+                Undo.RegisterCreatedObjectUndo(ob, "Create XRInteractionXRI300OriginPath.");
+                var activeScene = SceneManager.GetActiveScene();
+                var rootObjects = activeScene.GetRootGameObjects();
+                Undo.SetTransformParent(ob.transform, buildingBlockGO.transform, true, "Parent to buildingBlockGO.");
+                ob.transform.localPosition = Vector3.zero;
+                ob.transform.localRotation = Quaternion.identity;
+                ob.transform.localScale = Vector3.one;
+                ob.SetActive(true);
+                cameraOrigin = ob;
+
+                if (!cameraOrigin.GetComponent<PXR_Manager>())
+                {
+                    cameraOrigin.AddComponent<PXR_Manager>();
+                }
+
+                if (cameraOrigin.GetComponent<CharacterController>())
+                {
+                    cameraOrigin.GetComponent<CharacterController>().enabled = false;
+                }
+
+                buildingBlockGO.name = k_BuildingBlocksXRI300OriginName;
+                Undo.RegisterCreatedObjectUndo(buildingBlockGO, "Create buildingBlockGO.");
+
+                EditorSceneManager.MarkSceneDirty(buildingBlockGO.scene);
+                EditorSceneManager.SaveScene(buildingBlockGO.scene);
+
+                SetTrackingOriginMode();
+                PXR_ProjectSetting.SaveAssets();
+            }
+            else
+            {
+                cameraOrigin = transforms[0].GetChild(0).gameObject;
+            }
+
+            return cameraOrigin;
+        }
+#endif
         public static GameObject CheckAndCreateXROrigin()
         {
             GameObject cameraOrigin;
@@ -247,6 +332,10 @@ namespace Unity.XR.PXR
                 cameraOrigin = FindComponentsInScene<XROrigin>().Where(component => component.isActiveAndEnabled).ToList()[0].gameObject;
                 cameraOrigin.name = PXR_Utils.BuildingBlock + " XR Origin (XR Rig)";
                 Undo.RegisterCreatedObjectUndo(cameraOrigin, "Create XR Origin");
+                cameraOrigin.transform.localPosition = Vector3.zero;
+                cameraOrigin.transform.localRotation = Quaternion.identity;
+                cameraOrigin.transform.localScale = Vector3.one;
+                cameraOrigin.SetActive(true);
             }
             else
             {
@@ -281,6 +370,7 @@ namespace Unity.XR.PXR
         public static Camera GetMainCameraForXROrigin()
         {
             Camera mainCamera = Camera.main;
+
             List<Camera> components = FindComponentsInScene<Camera>().Where(component => (component.enabled && component.gameObject.CompareTag("MainCamera"))).ToList();
             for (int i = 0; i < components.Count; i++)
             {
@@ -297,7 +387,7 @@ namespace Unity.XR.PXR
 
         public static void UpdateSamples(string packageName, string sampleDisplayName)
         {
-            Debug.LogError($"Need to import {sampleDisplayName} first!");
+            Debug.LogError($"Need to import {sampleDisplayName} first! Once completed, click this Block again.");
             bool result = EditorUtility.DisplayDialog($"{sampleDisplayName}", $"It's detected that {sampleDisplayName} has not been imported in the current project. You can choose OK to auto-import it, or Cancel and install it manually. ", "OK", "Cancel");
             if (result)
             {
@@ -343,6 +433,28 @@ namespace Unity.XR.PXR
             {
                 Debug.LogError($"Package installation error: {xrHandsPackageAddRequest.Error}: {xrHandsPackageAddRequest.Error.message}");
             }
+        }
+
+        public static string minUnityVersion = "2020.3.21f1";
+        public static int CompareUnityVersions(string versionA, string versionB)
+        {
+            string[] partsA = versionA.Split(new char[] { '.', 'f' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] partsB = versionB.Split(new char[] { '.', 'f' }, StringSplitOptions.RemoveEmptyEntries);
+
+            int maxLength = Math.Max(partsA.Length, partsB.Length);
+
+            for (int i = 0; i < maxLength; i++)
+            {
+                int partA = i < partsA.Length ? int.Parse(partsA[i]) : 0;
+                int partB = i < partsB.Length ? int.Parse(partsB[i]) : 0;
+
+                if (partA > partB)
+                    return 1; 
+                if (partA < partB)
+                    return -1;
+            }
+
+            return 0; 
         }
 
     }

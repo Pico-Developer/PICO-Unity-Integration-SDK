@@ -1,5 +1,5 @@
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
 using Unity.XR.PXR;
-#if AR_FOUNDATION
 using System;
 using Unity.Collections;
 using UnityEngine;
@@ -97,7 +97,13 @@ public class PXR_FaceSubsystem : XRFaceSubsystem
     static void RegisterDescriptor()
     {
         PLog.i(k_SubsystemId, "RegisterDescriptor");
+#if AR_FOUNDATION_5
         var descriptorParams = new FaceSubsystemParams
+#endif
+
+#if AR_FOUNDATION_6
+        var descriptorParams = new XRFaceSubsystemDescriptor.Cinfo
+#endif
         {
             supportsFacePose = false,
             supportsFaceMeshVerticesAndIndices = true,
@@ -108,7 +114,13 @@ public class PXR_FaceSubsystem : XRFaceSubsystem
             subsystemTypeOverride = typeof(PXR_FaceSubsystem)
         };
 
+#if AR_FOUNDATION_5
         XRFaceSubsystemDescriptor.Create(descriptorParams);
+#endif
+
+#if AR_FOUNDATION_6
+        XRFaceSubsystemDescriptor.Register(descriptorParams);
+#endif
     }
 }
 #endif

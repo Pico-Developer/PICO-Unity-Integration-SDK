@@ -1,4 +1,4 @@
-﻿#if AR_FOUNDATION
+﻿#if AR_FOUNDATION_5 || AR_FOUNDATION_6
 using Unity.XR.PXR;
 using UnityEngine;
 using UnityEngine.XR.ARSubsystems;
@@ -56,7 +56,13 @@ public class PXR_CameraSubsystem : XRCameraSubsystem
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void RegisterDescriptor()
     {
+#if AR_FOUNDATION_5
         var cameraSubsystemCinfo = new XRCameraSubsystemCinfo
+#endif
+
+#if AR_FOUNDATION_6
+        var cameraSubsystemCinfo = new XRCameraSubsystemDescriptor.Cinfo
+#endif
         {
             id = k_SubsystemId,
             providerType = typeof(CameraProvider),
@@ -78,10 +84,16 @@ public class PXR_CameraSubsystem : XRCameraSubsystem
             supportsCameraGrain = false,
         };
 
+#if AR_FOUNDATION_5
         if (!XRCameraSubsystem.Register(cameraSubsystemCinfo))
         {
             PLog.e(k_SubsystemId, $"Failed to register the {k_SubsystemId} subsystem.");
         }
+#endif
+
+#if AR_FOUNDATION_6
+        XRCameraSubsystemDescriptor.Register(cameraSubsystemCinfo);
+#endif
     }
 }
 #endif

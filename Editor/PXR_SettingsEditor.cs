@@ -15,7 +15,8 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using UnityEngine.SceneManagement;
-#if AR_FOUNDATION
+using UnityEngine.Rendering;
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
 using UnityEngine.XR.ARFoundation;
 #endif
 
@@ -73,10 +74,37 @@ namespace Unity.XR.PXR.Editor
                 EditorGUILayout.PropertyField(stereoRenderingModeAndroid, guiStereoRenderingMode);
                 EditorGUILayout.PropertyField(systemDisplayFrequency, guiDisplayFrequency);
                 EditorGUILayout.PropertyField(optimizeBufferDiscards, guiOptimizeBuffer);
-                EditorGUILayout.PropertyField(serializedObject.FindProperty("enableAppSpaceWarp"), new GUIContent("Application SpaceWarp"));
+
+                bool aswDiabled = false;
+#if !UNITY_2021_1_OR_NEWER
+                aswDiabled = true;
+#endif
+                if (GraphicsDeviceType.OpenGLES3 == PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget)[0])
+                {
+                    GUI.enabled = false;
+                    serializedObject.FindProperty("enableAppSpaceWarp").boolValue = false;
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("enableAppSpaceWarp"), new GUIContent("Application SpaceWarp", "Set Graphics API to Vulkan."));
+                }else if (aswDiabled)
+                {
+                    GUI.enabled = false;
+                    serializedObject.FindProperty("enableAppSpaceWarp").boolValue = false;
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("enableAppSpaceWarp"), new GUIContent("Application SpaceWarp", "Unity Editor: 2021 LTS or later."));
+                }
+                else if (serializedObject.FindProperty("stereoRenderingModeAndroid").intValue ==0)
+                {
+                    GUI.enabled = false;
+                    serializedObject.FindProperty("enableAppSpaceWarp").boolValue = false;
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("enableAppSpaceWarp"), new GUIContent("Application SpaceWarp", "Set Stereo Rendering Mode to Multiview."));
+                }
+                else
+                {
+                    EditorGUILayout.PropertyField(serializedObject.FindProperty("enableAppSpaceWarp"), new GUIContent("Application SpaceWarp"));
+                }
+                GUI.enabled = true;
+
                 EditorGUILayout.PropertyField(systemSplashScreen, guiSystemSplashScreen);
 
-#if AR_FOUNDATION
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
                 PXR_ProjectSetting projectConfig = PXR_ProjectSetting.GetProjectConfig();
                 var guiContent = new GUIContent();
                 guiContent.text = "AR Foundation";

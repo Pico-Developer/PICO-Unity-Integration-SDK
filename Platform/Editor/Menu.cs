@@ -17,7 +17,7 @@ namespace Pico.Platform.Editor
 {
     public class Menu
     {
-        [MenuItem("PXR_SDK/Platform Settings")]
+        [MenuItem("PICO/Platform/Platform Settings")]
         public static void ShowNewConfig()
         {
             PicoSettings window = ScriptableObject.CreateInstance(typeof(PicoSettings)) as PicoSettings;
@@ -26,7 +26,7 @@ namespace Pico.Platform.Editor
             window.ShowUtility();
         }
 
-        [MenuItem("PXR_SDK/PC Debug Settings")]
+        [MenuItem("PICO/Platform/PC Debug Settings")]
         public static void EditPcConfig()
         {
             var obj = PcConfigEditor.load();

@@ -39,7 +39,7 @@ namespace Unity.XR.PXR
             }
             else
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     var providerHandle = PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(type);
                     var startResult = PXR_Plugin.MixedReality.UPxr_StartSenseDataProviderAsync(providerHandle, out var future);
@@ -67,6 +67,8 @@ namespace Unity.XR.PXR
                             {
                                 return pollResult;
                             }
+
+                            await Task.Delay(11,token);
                         }
                     }
                     else
@@ -111,6 +113,10 @@ namespace Unity.XR.PXR
             }
             else
             {
+                if (type == PxrSenseDataProviderType.SceneCapture)
+                {
+                    PXR_Plugin.MixedReality.SceneAnchorData.Clear();
+                }
                 var providerHandle = PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(type);
                 var stopResult = PXR_Plugin.MixedReality.UPxr_StopSenseDataProvide(providerHandle);
                 return stopResult;
@@ -151,7 +157,7 @@ namespace Unity.XR.PXR
             }
             else
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     var createResult = PXR_Plugin.MixedReality.UPxr_CreateSpatialAnchorAsync(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), position, rotation, out var future);
                     if (createResult == PxrResult.SUCCESS)
@@ -182,6 +188,8 @@ namespace Unity.XR.PXR
                             {
                                 return (pollResult, ulong.MinValue, Guid.Empty);
                             }
+
+                            await Task.Delay(11,token);
                         }
                     }
                     else
@@ -226,7 +234,7 @@ namespace Unity.XR.PXR
             }
             else
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     var persistResult = PXR_Plugin.MixedReality.UPxr_PersistSpatialAnchorAsync(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), anchorHandle, out var future);
                     if (persistResult == PxrResult.SUCCESS)
@@ -253,6 +261,8 @@ namespace Unity.XR.PXR
                             {
                                 return pollResult;
                             }
+
+                            await Task.Delay(11,token);
                         }
                     }
                     else
@@ -297,7 +307,7 @@ namespace Unity.XR.PXR
             }
             else
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     var unPersistResult = PXR_Plugin.MixedReality.UPxr_UnPersistSpatialAnchorAsync(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), anchorHandle, out var future);
                     if (unPersistResult == PxrResult.SUCCESS)
@@ -324,6 +334,8 @@ namespace Unity.XR.PXR
                             {
                                 return pollResult;
                             }
+
+                            await Task.Delay(11,token);
                         }
                     }
                     else
@@ -470,7 +482,7 @@ namespace Unity.XR.PXR
             }
             else
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     if (uuids == null)
                     {
@@ -526,11 +538,132 @@ namespace Unity.XR.PXR
                             {
                                 return (pollResult, new List<ulong>());
                             }
+
+                            await Task.Delay(11,token);
                         }
                     }
                     else
                     {
                         return (queryResult, new List<ulong>());
+                    }
+                }, token);
+            }
+        }
+
+        public static async Task<(PxrResult result, List<GameObject> spatialAnchorObjects)> QuerySpatialAnchorObjectsAsync(Guid[] uuids = null, CancellationToken token = default)
+        {
+            if (PXR_Plugin.MixedReality.UPxr_UseMRLegacyApi())
+            {
+                var result = LoadAnchorEntityByUuidFilter(out var taskId, uuids);
+                if (result == PxrResult.SUCCESS)
+                {
+                    var tcs = new TaskCompletionSource<(PxrResult result, List<GameObject> spatialAnchors)>();
+
+                    void Handler(PxrEventAnchorEntityLoaded entityLoaded)
+                    {
+                        PXR_Manager.AnchorEntityLoaded -= Handler;
+
+                        if (entityLoaded.result == PxrResult.SUCCESS && entityLoaded.count > 0)
+                        {
+                            GetAnchorEntityLoadResults(entityLoaded.taskId, entityLoaded.count, out var loadedAnchors);
+                            var spatialAnchorList = new List<GameObject>();
+                            foreach (var anchor in loadedAnchors)
+                            {
+                                var anchorObject = new GameObject($"Anchor_{anchor.Key}");
+                                var spatialAnchor = anchorObject.AddComponent<PXR_SpatialAnchor>();
+                                spatialAnchor.Created = true;
+                                spatialAnchor.anchorHandle = anchor.Key;
+                                spatialAnchor.anchorUuid = anchor.Value;
+                                spatialAnchorList.Add(anchorObject);
+                            }
+                            tcs.SetResult((entityLoaded.result, spatialAnchorList));
+                        }
+                        else
+                        {
+                            tcs.SetResult((entityLoaded.result, new List<GameObject>()));
+                        }
+                    }
+
+                    PXR_Manager.AnchorEntityLoaded += Handler;
+
+                    return await tcs.Task;
+                }
+                else
+                {
+                    return (result, new List<GameObject>());
+                }
+            }
+            else
+            {
+                return await Task.Run(async () =>
+                {
+                    if (uuids == null)
+                    {
+                        uuids = Array.Empty<Guid>();
+                    }
+                    var queryResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataByUuidAsync(uuids, out var future);
+                    if (queryResult == PxrResult.SUCCESS)
+                    {
+                        while (true)
+                        {
+                            var pollResult = PXR_Plugin.MixedReality.UPxr_PollFuture(future, out var futureState);
+                            if (pollResult == PxrResult.SUCCESS)
+                            {
+                                if (futureState == PxrFutureState.Ready)
+                                {
+                                    var completeResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataComplete(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), future, out var completion);
+                                    if (completeResult == PxrResult.SUCCESS)
+                                    {
+                                        if (completion.futureResult == PxrResult.SUCCESS)
+                                        {
+                                            var getResult = PXR_Plugin.MixedReality.UPxr_GetQueriedSenseData(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SpatialAnchor), completion.snapshotHandle, out var entityInfos);
+                                            if (getResult == PxrResult.SUCCESS)
+                                            {
+                                                var spatialAnchorList = new List<GameObject>();
+                                                foreach (var e in entityInfos)
+                                                {
+                                                    var retrieveResult = PXR_Plugin.MixedReality.UPxr_RetrieveSpatialEntityAnchor(completion.snapshotHandle, e.spatialEntity, out var anchorHandle);
+                                                    if (retrieveResult == PxrResult.SUCCESS)
+                                                    {
+                                                        var anchorObject = new GameObject($"Anchor_{anchorHandle}");
+                                                        PXR_Plugin.MixedReality.UPxr_GetAnchorUuid(anchorHandle,out var uuid);
+                                                        var spatialAnchor = anchorObject.AddComponent<PXR_SpatialAnchor>();
+                                                        spatialAnchor.Created = true;
+                                                        spatialAnchor.anchorHandle = anchorHandle;
+                                                        spatialAnchor.anchorUuid = uuid;
+                                                        spatialAnchorList.Add(anchorObject);
+                                                    }
+                                                }
+                                                PXR_Plugin.MixedReality.UPxr_DestroySenseDataQueryResult(completion.snapshotHandle);
+                                                return (getResult, spatialAnchorList);
+                                            }
+                                            else
+                                            {
+                                                return (getResult, new List<GameObject>());
+                                            }
+                                        }
+                                        else
+                                        {
+                                            return (completion.futureResult, new List<GameObject>());
+                                        }
+                                    }
+                                    else
+                                    {
+                                        return (completeResult, new List<GameObject>());
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                return (pollResult, new List<GameObject>());
+                            }
+
+                            await Task.Delay(11, token);
+                        }
+                    }
+                    else
+                    {
+                        return (queryResult, new List<GameObject>());
                     }
                 }, token);
             }
@@ -568,7 +701,7 @@ namespace Unity.XR.PXR
             }
             else
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     var startResult = PXR_Plugin.MixedReality.UPxr_StartSceneCaptureAsync(out var future);
                     if (startResult == PxrResult.SUCCESS)
@@ -595,6 +728,8 @@ namespace Unity.XR.PXR
                             {
                                 return pollResult;
                             }
+
+                            await Task.Delay(11,token);
                         }
                     }
                     else
@@ -660,7 +795,7 @@ namespace Unity.XR.PXR
             }
             else
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     if (labels == null)
                     {
@@ -686,8 +821,6 @@ namespace Unity.XR.PXR
                                             if (getResult == PxrResult.SUCCESS)
                                             {
                                                 var anchorHandleList = new List<ulong>();
-                                                PXR_Plugin.MixedReality.SceneAnchorData.Clear();
-                                                PXR_Plugin.MixedReality.SceneAnchorData = new Dictionary<ulong, PxrSceneComponentData>();
                                                 foreach (var e in entityInfos)
                                                 {
                                                     byte[] byteArray = new byte[16];
@@ -761,11 +894,19 @@ namespace Unity.XR.PXR
                                                                 }
                                                         }
                                                     }
+                                                    if (PXR_Plugin.MixedReality.SceneAnchorData.ContainsKey(e.spatialEntity))
+                                                    {
+                                                        PXR_Plugin.MixedReality.SceneAnchorData[e.spatialEntity] = sceneAnchor;
+                                                    }
+                                                    else
+                                                    {
 #if UNITY_2021_1_OR_NEWER
-                                                    PXR_Plugin.MixedReality.SceneAnchorData.TryAdd(e.spatialEntity, sceneAnchor);
+                                                        PXR_Plugin.MixedReality.SceneAnchorData.TryAdd(e.spatialEntity, sceneAnchor);
 #else
-                                                    PXR_Plugin.MixedReality.SceneAnchorData.Add(e.spatialEntity, sceneAnchor);
+                                                        PXR_Plugin.MixedReality.SceneAnchorData.Add(e.spatialEntity, sceneAnchor);
 #endif
+                                                    }
+
                                                 }
                                                 PXR_Plugin.MixedReality.UPxr_DestroySenseDataQueryResult(completion.snapshotHandle);
                                                 return (getResult, anchorHandleList);
@@ -790,6 +931,8 @@ namespace Unity.XR.PXR
                             {
                                 return (pollResult, new List<ulong>());
                             }
+
+                            await Task.Delay(11,token);
                         }
                     }
                     else
@@ -842,7 +985,7 @@ namespace Unity.XR.PXR
             }
             else
             {
-                return await Task.Run(() =>
+                return await Task.Run(async () =>
                 {
                     var queryResult = PXR_Plugin.MixedReality.UPxr_QuerySenseDataBySemanticAsync(Array.Empty<PxrSemanticLabel>(), out var future);
                     if (queryResult == PxrResult.SUCCESS)
@@ -863,8 +1006,6 @@ namespace Unity.XR.PXR
                                             if (getResult == PxrResult.SUCCESS)
                                             {
                                                 var anchorDictionary = new Dictionary<ulong, Guid>();
-                                                PXR_Plugin.MixedReality.SceneAnchorData.Clear();
-                                                PXR_Plugin.MixedReality.SceneAnchorData = new Dictionary<ulong, PxrSceneComponentData>();
                                                 foreach (var e in entityInfos)
                                                 {
                                                     byte[] byteArray = new byte[16];
@@ -935,11 +1076,18 @@ namespace Unity.XR.PXR
                                                                 }
                                                         }
                                                     }
+                                                    if (PXR_Plugin.MixedReality.SceneAnchorData.ContainsKey(e.spatialEntity))
+                                                    {
+                                                        PXR_Plugin.MixedReality.SceneAnchorData[e.spatialEntity] = sceneAnchor;
+                                                    }
+                                                    else
+                                                    {
 #if UNITY_2021_1_OR_NEWER
-                                                    PXR_Plugin.MixedReality.SceneAnchorData.TryAdd(e.spatialEntity, sceneAnchor);
+                                                        PXR_Plugin.MixedReality.SceneAnchorData.TryAdd(e.spatialEntity, sceneAnchor);
 #else
-                                                    PXR_Plugin.MixedReality.SceneAnchorData.Add(e.spatialEntity, sceneAnchor);
+                                                        PXR_Plugin.MixedReality.SceneAnchorData.Add(e.spatialEntity, sceneAnchor);
 #endif
+                                                    }
                                                 }
                                                 PXR_Plugin.MixedReality.UPxr_DestroySenseDataQueryResult(completion.snapshotHandle);
                                                 return (getResult, anchorDictionary);
@@ -964,6 +1112,8 @@ namespace Unity.XR.PXR
                             {
                                 return (pollResult, new Dictionary<ulong, Guid>());
                             }
+
+                            await Task.Delay(11,token);
                         }
                     }
                     else
@@ -1184,7 +1334,7 @@ namespace Unity.XR.PXR
 
         public static async Task<(PxrResult result, List<PxrSpatialMeshInfo> meshInfos)> QueryMeshAnchorAsync(CancellationToken token = default)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 PxrSenseDataQueryInfo info = new PxrSenseDataQueryInfo()
                 {
@@ -1309,6 +1459,8 @@ namespace Unity.XR.PXR
                         {
                             return (pollResult, new List<PxrSpatialMeshInfo>());
                         }
+
+                        await Task.Delay(11,token);
                     }
                 }
                 else
@@ -1326,7 +1478,7 @@ namespace Unity.XR.PXR
         /// <returns>Refer to the `PxrResult` enumeration for details. In addition, the handle and UUID of the shared spatial anchor are returned.</returns>
         public static async Task<(PxrResult result, Guid uuid)> UploadSpatialAnchorAsync(ulong anchorHandle, CancellationToken token = default)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 var startResult = PXR_Plugin.MixedReality.UPxr_ShareSpatialAnchorAsync(anchorHandle, out var future);
                 if (startResult == PxrResult.SUCCESS)
@@ -1368,6 +1520,8 @@ namespace Unity.XR.PXR
                         {
                             return (pollResult, Guid.Empty);
                         }
+
+                        await Task.Delay(11,token);
                     }
                 }
                 else
@@ -1385,7 +1539,7 @@ namespace Unity.XR.PXR
         /// <returns>Refer to the `PxrResult` enumeration for details. In addition, the handle and UUID of the downloaded shared spatial anchor are returned.</returns>
         public static async Task<PxrResult> DownloadSharedSpatialAnchorAsync(Guid uuid, CancellationToken token = default)
         {
-            return await Task.Run(() =>
+            return await Task.Run(async () =>
             {
                 var startResult = PXR_Plugin.MixedReality.UPxr_DownloadSharedSpatialAnchorsAsync(uuid, out var future);
                 if (startResult == PxrResult.SUCCESS)
@@ -1412,6 +1566,8 @@ namespace Unity.XR.PXR
                         {
                             return pollResult;
                         }
+
+                        await Task.Delay(11,token);
                     }
                 }
                 else

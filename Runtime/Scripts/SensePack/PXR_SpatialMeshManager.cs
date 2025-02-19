@@ -1,42 +1,64 @@
+﻿/*******************************************************************************
+Copyright © 2015-2022 PICO Technology Co., Ltd.All rights reserved.  
+
+NOTICE：All information contained herein is, and remains the property of 
+PICO Technology Co., Ltd. The intellectual and technical concepts 
+contained herein are proprietary to PICO Technology Co., Ltd. and may be 
+covered by patents, patents in process, and are protected by trade secret or 
+copyright law. Dissemination of this information or reproduction of this 
+material is strictly forbidden unless prior written permission is obtained from
+PICO Technology Co., Ltd. 
+*******************************************************************************/
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using UnityEngine.XR;
 using UnityEngine.XR.Management;
 
 namespace Unity.XR.PXR
 {
+    
     [DisallowMultipleComponent]
     public class PXR_SpatialMeshManager : MonoBehaviour
     {
         public GameObject meshPrefab;
         private Dictionary<Guid, GameObject> meshIDToGameobject;
         private Dictionary<Guid, PxrSpatialMeshInfo> spatialMeshNeedingDraw;
+        private Dictionary<PxrSemanticLabel, Color> colorMappings;
         private Mesh mesh;
         private XRMeshSubsystem subsystem;
         private int objectPoolMaxSize = 200;
         private Queue<GameObject> meshObjectsPool;
         private const float frameCount = 15.0f;
-        
 
         /// <summary>
         /// The drawing of the new spatial mesh is complete.
         /// </summary>
         public static Action<Guid, GameObject> MeshAdded;
+        public UnityEvent<Guid, GameObject> OnSpatialMeshAdded;
         
         /// <summary>
         /// The drawing the updated spatial mesh is complete.
         /// </summary>
         public static Action<Guid, GameObject> MeshUpdated;
+        public UnityEvent<Guid, GameObject> OnSpatialMeshUpdated;
         
         /// <summary>
         /// The deletion of the disappeared spatial mesh is complete.
         /// </summary>
         public static Action<Guid> MeshRemoved;
+        public UnityEvent<Guid> OnSpatialMeshRemoved;
+
+        void Awake()
+        {
+            InitMeshColor();
+        }
 
         void Start()
         {
@@ -117,6 +139,7 @@ namespace Unity.XR.PXR
                         case MeshChangeState.Removed:
                             {
                                 MeshRemoved?.Invoke(meshInfos[i].uuid);
+                                OnSpatialMeshRemoved?.Invoke(meshInfos[i].uuid);
 
                                 if (meshIDToGameobject.TryGetValue(meshInfos[i].uuid, out var go))
                                 {
@@ -180,11 +203,13 @@ namespace Unity.XR.PXR
                 case MeshChangeState.Added:
                     {
                         MeshAdded?.Invoke(block.uuid, meshGameObject);
+                        OnSpatialMeshAdded?.Invoke(block.uuid, meshGameObject);
                     }
                     break;
                 case MeshChangeState.Updated:
                     {
                         MeshUpdated?.Invoke(block.uuid, meshGameObject);
+                        OnSpatialMeshUpdated?.Invoke(block.uuid, meshGameObject);
                     }
                     break;
                 default:
@@ -212,45 +237,72 @@ namespace Unity.XR.PXR
             return go;
         }
 
+        private void InitMeshColor()
+        {
+            PXR_SpatialMeshColorSetting colorSetting = PXR_SpatialMeshColorSetting.GetSpatialMeshColorSetting();
+            PxrSemanticLabel[] labels = (PxrSemanticLabel[])Enum.GetValues(typeof(PxrSemanticLabel));
+            colorMappings = new Dictionary<PxrSemanticLabel, Color>();
+            for (int i = 0; i < labels.Length; i++)
+            {
+                var label = labels[i];
+                var color = colorSetting.colorLists[i];
+                colorMappings.Add(label,color);
+            }
+        }
+
         private Color GetMeshColorBySemanticLabel(PxrSemanticLabel label)
         {
-            return label switch
+            if (colorMappings != null && colorMappings.Count > 0)
             {
-                PxrSemanticLabel.Unknown => Color.white,
-                PxrSemanticLabel.Floor => Color.red,
-                PxrSemanticLabel.Ceiling => Color.green,
-                PxrSemanticLabel.Wall => Color.blue,
-                PxrSemanticLabel.Door => Color.cyan,
-                PxrSemanticLabel.Window => Color.magenta,
-                PxrSemanticLabel.Opening => Color.yellow,
-                PxrSemanticLabel.Table => Color.magenta,
-                PxrSemanticLabel.Sofa => Color.gray,
-                //Dark Red
-                PxrSemanticLabel.Chair => new Color(0.5f, 0f, 0f),
-                //Dark Green
-                PxrSemanticLabel.Human => new Color(0f, 0.5f, 0f),
-                //Dark Blue
-                PxrSemanticLabel.Curtain => new Color(0f, 0f, 0.5f),
-                //Orange
-                PxrSemanticLabel.Cabinet => new Color(1f, 0.5f, 0f),
-                //Pink
-                PxrSemanticLabel.Bed => new Color(1f, 0.75f, 0.8f),
-                //Purple
-                PxrSemanticLabel.Plant => new Color(0.5f, 0f, 0.5f),
-                //Brown
-                PxrSemanticLabel.Screen => new Color(0.5f, 0.25f, 0f),
-                //Olive Green
-                PxrSemanticLabel.Refrigerator => new Color(0.5f, 0.5f, 0f),
-                //Gold
-                PxrSemanticLabel.WashingMachine => new Color(1f, 0.84f, 0f),
-                //Silver
-                PxrSemanticLabel.AirConditioner => new Color(0.75f, 0.75f, 0.75f),
-                //Mint Green
-                PxrSemanticLabel.Lamp => new Color(0.5f, 1f, 0.5f),
-                //Dark Purple
-                PxrSemanticLabel.WallArt => new Color(0.5f, 0f, 0.25f),
-                _ => Color.white,
-            };
+                if (colorMappings.ContainsKey(label))
+                {
+                    return colorMappings[label];
+                }
+                else
+                {
+                    return Color.white;
+                }
+            }
+            else
+            {
+                return label switch
+                {
+                    PxrSemanticLabel.Unknown => Color.white,
+                    PxrSemanticLabel.Floor => Color.grey,
+                    PxrSemanticLabel.Ceiling => Color.grey,
+                    PxrSemanticLabel.Wall => Color.blue,
+                    PxrSemanticLabel.Door => Color.cyan,
+                    PxrSemanticLabel.Window => Color.magenta,
+                    PxrSemanticLabel.Opening => Color.yellow,
+                    PxrSemanticLabel.Table => Color.red,
+                    PxrSemanticLabel.Sofa => Color.green,
+                    //Dark Red
+                    PxrSemanticLabel.Chair => new Color(0.5f, 0f, 0f),
+                    //Dark Green
+                    PxrSemanticLabel.Human => new Color(0f, 0.5f, 0f),
+                    //Dark Blue
+                    PxrSemanticLabel.Curtain => new Color(0f, 0f, 0.5f),
+                    //Orange
+                    PxrSemanticLabel.Cabinet => new Color(1f, 0.5f, 0f),
+                    //Pink
+                    PxrSemanticLabel.Bed => new Color(1f, 0.75f, 0.8f),
+                    //Purple
+                    PxrSemanticLabel.Plant => new Color(0.5f, 0f, 0.5f),
+                    //Brown
+                    PxrSemanticLabel.Screen => new Color(0.5f, 0.25f, 0f),
+                    //Olive Green
+                    PxrSemanticLabel.Refrigerator => new Color(0.5f, 0.5f, 0f),
+                    //Gold
+                    PxrSemanticLabel.WashingMachine => new Color(1f, 0.84f, 0f),
+                    //Silver
+                    PxrSemanticLabel.AirConditioner => new Color(0.75f, 0.75f, 0.75f),
+                    //Mint Green
+                    PxrSemanticLabel.Lamp => new Color(0.5f, 1f, 0.5f),
+                    //Dark Purple
+                    PxrSemanticLabel.WallArt => new Color(0.5f, 0f, 0.25f),
+                    _ => Color.white,
+                };
+            }
         }
     }
 

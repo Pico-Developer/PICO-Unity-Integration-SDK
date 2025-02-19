@@ -46,12 +46,16 @@ namespace Unity.XR.PXR
         public bool qualitySharpening;
         public bool fixedFoveatedSharpening;
         public bool selfAdaptiveSharpening;
-
+        public HandTrackingSupport handTrackingSupportType;
+        #region Project Validation
         public bool arFoundation;
         public bool mrSafeguard;
         public bool enableRecommendMSAA;
         public bool recommendSubsamping;
         public bool recommendMSAA;
+        public bool validationFFREnabled;
+        public bool validationETFREnabled;
+        #endregion
 
         public static PXR_ProjectSetting GetProjectConfig()
         {
@@ -62,6 +66,7 @@ namespace Unity.XR.PXR
                 projectConfig = CreateInstance<PXR_ProjectSetting>();
                 projectConfig.useContentProtect = false;
                 projectConfig.handTracking = false;
+                projectConfig.handTrackingSupportType = HandTrackingSupport.ControllersAndHands;
                 projectConfig.adaptiveHand = false;
                 projectConfig.highFrequencyHand = false;
                 projectConfig.openMRC = true;
@@ -91,6 +96,8 @@ namespace Unity.XR.PXR
                 projectConfig.enableRecommendMSAA = false;
                 projectConfig.recommendSubsamping = false;
                 projectConfig.recommendMSAA = false;
+                projectConfig.validationFFREnabled = false;
+                projectConfig.validationETFREnabled = false;
                 projectConfig.meshLod = PxrMeshLod.Low;
 
                 string path = Application.dataPath + "/Resources";

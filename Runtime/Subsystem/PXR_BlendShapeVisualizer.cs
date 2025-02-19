@@ -1,4 +1,4 @@
-﻿#if AR_FOUNDATION
+﻿#if AR_FOUNDATION_5 || AR_FOUNDATION_6
 using System.Collections.Generic;
 using UnityEngine;
 

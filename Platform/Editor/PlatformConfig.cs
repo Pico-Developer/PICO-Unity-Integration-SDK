@@ -189,7 +189,7 @@ namespace Pico.Platform.Editor
                 new ConfigIsLandscapeLeft(),
                 new ConfigMinApiLevel(),
             };
-            this.titleContent = new GUIContent("PICO Platform Settings");
+            this.titleContent = new GUIContent("Platform Settings");
             language = Language.English;
             if (Application.systemLanguage == SystemLanguage.Chinese || Application.systemLanguage == SystemLanguage.ChineseSimplified || Application.systemLanguage == SystemLanguage.ChineseTraditional)
             {

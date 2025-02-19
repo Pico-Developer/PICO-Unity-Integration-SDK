@@ -16,7 +16,7 @@ using UnityEditor.PackageManager.UI;
 #if URP
 using UnityEngine.Rendering.Universal;
 #endif
-#if AR_FOUNDATION
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
 using UnityEngine.XR.ARFoundation;
 #endif
 namespace Unity.XR.PXR
@@ -217,8 +217,8 @@ namespace Unity.XR.PXR
                     Message = $"'PXR_Manager' needs to be added in the scene!",
                     IsRuleEnabled = IsPXRPluginEnabled,
                     CheckPredicate = () =>
-                    {                        
-#if AR_FOUNDATION
+                    {   
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
                         if (PXR_ProjectSetting.GetProjectConfig().arFoundation)
                         {
                             List<ARCameraManager> components = FindComponentsInScene<ARCameraManager>().Where(component => (component.enabled && component.gameObject.CompareTag("MainCamera"))).ToList();
@@ -393,6 +393,46 @@ namespace Unity.XR.PXR
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
+                    Message = "When using Sharpening, Subsampling needs to be disabled.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().normalSharpening||PXR_ProjectSetting.GetProjectConfig().qualitySharpening)
+                        {
+                            return !PXR_ProjectSetting.GetProjectConfig().enableSubsampled;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "Open PXR_Manager > Subsampling: disabled.",
+                    FixIt = () =>
+                    {
+                        PXR_ProjectSetting.GetProjectConfig().enableSubsampled = false;
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When using Super Resolution, Subsampling needs to be disabled.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().superResolution)
+                        {
+                            return !PXR_ProjectSetting.GetProjectConfig().enableSubsampled;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "Open PXR_Manager > Subsampling: disabled.",
+                    FixIt = () =>
+                    {
+                        PXR_ProjectSetting.GetProjectConfig().enableSubsampled = false;
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
                     Message = "When using MR features, need to set ARM64 architecture and IL2CPP scripting.",
                     IsRuleEnabled = IsPXRPluginEnabled,
                     CheckPredicate = () =>
@@ -453,13 +493,14 @@ namespace Unity.XR.PXR
                         }
                     },
                     Error = true
-                },                
+                },
 #if URP
 #if UNITY_2021_3_OR_NEWER || UNITY_2022_3_OR_NEWER
             new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = "When using URP, it is necessary to set Quality > Render Pipeline Asset.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
                     CheckPredicate = () =>
                     {
                         if (GraphicsSettings.currentRenderPipeline!= null)
@@ -512,28 +553,154 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "When using URP, HDR needs to be disabled.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
                     CheckPredicate = () =>
                     {
-                        if (QualitySettings.renderPipeline != null && GraphicsSettings.currentRenderPipeline!= null)
+                        bool isHDR = false;
+                        if (QualitySettings.renderPipeline != null)
                         {
-                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.renderPipelineAsset;
-                            return !universalRenderPipelineAsset.supportsHDR;
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)QualitySettings.renderPipeline;
+                            isHDR = universalRenderPipelineAsset.supportsHDR;
+
+                        }else if(GraphicsSettings.currentRenderPipeline!= null)
+                        {
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+                            isHDR = universalRenderPipelineAsset.supportsHDR;
                         }
-                        return true;
+                        return !isHDR;
                     },
                     FixItMessage = "Open Universal Render Pipeline Asset > Quality > disable HDR.",
                     FixIt = () =>
                     {
-                        UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.renderPipelineAsset;
-                        universalRenderPipelineAsset.supportsHDR = false;
+                        if (QualitySettings.renderPipeline != null)
+                        {
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)QualitySettings.renderPipeline;
+                            universalRenderPipelineAsset.supportsHDR = false;
+
+                        }else if(GraphicsSettings.currentRenderPipeline!= null)
+                        {
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+                            universalRenderPipelineAsset.supportsHDR = false;
+                        }
                     },
                     Error = true
                 },
-#endif                
+            new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When using URP and VST, Post Processing needs to be disabled.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (QualitySettings.renderPipeline != null && GraphicsSettings.currentRenderPipeline!= null)
+                        {
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+
+                            Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
+                            if(mainCamera.clearFlags == CameraClearFlags.SolidColor && mainCamera.backgroundColor == new Color(0, 0, 0, 0))
+                            {
+                                bool isPostProcessingEnabled = mainCamera.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing;
+                                return !isPostProcessingEnabled;
+                            }
+
+                            return true;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "Scene > MainCamera > Post Processing > Disable.",
+                    FixIt = () =>
+                    {
+                        if (QualitySettings.renderPipeline != null && GraphicsSettings.currentRenderPipeline!= null)
+                        {
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+
+                            Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
+                            if(mainCamera.clearFlags == CameraClearFlags.SolidColor && mainCamera.backgroundColor == new Color(0, 0, 0, 0))
+                            {
+                                mainCamera.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing = false;
+                            }
+                        }
+                    },
+                    Error = true
+                },
+            new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When using URP, The ETFR/FFR function will fail.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        return !PXR_ProjectSetting.GetProjectConfig().validationFFREnabled && !PXR_ProjectSetting.GetProjectConfig().validationETFREnabled;
+                    },
+                    FixItMessage = "You can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it. ",
+                    FixIt = () =>
+                    {
+                         string url = "https://developer.picoxr.com/document/unity/fixed-foveated-rendering/";
+                         Application.OpenURL(url);
+                    },
+                    Error = true
+                },
+#if UNITY_6000_0_OR_NEWER
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When using URP+OpenGLES+MultiPass, The MSAA needs to be disabled.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        var buildTarget = BuildTarget.Android;
+                        if (PlayerSettings.GetUseDefaultGraphicsAPIs(buildTarget))
+                        {
+                            return true;
+                        }
+
+                        if (PlayerSettings.GetGraphicsAPIs(buildTarget)[0] == GraphicsDeviceType.Vulkan)
+                        {
+                            return true;
+                        }
+
+                        if(GetSettings().stereoRenderingModeAndroid == PXR_Settings.StereoRenderingModeAndroid.Multiview)
+                        {
+                            return true;
+                        }
+
+                        int msaaSampleCount = 1;
+                        if (QualitySettings.renderPipeline != null)
+                        {
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)QualitySettings.renderPipeline;
+                            msaaSampleCount = universalRenderPipelineAsset.msaaSampleCount;
+
+                        }else if(GraphicsSettings.currentRenderPipeline!= null)
+                        {
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+                            msaaSampleCount = universalRenderPipelineAsset.msaaSampleCount;
+                        }
+
+                        return msaaSampleCount==1;
+                    },
+                    FixItMessage = "Open Universal Render Pipeline Asset > Quality/Graphics > Anti Aliasing(MSAA) > Disabled.",
+                    FixIt = () =>
+                    {
+                        if (QualitySettings.renderPipeline != null)
+                        {
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)QualitySettings.renderPipeline;
+                            universalRenderPipelineAsset.msaaSampleCount = 1;
+
+                        }else if(GraphicsSettings.currentRenderPipeline!= null)
+                        {
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+                            universalRenderPipelineAsset.msaaSampleCount = 1;
+                        }
+                    },
+                    Error = true
+                },
+#endif
+#endif
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = "Project Keystore needs to be set up.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
                     CheckPredicate = () =>
                     {
                         string keystorePath = PlayerSettings.Android.keystoreName;
@@ -561,6 +728,7 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "Project Key needs to be set up.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
                     CheckPredicate = () =>
                     {
                         string keyaliasName = PlayerSettings.Android.keyaliasName;
@@ -584,6 +752,160 @@ namespace Unity.XR.PXR
                     },
                     Error = true
                 },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "The range of official Unity versions supported by PICO SDK is from 2020.3.21 to Unity 6. ",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+#if UNITY_2020_3_OR_NEWER
+                        string curVersion = Application.unityVersion;
+                        string minVersion = PXR_Utils.minUnityVersion;
+                        int comparisonResult = PXR_Utils.CompareUnityVersions(curVersion, minVersion);
+
+                        if (comparisonResult > 0)
+                        {
+                            return true;
+                        }
+                        else if (comparisonResult < 0)
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+#else
+                        return false;
+#endif
+        },
+                    FixItMessage = "You can Use Unity 2020.3.21 - Unity 6. ",
+                    FixIt = () =>
+                    {
+                        string url = "https://developer.picoxr.com/resources/";
+                        Application.OpenURL(url);
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "Use ARM64 architecture and IL2CPP scripting.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if ((PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARM64) != AndroidArchitecture.None)
+                        {
+                            return PlayerSettings.GetScriptingBackend(recommendedBuildTarget) == ScriptingImplementation.IL2CPP;
+                        }
+                        return false;
+                    },
+                    FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > Android tab and ensure 'Scripting Backend'" +
+                        " is set to 'IL2CPP'. Then under 'Target Architectures' enable 'ARM64'.",
+                    FixIt = () =>
+                    {
+                        PlayerSettings.SetScriptingBackend(recommendedBuildTarget, ScriptingImplementation.IL2CPP);
+                        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "Use ' Late Latching' need Unity 2021.3.19f1+ LTS.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().latelatching)
+                        {
+                            string curVersion = Application.unityVersion;
+                            string minVersion = "2021.3.19f1";
+                            int comparisonResult = PXR_Utils.CompareUnityVersions(curVersion, minVersion);
+
+                            if (comparisonResult > 0)
+                            {
+                                return true;
+                            }
+                            else if (comparisonResult < 0)
+                            {
+                                return false;
+                            }
+                            else
+                            {
+                                return true;
+                            }
+                        }
+                        return true;
+                    },
+                    FixItMessage = "Open PXR_Manager > Late Latching: disabled.",
+                    FixIt = () =>
+                    {
+                        PXR_ProjectSetting.GetProjectConfig().latelatching = false;
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = $"Late latching and composite layers cannot be used simultaneously as they can cause jitter in the composite layer! ",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().latelatching)
+                        {
+                            return FindComponentsInScene<PXR_OverLay>().Where(component => component.isActiveAndEnabled).ToList().Count == 0;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "Open PXR_Manager > Late Latching: disabled.",
+                    FixIt = () =>
+                    {
+                        PXR_ProjectSetting.GetProjectConfig().latelatching = false;
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = $"A single scene supports up to 7 compositor layers!",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        return FindComponentsInScene<PXR_OverLay>().Where(component => component.isActiveAndEnabled).ToList().Count <= 7;
+                    },
+                    FixItMessage = "You can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it. ",
+                    FixIt = () =>
+                    {
+                        string url = "https://developer.picoxr.com/en/document/unity/vr-compositor-layers/";
+                        Application.OpenURL(url);
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When using MRC in Vulkan, ColorSpace should be set to Linear.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().openMRC)
+                        {
+                            var buildTarget = BuildTarget.Android;
+                            if (PlayerSettings.GetUseDefaultGraphicsAPIs(buildTarget) || GraphicsDeviceType.Vulkan == PlayerSettings.GetGraphicsAPIs(buildTarget)[0])
+                            {
+                                return PlayerSettings.colorSpace == ColorSpace.Linear;
+                            }
+                        }
+                        return true;
+                    },
+                    FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > 'Color Space' set to 'Linear'.",
+                    FixIt = () =>
+                    {
+                        PlayerSettings.colorSpace = ColorSpace.Linear;
+                    },
+                    Error = true
+                },
         };
             BuildValidator.AddRules(BuildTargetGroup.Android, androidGlobalRules);
         }
@@ -598,6 +920,18 @@ namespace Unity.XR.PXR
             var managerSettings = generalSettings.AssignedSettings;
 
             return managerSettings != null && managerSettings.activeLoaders.Any(loader => loader is PXR_Loader);
+        }
+
+        static PXR_Settings GetSettings()
+        {
+            PXR_Settings settings = null;
+#if UNITY_EDITOR
+            UnityEditor.EditorBuildSettings.TryGetConfigObject<PXR_Settings>("Unity.XR.PXR.Settings", out settings);
+#endif
+#if UNITY_ANDROID && !UNITY_EDITOR
+            settings = PXR_Settings.settings;
+#endif
+            return settings;
         }
 
         public static List<T> FindComponentsInScene<T>() where T : Component

@@ -61,6 +61,8 @@ namespace Unity.XR.PXR
         static string xrOriginName = $"{PXR_Utils.BuildingBlock} {k_Id} XR Origin (XR Rig)";
         static string controllerLeftName = "Left Controller";
         static string controllerRightName = "Right Controller";
+        static string controllerModelLeftName = $"{PXR_Utils.BuildingBlock} Left Controller";
+        static string controllerModelRightName = $"{PXR_Utils.BuildingBlock} Right Controller";
 
         static void DoInterestingStuff()
         {
@@ -74,104 +76,162 @@ namespace Unity.XR.PXR
             PXR_Utils.xriVersion = xriPackage.version;
             Debug.Log($"XRI Toolkit version = {xriPackage.version}");
 
-            var presetLC = AssetDatabase.LoadAssetAtPath<Preset>(PXR_Utils.XRIDefaultLeftControllerPreset);
-            var presetRC = AssetDatabase.LoadAssetAtPath<Preset>(PXR_Utils.XRIDefaultRightControllerPreset);
             var inputActionAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(PXR_Utils.XRIDefaultInputActions);
-            if (presetLC == null || presetRC == null || inputActionAsset == null)
+#if XRI_TOOLKIT_3
+            if (inputActionAsset == null)
             {
                 PXR_Utils.UpdateSamples(PXR_Utils.xriPackageName, PXR_Utils.xriStarterAssetsSampleName);
             }
             else
             {
                 // Get XROrigin
-                GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
-
-                Transform leftControllerTransform = cameraOrigin.transform.Find("Camera Offset").Find("Left Controller");
-                Transform rightControllerTransform = cameraOrigin.transform.Find("Camera Offset").Find("Right Controller");
-
-                if (leftControllerTransform == null || rightControllerTransform == null)
+                GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROriginXRI300();
+                Transform cameraOffset = cameraOrigin.transform.Find("Camera Offset");
+                if (cameraOffset != null)
                 {
-                    List<ActionBasedController> controllersComponents = PXR_Utils.FindComponentsInScene<ActionBasedController>().Where(component => component.isActiveAndEnabled).ToList();
-                    if (controllersComponents.Count > 1)
+                    Transform leftController = cameraOffset.transform.Find("Left Controller");
+                    Transform rightController = cameraOffset.transform.Find("Right Controller");
+
+                    if (leftController != null)
                     {
-                        leftControllerTransform = controllersComponents[0].transform;
-                        rightControllerTransform = controllersComponents[1].transform;
-                    }
-                    else
-                    {
-                        cameraOrigin.SetActive(false);
-                        if (!EditorApplication.ExecuteMenuItem("GameObject/XR/XR Origin (VR)"))
+                        GameObject oldLeftC = leftController.Find("Left Controller Visual")?.gameObject;
+                        oldLeftC.SetActive(false);
+
+                        GameObject ob = leftController.Find(controllerModelLeftName)?.gameObject;
+                        if (!ob)
                         {
-                            EditorApplication.ExecuteMenuItem("GameObject/XR/XR Origin (Action-based)");
+                            ob = PrefabUtility.LoadPrefabContents(controllerLeftPath);
+                            Undo.RegisterCreatedObjectUndo(ob, "Create controllerLeftPath.");
+                            Undo.SetTransformParent(ob.transform, leftController, true, "Parent to leftController.");
+                            ob.transform.localPosition = Vector3.zero;
+                            ob.transform.localRotation = Quaternion.identity;
+                            ob.transform.localScale = Vector3.one;
+                            ob.name = controllerModelLeftName;
                         }
-                        cameraOrigin = PXR_Utils.FindComponentsInScene<XROrigin>().Where(component => component.isActiveAndEnabled).ToList()[0].gameObject;
-                        leftControllerTransform = cameraOrigin.transform.Find("Camera Offset").Find(controllerLeftName);
-                        rightControllerTransform = cameraOrigin.transform.Find("Camera Offset").Find(controllerRightName);
+                        ob.SetActive(true);
+                    }
+
+                    if (rightController != null)
+                    {
+                        GameObject oldRightC = rightController.Find("Right Controller Visual")?.gameObject;
+                        oldRightC.SetActive(false);
+
+                        GameObject ob = rightController.Find(controllerModelRightName)?.gameObject;
+                        if (!ob)
+                        {
+                            ob = PrefabUtility.LoadPrefabContents(controllerRightPath);
+                            Undo.RegisterCreatedObjectUndo(ob, "Create controllerRightPath.");
+                            Undo.SetTransformParent(ob.transform, rightController, true, "Parent to rightController.");
+                            ob.transform.localPosition = Vector3.zero;
+                            ob.transform.localRotation = Quaternion.identity;
+                            ob.transform.localScale = Vector3.one;
+                            ob.name = controllerModelRightName;
+                        }
+                        ob.SetActive(true);
                     }
                 }
-
-                if (leftControllerTransform != null)
-                {
-                    ActionBasedController leftController = leftControllerTransform.GetComponent<ActionBasedController>();
-
-                    if (presetLC != null)
-                    {
-                        presetLC.ApplyTo(leftController);
-                        Debug.Log("XRI Default Left Controller preset applied successfully.");
-                    }
-                    else
-                    {
-                        Debug.LogError("Failed to load XRI Default Left Controller preset.");
-                    }
-
-                    leftController.enableInputActions = true;
-                    leftController.modelPrefab = AssetDatabase.LoadAssetAtPath<Transform>(controllerLeftPath);
-                }
-
-                if (rightControllerTransform != null)
-                {
-                    ActionBasedController rightController = rightControllerTransform.GetComponent<ActionBasedController>();
-
-                    if (presetRC != null)
-                    {
-                        presetRC.ApplyTo(rightController);
-                        Debug.Log("XRI Default Right Controller preset applied successfully.");
-                    }
-                    else
-                    {
-                        Debug.LogError("Failed to load XRI Default Right Controller preset.");
-                    }
-
-                    rightController.enableInputActions = true;
-                    rightController.modelPrefab = AssetDatabase.LoadAssetAtPath<Transform>(controllerRightPath);
-                }
-
-                List<InputActionAsset> inputActions = new List<InputActionAsset>();
-                inputActions.Add(inputActionAsset);
-
-                List<InputActionManager> iamComponents = PXR_Utils.FindComponentsInScene<InputActionManager>().Where(component => component.isActiveAndEnabled).ToList();
-                if (iamComponents.Count == 0)
-                {
-                    InputActionManager inputActionManager = cameraOrigin.transform.GetComponent<InputActionManager>();
-                    if (!inputActionManager)
-                    {
-                        inputActionManager = cameraOrigin.AddComponent<InputActionManager>();
-                    }
-
-                    inputActionManager.enabled = true;
-                    iamComponents.Add(inputActionManager);
-                }
-                foreach (var component in iamComponents)
-                {
-                    component.actionAssets = inputActions;
-                }
-
-                cameraOrigin.name = xrOriginName;
-                leftControllerTransform.name = controllerLeftName;
-                rightControllerTransform.name = controllerRightName;
 
                 EditorSceneManager.SaveScene(cameraOrigin.gameObject.scene);
             }
+#else
+            var presetLC = AssetDatabase.LoadAssetAtPath<Preset>(PXR_Utils.XRIDefaultLeftControllerPreset);
+                var presetRC = AssetDatabase.LoadAssetAtPath<Preset>(PXR_Utils.XRIDefaultRightControllerPreset);
+                if (presetLC == null || presetRC == null || inputActionAsset == null)
+                {
+                    PXR_Utils.UpdateSamples(PXR_Utils.xriPackageName, PXR_Utils.xriStarterAssetsSampleName);
+                }
+                else
+                {
+                    // Get XROrigin
+                    GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
+
+                    Transform leftControllerTransform = cameraOrigin.transform.Find("Camera Offset").Find("Left Controller");
+                    Transform rightControllerTransform = cameraOrigin.transform.Find("Camera Offset").Find("Right Controller");
+
+                    if (leftControllerTransform == null || rightControllerTransform == null)
+                    {
+                        List<ActionBasedController> controllersComponents = PXR_Utils.FindComponentsInScene<ActionBasedController>().Where(component => component.isActiveAndEnabled).ToList();
+                        if (controllersComponents.Count > 1)
+                        {
+                            leftControllerTransform = controllersComponents[0].transform;
+                            rightControllerTransform = controllersComponents[1].transform;
+                        }
+                        else
+                        {
+                            cameraOrigin.SetActive(false);
+                            if (!EditorApplication.ExecuteMenuItem("GameObject/XR/XR Origin (VR)"))
+                            {
+                                EditorApplication.ExecuteMenuItem("GameObject/XR/XR Origin (Action-based)");
+                            }
+                            cameraOrigin = PXR_Utils.FindComponentsInScene<XROrigin>().Where(component => component.isActiveAndEnabled).ToList()[0].gameObject;
+                            leftControllerTransform = cameraOrigin.transform.Find("Camera Offset").Find(controllerLeftName);
+                            rightControllerTransform = cameraOrigin.transform.Find("Camera Offset").Find(controllerRightName);
+                        }
+                    }
+
+                    if (leftControllerTransform != null)
+                    {
+                        ActionBasedController leftController = leftControllerTransform.GetComponent<ActionBasedController>();
+
+                        if (presetLC != null)
+                        {
+                            presetLC.ApplyTo(leftController);
+                            Debug.Log("XRI Default Left Controller preset applied successfully.");
+                        }
+                        else
+                        {
+                            Debug.LogError("Failed to load XRI Default Left Controller preset.");
+                        }
+
+                        leftController.enableInputActions = true;
+                        leftController.modelPrefab = AssetDatabase.LoadAssetAtPath<Transform>(controllerLeftPath);
+                    }
+
+                    if (rightControllerTransform != null)
+                    {
+                        ActionBasedController rightController = rightControllerTransform.GetComponent<ActionBasedController>();
+
+                        if (presetRC != null)
+                        {
+                            presetRC.ApplyTo(rightController);
+                            Debug.Log("XRI Default Right Controller preset applied successfully.");
+                        }
+                        else
+                        {
+                            Debug.LogError("Failed to load XRI Default Right Controller preset.");
+                        }
+
+                        rightController.enableInputActions = true;
+                        rightController.modelPrefab = AssetDatabase.LoadAssetAtPath<Transform>(controllerRightPath);
+                    }
+
+                    List<InputActionAsset> inputActions = new List<InputActionAsset>();
+                    inputActions.Add(inputActionAsset);
+
+                    List<InputActionManager> iamComponents = PXR_Utils.FindComponentsInScene<InputActionManager>().Where(component => component.isActiveAndEnabled).ToList();
+                    if (iamComponents.Count == 0)
+                    {
+                        InputActionManager inputActionManager = cameraOrigin.transform.GetComponent<InputActionManager>();
+                        if (!inputActionManager)
+                        {
+                            inputActionManager = cameraOrigin.AddComponent<InputActionManager>();
+                        }
+
+                        inputActionManager.enabled = true;
+                        iamComponents.Add(inputActionManager);
+                    }
+                    foreach (var component in iamComponents)
+                    {
+                        component.actionAssets = inputActions;
+                    }
+
+                    cameraOrigin.name = xrOriginName;
+                    leftControllerTransform.name = controllerLeftName;
+                    rightControllerTransform.name = controllerRightName;
+
+                    EditorSceneManager.SaveScene(cameraOrigin.gameObject.scene);
+                }
+#endif
             AssetDatabase.SaveAssets();
         }
 
@@ -203,46 +263,6 @@ namespace Unity.XR.PXR
             // Get XROrigin
             GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
             PXR_Utils.SetTrackingOriginMode();
-
-            GameObject eventSystemGO;
-            List<EventSystem> esComponents = PXR_Utils.FindComponentsInScene<EventSystem>().ToList();
-            if (esComponents.Count == 0)
-            {
-                if (!EditorApplication.ExecuteMenuItem("GameObject/UI/Event System"))
-                {
-                    EditorApplication.ExecuteMenuItem("GameObject/UI/Event System");
-                }
-                eventSystemGO = PXR_Utils.FindComponentsInScene<EventSystem>()[0].gameObject;
-            }
-            else
-            {
-                esComponents = PXR_Utils.FindComponentsInScene<EventSystem>().ToList();
-                eventSystemGO = esComponents[0].gameObject;
-                eventSystemGO.SetActive(true);
-            }
-
-            EventSystem system = eventSystemGO.transform.GetComponent<EventSystem>();
-            if (system != null)
-            {
-                system.enabled = true;
-            }
-
-            StandaloneInputModule standalone = eventSystemGO.transform.GetComponent<StandaloneInputModule>();
-            if (standalone != null)
-            {
-                standalone.enabled = false;
-            }
-
-            XRUIInputModule xRUIInputModule = eventSystemGO.transform.GetComponent<XRUIInputModule>();
-            if (xRUIInputModule == null)
-            {
-                eventSystemGO.AddComponent<XRUIInputModule>();
-            }
-            else
-            {
-                xRUIInputModule.enabled = true;
-            }
-
             Canvas canvas;
             List<Canvas> canvasComponents = PXR_Utils.FindComponentsInScene<Canvas>().ToList();
             if (canvasComponents.Count == 0)
@@ -285,6 +305,53 @@ namespace Unity.XR.PXR
                 }
                 canvas.name = canvasName;
             }
+
+            GameObject eventSystemGO;
+            List<EventSystem> esComponents = PXR_Utils.FindComponentsInScene<EventSystem>().ToList();
+#if !XRI_TOOLKIT_3
+            if (esComponents.Count == 0)
+            {
+                if (!EditorApplication.ExecuteMenuItem("GameObject/UI/Event System"))
+                {
+                    EditorApplication.ExecuteMenuItem("GameObject/UI/Event System");
+                }
+                eventSystemGO = PXR_Utils.FindComponentsInScene<EventSystem>()[0].gameObject;
+            }
+            else
+            {
+                esComponents = PXR_Utils.FindComponentsInScene<EventSystem>().ToList();
+                eventSystemGO = esComponents[0].gameObject;
+                eventSystemGO.SetActive(true);
+            }
+
+            EventSystem system = eventSystemGO.transform.GetComponent<EventSystem>();
+            if (system != null)
+            {
+                system.enabled = true;
+            }
+
+            StandaloneInputModule standalone = eventSystemGO.transform.GetComponent<StandaloneInputModule>();
+            if (standalone != null)
+            {
+                standalone.enabled = false;
+            }
+
+            XRUIInputModule xRUIInputModule = eventSystemGO.transform.GetComponent<XRUIInputModule>();
+            if (xRUIInputModule == null)
+            {
+                eventSystemGO.AddComponent<XRUIInputModule>();
+            }
+            else
+            {
+                xRUIInputModule.enabled = true;
+            }
+#else
+            if (esComponents.Count > 0)
+            {
+                eventSystemGO = PXR_Utils.FindComponentsInScene<EventSystem>()[0].gameObject;
+                eventSystemGO.SetActive(false);
+            }
+#endif
 
             cameraOrigin.name = xrOriginName;
 
@@ -520,8 +587,8 @@ namespace Unity.XR.PXR
         const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : This button allows one-click configuration of the gesture interaction method in XRInteraction Toolkit to enable interaction between the hand and 3D objects.";
-        const string k_BuildingBlocksXROriginName = "Building Blocks XRI Hand Interaction";
-        const string k_BuildingBlocksGrabName = "Building Blocks XRI Hand Grab Interactable";
+        static string k_BuildingBlocksXROriginName = $"{PXR_Utils.BuildingBlock} XRI Hand Interaction";
+        static string k_BuildingBlocksGrabName = $"{PXR_Utils.BuildingBlock} XRI Hand Grab Interactable";
         const int k_SectionPriority = 10;
 
         public string Id => k_Id;
@@ -600,7 +667,11 @@ namespace Unity.XR.PXR
                 }
 
                 // XRI LeftHand
+#if XRI_TOOLKIT_3
+                InputActionMap actionMapLeftHand = inputActionAsset.FindActionMap("XRI Left");
+#else
                 InputActionMap actionMapLeftHand = inputActionAsset.FindActionMap("XRI LeftHand");
+#endif
                 if (actionMapLeftHand != null)
                 {
                     InputAction aimPositionAction = actionMapLeftHand.FindAction("Aim Position");
@@ -657,7 +728,11 @@ namespace Unity.XR.PXR
                 }
 
                 // XRI RightHand
+#if XRI_TOOLKIT_3
+                InputActionMap actionMapRightHand = inputActionAsset.FindActionMap("XRI Right");
+#else
                 InputActionMap actionMapRightHand = inputActionAsset.FindActionMap("XRI RightHand");
+#endif
                 if (actionMapRightHand != null)
                 {
                     InputAction aimPositionAction = actionMapRightHand.FindAction("Aim Position");
@@ -713,7 +788,11 @@ namespace Unity.XR.PXR
                 }
 
                 // XRI LeftHand Interaction
+#if XRI_TOOLKIT_3
+                InputActionMap actionMapLeftHandI = inputActionAsset.FindActionMap("XRI Left Interaction");
+#else
                 InputActionMap actionMapLeftHandI = inputActionAsset.FindActionMap("XRI LeftHand Interaction");
+#endif
                 if (actionMapLeftHandI != null)
                 {
                     InputAction selectAction = actionMapLeftHandI.FindAction("Select");
@@ -786,7 +865,11 @@ namespace Unity.XR.PXR
                 }
 
                 // XRI RightHand Interaction
+#if XRI_TOOLKIT_3
+                InputActionMap actionMapRightHandI = inputActionAsset.FindActionMap("XRI Right Interaction");
+#else
                 InputActionMap actionMapRightHandI = inputActionAsset.FindActionMap("XRI RightHand Interaction");
+#endif
                 if (actionMapRightHandI != null)
                 {
                     InputAction selectAction = actionMapRightHandI.FindAction("Select");
@@ -885,8 +968,8 @@ namespace Unity.XR.PXR
         const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Grab objects with hands or controllers.";
-        const string k_BuildingBlocksXROriginName = "Building Blocks XRI Hand Interaction";
-        const string k_BuildingBlocksGrabName = "Building Blocks XRI Hand Grab Interactable";
+        static string k_BuildingBlocksXROriginName = $"{PXR_Utils.BuildingBlock} XRI Hand Interaction";
+        static string k_BuildingBlocksGrabName = $"{PXR_Utils.BuildingBlock} XRI Hand Grab Interactable";
         const int k_SectionPriority = 10;
 
         public string Id => k_Id;
@@ -961,7 +1044,11 @@ namespace Unity.XR.PXR
                 if (cameraOrigin)
                 {
                     Transform parentT = cameraOrigin.transform.parent;
-                    if (parentT == null || parentT.name != "XR Interaction Hands Setup")
+#if XRI_TOOLKIT_3
+                    if (parentT == null || cameraOrigin.name != PXR_Utils.xri3HandsSetupPefabName)
+#else
+                    if (parentT == null || parentT.name != PXR_Utils.xri2HandsSetupPefabName)
+#endif
                     {
                         cameraOrigin.SetActive(false);
                         GameObject ob = PrefabUtility.LoadPrefabContents(PXR_Utils.XRInteractionHandsSetupPath);
@@ -1000,8 +1087,10 @@ namespace Unity.XR.PXR
             {
                 GameObject buildingBlockGO = new GameObject();
                 Selection.activeGameObject = buildingBlockGO;
-                buildingBlockGO.transform.position = Camera.main.transform.position + new Vector3(0, 0, 0.5f);
-                buildingBlockGO.transform.rotation = Quaternion.identity;
+
+                Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
+                buildingBlockGO.transform.position = mainCamera.transform.position + new Vector3(0, 0, 0.5f);
+                buildingBlockGO.transform.rotation = mainCamera.transform.rotation;
                 buildingBlockGO.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
 
                 if (!EditorApplication.ExecuteMenuItem("GameObject/XR/Grab Interactable"))
@@ -1014,6 +1103,11 @@ namespace Unity.XR.PXR
                 if (grabInteractableGO != null)
                 {
                     grabInteractableGO.transform.parent = buildingBlockGO.transform;
+                    grabInteractableGO.transform.localPosition = new Vector3(0, 0, 0.5f);
+                    grabInteractableGO.transform.localRotation = Quaternion.identity;
+                    grabInteractableGO.transform.localScale = Vector3.one;
+                    grabInteractableGO.SetActive(true);
+
                     Selection.activeGameObject = buildingBlockGO;
 
                     Rigidbody rigidbody = grabInteractableGO.GetComponent<Rigidbody>();
@@ -1021,7 +1115,11 @@ namespace Unity.XR.PXR
                     {
                         grabInteractableGO.GetComponent<Rigidbody>().useGravity = false;
                         grabInteractableGO.GetComponent<Rigidbody>().mass = 0;
+#if UNITY_6000_0_OR_NEWER
+                        grabInteractableGO.GetComponent<Rigidbody>().linearDamping = 2f;
+#else
                         grabInteractableGO.GetComponent<Rigidbody>().drag = 2f;
+#endif
                     }
                 }
 
@@ -1054,8 +1152,8 @@ namespace Unity.XR.PXR
         const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Poke objects with hands or controllers.";
-        const string k_BuildingBlocksXROriginName = "Building Blocks XRI Hand Interaction";
-        const string k_BuildingBlocksGrabName = "Building Blocks XRI Hand Poke Interactable";
+        static string k_BuildingBlocksXROriginName = $"{PXR_Utils.BuildingBlock} XRI Hand Interaction";
+        static string k_BuildingBlocksGrabName = $"{PXR_Utils.BuildingBlock} XRI Hand Poke Interactable";
         const int k_SectionPriority = 10;
 
         public string Id => k_Id;
@@ -1089,7 +1187,7 @@ namespace Unity.XR.PXR
                 return;
             }
             PXR_Utils.xriVersion = xriPackage.version;
-            
+
             // if no samples, add.
             if (PXR_Utils.TryFindSample(PXR_Utils.xriPackageName, PXR_Utils.xriVersion, PXR_Utils.xriStarterAssetsSampleName, out var sampleXRIStarter))
             {
@@ -1131,7 +1229,11 @@ namespace Unity.XR.PXR
                 if (cameraOrigin)
                 {
                     Transform parentT = cameraOrigin.transform.parent;
-                    if (parentT == null || parentT.name != "XR Interaction Hands Setup")
+#if XRI_TOOLKIT_3
+                    if (parentT == null || cameraOrigin.name != PXR_Utils.xri3HandsSetupPefabName)
+#else
+                    if (parentT == null || parentT.name != PXR_Utils.xri2HandsSetupPefabName)
+#endif
                     {
                         cameraOrigin.SetActive(false);
 
@@ -1253,9 +1355,9 @@ namespace Unity.XR.PXR
         {
             // Get XROrigin
             GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
-            if (!cameraOrigin.GetComponent<CameraEffectTest>())
+            if (!cameraOrigin.GetComponent<PXR_CameraEffectBlock>())
             {
-                cameraOrigin.AddComponent<CameraEffectTest>();
+                cameraOrigin.AddComponent<PXR_CameraEffectBlock>();
             }
 
             Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
@@ -1294,6 +1396,9 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_BuildingBlocksControllerTracking pXR_BuildingBlocksControllerTracking = new PXR_BuildingBlocksControllerTracking();
+            pXR_BuildingBlocksControllerTracking.ExecuteBuildingBlock();
+
             // Get XROrigin
             GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
             Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
@@ -1363,14 +1468,223 @@ namespace Unity.XR.PXR
                 }
             }
 
-            PXR_BuildingBlocksControllerTracking pXR_BuildingBlocksControllerTracking = new PXR_BuildingBlocksControllerTracking();
-            pXR_BuildingBlocksControllerTracking.ExecuteBuildingBlock();
+#if XRI_TOOLKIT_3
+            GameObject eventSystemGO;
+            List<EventSystem> esComponents = PXR_Utils.FindComponentsInScene<EventSystem>().ToList();
 
+            if (esComponents.Count > 0)
+            {
+                eventSystemGO = PXR_Utils.FindComponentsInScene<EventSystem>()[0].gameObject;
+                eventSystemGO.SetActive(false);
+            }
+#endif
             PXR_Utils.SetTrackingOriginMode();
             cameraOrigin.name = xrOriginName;
             Undo.RegisterCreatedObjectUndo(canvas, k_Id);
             EditorSceneManager.MarkSceneDirty(cameraOrigin.scene);
             EditorSceneManager.SaveScene(cameraOrigin.scene);
+        }
+
+        public void ExecuteBuildingBlock() => DoInterestingStuff();
+
+        // Each building block should have an accompanying MenuItem as a good practice, we add them here.
+        [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
+        public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+    }
+
+    #endregion
+
+    #region PICO Motion Tracking
+    [BuildingBlockItem(Priority = k_SectionPriority)]
+    class PXR_MotionTrackingSection : IBuildingBlockSection
+    {
+        const string k_SectionId = "PICO Motion Tracking";
+        public string SectionId => k_SectionId;
+
+        const string k_SectionIconPath = "Building/Block/Section/Icon/Path";
+        public string SectionIconPath => k_SectionIconPath;
+        const int k_SectionPriority = 3;
+
+        readonly IBuildingBlock[] m_BBlocksElementIds = new IBuildingBlock[]
+        {
+            new PXR_BuildingBlocksBodyTracking(),
+            new PXR_BuildingBlocksBodyTrackingDebug(),
+            new PXR_BuildingBlocksObjectTracking(),
+        };
+
+        public IEnumerable<IBuildingBlock> GetBuildingBlocks()
+        {
+            var elements = m_BBlocksElementIds.ToList();
+            return elements;
+        }
+    }
+
+    class PXR_BuildingBlocksBodyTracking : IBuildingBlock
+    {
+        const string k_Id = "PICO Body Tracking";
+        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_IconPath = "buildingblockIcon";
+        const string k_Tooltip = k_Id + " : Body Tracking can be set with one click through this block, and 24 cubes will be used to display the tracking status of 24 human body joints in real time. ";
+        const int k_SectionPriority = 10;
+        static string bodyTrackingPath = PXR_Utils.sdkPackageName + "Assets/BuildingBlocks/Prefabs/BodyTracking.prefab";
+        static string k_BuildingBlocksGOName = $"{PXR_Utils.BuildingBlock} {k_Id}";
+
+        public string Id => k_Id;
+        public string IconPath => k_IconPath;
+        public bool IsEnabled => true;
+        public string Tooltip => k_Tooltip;
+
+        static void DoInterestingStuff()
+        {
+            // Get XROrigin
+            GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
+
+            PXR_ProjectSetting.GetProjectConfig().bodyTracking = true;
+            PXR_ProjectSetting.SaveAssets();
+
+            if (PXR_Utils.FindComponentsInScene<Transform>().Where(component => component.name == k_BuildingBlocksGOName).ToList().Count == 0)
+            {
+                GameObject buildingBlockGO = new GameObject();
+                Selection.activeGameObject = buildingBlockGO;
+
+                Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
+                buildingBlockGO.transform.position = mainCamera.transform.position;
+                buildingBlockGO.transform.rotation = mainCamera.transform.rotation;
+
+                GameObject ob = PrefabUtility.LoadPrefabContents(bodyTrackingPath);
+                Undo.RegisterCreatedObjectUndo(ob, "Create bodyTrackingPath.");
+                var activeScene = SceneManager.GetActiveScene();
+                var rootObjects = activeScene.GetRootGameObjects();
+                Undo.SetTransformParent(ob.transform, buildingBlockGO.transform, true, "Parent to ob.");
+                ob.transform.localPosition = Vector3.zero;
+                ob.transform.localRotation = Quaternion.identity;
+                ob.transform.localScale = Vector3.one;
+                ob.SetActive(true);
+
+                buildingBlockGO.name = k_BuildingBlocksGOName;
+                Undo.RegisterCreatedObjectUndo(buildingBlockGO, k_Id);
+
+                PXR_Utils.SetTrackingOriginMode();
+                EditorSceneManager.MarkSceneDirty(buildingBlockGO.scene);
+                EditorSceneManager.SaveScene(buildingBlockGO.scene);
+            }
+            AssetDatabase.SaveAssets();
+        }
+
+        public void ExecuteBuildingBlock() => DoInterestingStuff();
+
+        // Each building block should have an accompanying MenuItem as a good practice, we add them here.
+        [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
+        public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+    }
+
+    class PXR_BuildingBlocksBodyTrackingDebug : IBuildingBlock
+    {
+        const string k_Id = "PICO Body Tracking Debug";
+        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_IconPath = "buildingblockIcon";
+        const string k_Tooltip = k_Id + " : If the Avatar model you are using does not match the 24-joint data direction of PICO, you can adapt it by rotating the X, Y, and Z axes of the specified joint data. ";
+        const int k_SectionPriority = 10;
+        static string bodyTrackingPath = PXR_Utils.sdkPackageName + "Assets/BuildingBlocks/Prefabs/BodyTrackingDebug.prefab";
+        static string k_BuildingBlocksGOName = $"{PXR_Utils.BuildingBlock} {k_Id}";
+
+        public string Id => k_Id;
+        public string IconPath => k_IconPath;
+        public bool IsEnabled => true;
+        public string Tooltip => k_Tooltip;
+
+        static void DoInterestingStuff()
+        {
+            PXR_BuildingBlocksControllerTracking pXR_BuildingBlocksControllerTracking = new PXR_BuildingBlocksControllerTracking();
+            pXR_BuildingBlocksControllerTracking.ExecuteBuildingBlock();
+            // Get XROrigin
+            GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
+
+            PXR_ProjectSetting.GetProjectConfig().bodyTracking = true;
+            PXR_ProjectSetting.SaveAssets();
+
+            if (PXR_Utils.FindComponentsInScene<Transform>().Where(component => component.name == k_BuildingBlocksGOName).ToList().Count == 0)
+            {
+                GameObject buildingBlockGO = new GameObject();
+                Selection.activeGameObject = buildingBlockGO;
+
+                Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
+                buildingBlockGO.transform.position = mainCamera.transform.position;
+                buildingBlockGO.transform.rotation = mainCamera.transform.rotation;
+
+                GameObject ob = PrefabUtility.LoadPrefabContents(bodyTrackingPath);
+                Undo.RegisterCreatedObjectUndo(ob, "Create bodyTrackingPath.");
+                var activeScene = SceneManager.GetActiveScene();
+                var rootObjects = activeScene.GetRootGameObjects();
+                Undo.SetTransformParent(ob.transform, buildingBlockGO.transform, true, "Parent to ob.");
+                ob.transform.localPosition = Vector3.zero + new Vector3(0, 0, 1);
+                ob.transform.localRotation = Quaternion.identity;
+                ob.transform.localScale = Vector3.one;
+                ob.SetActive(true);
+
+                buildingBlockGO.name = k_BuildingBlocksGOName;
+                Undo.RegisterCreatedObjectUndo(buildingBlockGO, k_Id);
+
+                PXR_Utils.SetTrackingOriginMode();
+                EditorSceneManager.MarkSceneDirty(buildingBlockGO.scene);
+                EditorSceneManager.SaveScene(buildingBlockGO.scene);
+            }
+            AssetDatabase.SaveAssets();
+        }
+
+        public void ExecuteBuildingBlock() => DoInterestingStuff();
+
+        // Each building block should have an accompanying MenuItem as a good practice, we add them here.
+        [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
+        public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+    }
+
+    class PXR_BuildingBlocksObjectTracking : IBuildingBlock
+    {
+        const string k_Id = "PICO Object Tracking";
+        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_IconPath = "buildingblockIcon";
+        const string k_Tooltip = k_Id + " : Object Tracking can be set with one click through this block. ";
+        const int k_SectionPriority = 10;
+        static string k_BuildingBlocksGOName = $"{PXR_Utils.BuildingBlock} {k_Id}";
+
+        public string Id => k_Id;
+        public string IconPath => k_IconPath;
+        public bool IsEnabled => true;
+        public string Tooltip => k_Tooltip;
+
+        static void DoInterestingStuff()
+        {
+            // Get XROrigin
+            GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
+
+            PXR_ProjectSetting.GetProjectConfig().bodyTracking = true;
+            PXR_ProjectSetting.SaveAssets();
+
+            if (PXR_Utils.FindComponentsInScene<Transform>().Where(component => component.name == k_BuildingBlocksGOName).ToList().Count == 0)
+            {
+                GameObject buildingBlockGO = new GameObject();
+                Selection.activeGameObject = buildingBlockGO;
+
+                Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
+
+                if (!buildingBlockGO.GetComponent<PXR_ObjectTrackingBlock>())
+                {
+                    buildingBlockGO.AddComponent<PXR_ObjectTrackingBlock>();
+                }
+
+                buildingBlockGO.name = k_BuildingBlocksGOName;
+                Undo.RegisterCreatedObjectUndo(buildingBlockGO, k_Id);
+                Undo.SetTransformParent(buildingBlockGO.transform, mainCamera.transform.parent, true, "Parent to camera offset.");
+                buildingBlockGO.transform.localPosition = Vector3.zero;
+                buildingBlockGO.transform.localRotation = Quaternion.identity;
+                buildingBlockGO.transform.localScale = Vector3.one;
+
+                PXR_Utils.SetTrackingOriginMode();
+                EditorSceneManager.MarkSceneDirty(buildingBlockGO.scene);
+                EditorSceneManager.SaveScene(buildingBlockGO.scene);
+            }
+            AssetDatabase.SaveAssets();
         }
 
         public void ExecuteBuildingBlock() => DoInterestingStuff();

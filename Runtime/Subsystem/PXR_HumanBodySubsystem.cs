@@ -1,4 +1,4 @@
-#if AR_FOUNDATION
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
 using Unity.Collections;
 using Unity.XR.PXR;
 using UnityEngine;
@@ -152,7 +152,13 @@ public class PXR_HumanBodySubsystem : XRHumanBodySubsystem
     static void RegisterDescriptor()
     {
         PLog.i(k_SubsystemId, "RegisterDescriptor");
+#if AR_FOUNDATION_5
         var mXRHumanBodySubsystemCinfo = new XRHumanBodySubsystemCinfo
+#endif
+
+#if AR_FOUNDATION_6
+        var mXRHumanBodySubsystemCinfo = new XRHumanBodySubsystemDescriptor.Cinfo
+#endif
         {
             id = k_SubsystemId,
             providerType = typeof(HumanBodyProvider),
@@ -162,6 +168,11 @@ public class PXR_HumanBodySubsystem : XRHumanBodySubsystem
             supportsHumanBody3DScaleEstimation = true,
         };
 
+#if AR_FOUNDATION_6
+        XRHumanBodySubsystemDescriptor.Register(mXRHumanBodySubsystemCinfo);
+#endif
+
+#if AR_FOUNDATION_5
         if (!Register(mXRHumanBodySubsystemCinfo))
         {
             PLog.e(k_SubsystemId, $"Failed to register the {k_SubsystemId} subsystem.");
@@ -170,6 +181,8 @@ public class PXR_HumanBodySubsystem : XRHumanBodySubsystem
         {
             PLog.i(k_SubsystemId, $"success to register the {k_SubsystemId} subsystem.");
         }
+#endif
+
     }
 
 }

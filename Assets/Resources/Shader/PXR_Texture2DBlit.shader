@@ -6,9 +6,10 @@
     SubShader{
         Tags{ "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
 
-        Pass{
-            ZWrite Off
-            ColorMask RGBA
+        Pass{            
+            ZTest Always
+            ZWrite Off            
+            Cull Off
 
             CGPROGRAM
                 #pragma vertex vert

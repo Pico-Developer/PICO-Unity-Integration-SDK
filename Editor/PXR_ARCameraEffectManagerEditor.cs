@@ -35,47 +35,24 @@ public class PXR_ARCameraEffectManagerEditor : Editor
             manager.contrastValue = EditorGUILayout.Slider(guiContent, manager.contrastValue, -50, 50);
 
             EditorGUILayout.LabelField("LUT");
-            var textureControlRect = EditorGUILayout.GetControlRect(GUILayout.Height(100));
-            manager.lutTex = (Texture2D)EditorGUI.ObjectField(new Rect(textureControlRect.x, textureControlRect.y, 100, textureControlRect.height), manager.lutTex, typeof(Texture), false);
+            var textureControlRect = EditorGUILayout.GetControlRect(GUILayout.Width(100), GUILayout.Height(100));
+            manager.lutTex1 = (Texture2D)EditorGUI.ObjectField(new Rect(textureControlRect.x, textureControlRect.y, 100, textureControlRect.height), manager.lutTex1, typeof(Texture), false);
+            ValidateTexture(manager.lutTex1);
 
-            if (manager.lutTex != null)
-            {
-                // Validate texture format
-                if (manager.lutTex.format != TextureFormat.RGBA32)
-                {
-                    Debug.LogError("Unsupported texture format! Please provide a texture in RGBA32 format.");
-                    manager.lutTex = null; // Reset texture if format is incorrect
-                }
+            manager.lutTex2 = (Texture2D)EditorGUI.ObjectField(new Rect(textureControlRect.x + textureControlRect.width, textureControlRect.y, textureControlRect.width, textureControlRect.height), manager.lutTex2, typeof(Texture), false);
+            ValidateTexture(manager.lutTex2);
 
-                // Validate texture size
-                if (manager.lutTex.width > 512 || manager.lutTex.height > 512)
-                {
-                    Debug.LogError("The texture size must not exceed 512x512 pixels!");
-                    manager.lutTex = null; // Reset texture if size is incorrect
-                }
+            manager.lutTex3 = (Texture2D)EditorGUI.ObjectField(new Rect(textureControlRect.x + 2*textureControlRect.width, textureControlRect.y, textureControlRect.width, textureControlRect.height), manager.lutTex3, typeof(Texture), false);
+            ValidateTexture(manager.lutTex3);
 
-                // Set read/write flag
-                if (!manager.lutTex.isReadable)
-                {
-                    string assetPath = AssetDatabase.GetAssetPath(manager.lutTex);
-                    TextureImporter importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
-                    if (importer != null)
-                    {
-                        importer.isReadable = true;
-                        AssetDatabase.ImportAsset(assetPath);
-                    }
-                }
-            }
+            manager.lutTex4 = (Texture2D)EditorGUI.ObjectField(new Rect(textureControlRect.x + 3 * textureControlRect.width, textureControlRect.y, textureControlRect.width, textureControlRect.height), manager.lutTex4, typeof(Texture), false);
+            ValidateTexture(manager.lutTex4);
 
-            guiContent.text = "Lut Row";
-            manager.lutRowValue = EditorGUILayout.Slider(guiContent, manager.lutRowValue, 0, 100);
-
-            guiContent.text = "Lut Col";
-            manager.lutColValue = EditorGUILayout.Slider(guiContent, manager.lutColValue, 0, 100);
-
+            manager.lutTex5 = (Texture2D)EditorGUI.ObjectField(new Rect(textureControlRect.x + 4 * textureControlRect.width, textureControlRect.y, textureControlRect.width, textureControlRect.height), manager.lutTex5, typeof(Texture), false);
+            ValidateTexture(manager.lutTex5);
             EditorGUI.indentLevel--;
         }
-        
+
         Camera camera = manager.gameObject.GetComponent<Camera>();
         if (camera)
         {
@@ -93,6 +70,38 @@ public class PXR_ARCameraEffectManagerEditor : Editor
         if (GUI.changed)
         {
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+        }
+    }
+
+    private static void ValidateTexture(Texture2D lutTex)
+    {
+        if (lutTex != null)
+        {
+            // Validate texture format
+            if (lutTex.format != TextureFormat.RGBA32)
+            {
+                Debug.LogError("Unsupported texture format! Please provide a texture in RGBA32 format.");
+                lutTex = null; // Reset texture if format is incorrect
+            }
+
+            // Validate texture size
+            if (lutTex.width > 512 || lutTex.height > 512)
+            {
+                Debug.LogError("The texture size must not exceed 512x512 pixels!");
+                lutTex = null; // Reset texture if size is incorrect
+            }
+
+            // Set read/write flag
+            if (!lutTex.isReadable)
+            {
+                string assetPath = AssetDatabase.GetAssetPath(lutTex);
+                TextureImporter importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+                if (importer != null)
+                {
+                    importer.isReadable = true;
+                    AssetDatabase.ImportAsset(assetPath);
+                }
+            }
         }
     }
 }

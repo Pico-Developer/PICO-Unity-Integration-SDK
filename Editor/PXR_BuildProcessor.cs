@@ -223,10 +223,9 @@ namespace Unity.XR.PXR.Editor
             var settings = PXR_XmlTools.GetSettings();
             doc.InsertAttributeInTargetTag(applicationTagPath,null, new Dictionary<string, string>() {{"requestLegacyExternalStorage", "true"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.app.type"}},new Dictionary<string, string>{{"value","vr"}});
-            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.sdk.version"}},new Dictionary<string, string>{{"value","XR Platform_3.0.5"}});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.sdk.version"}},new Dictionary<string, string>{{"value","XR Platform_3.1.2"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pxr.sdk.version_code"}},new Dictionary<string, string>{{"value", "5120"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","enable_cpt"}},new Dictionary<string, string>{{"value",PXR_ProjectSetting.GetProjectConfig().useContentProtect ? "1" : "0"}});
-            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","handtracking"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().handTracking ? "1" : "0" }});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","Enable_AdaptiveHandModel"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().adaptiveHand ? "1" : "0" }});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","Hand_Tracking_HighFrequency"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().highFrequencyHand ? "1" : "0" }});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","rendering_mode"}},new Dictionary<string, string>{{"value",((int)settings.stereoRenderingModeAndroid).ToString()}});
@@ -268,14 +267,34 @@ namespace Unity.XR.PXR.Editor
 
             if (PXR_ProjectSetting.GetProjectConfig().handTracking)
             {
-                doc.CreateElementInTag(manifestTagPath, usesPermissionTagName,
-                    new Dictionary<string, string> { { "name", "com.picovr.permission.HAND_TRACKING" } });
+                if (PXR_ProjectSetting.GetProjectConfig().handTrackingSupportType==HandTrackingSupport.HandsOnly)
+                {
+                    doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "handtracking" } },
+                        new Dictionary<string, string> { { "value", "1" } });
+                    doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "controller" } });
+
+                    doc.CreateElementInTag(manifestTagPath, usesPermissionTagName,
+                        new Dictionary<string, string> { { "name", "com.picovr.permission.HAND_TRACKING" } });
+                }
+                else
+                {
+                    doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "handtracking" } },
+                        new Dictionary<string, string> { { "value", "1" } });
+                    doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "controller" } },
+                        new Dictionary<string, string> { { "value", "1" } });
+                    doc.CreateElementInTag(manifestTagPath, usesPermissionTagName,
+                        new Dictionary<string, string> { { "name", "com.picovr.permission.HAND_TRACKING" } });
+                }
             }
             else
             {
+                doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "handtracking" } });
+                doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "controller" } },
+                    new Dictionary<string, string> { { "value", "1" } });
                 doc.RemoveNameValueElementInTag(manifestTagPath, usesPermissionTagName,
                     "android:name", "com.picovr.permission.HAND_TRACKING");
             }
+           
             if (PXR_ProjectSetting.GetProjectConfig().faceTracking) { doc.CreateElementInTag(manifestTagPath, usesPermissionTagName, new Dictionary<string, string> { { "name", "com.picovr.permission.FACE_TRACKING" } }); }
             if (PXR_ProjectSetting.GetProjectConfig().lipsyncTracking) { doc.CreateElementInTag(manifestTagPath, usesPermissionTagName, new Dictionary<string, string> { { "name", "android.permission.RECORD_AUDIO" } }); }
             if (PXR_ProjectSetting.GetProjectConfig().faceTracking) { doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "picovr.software.face_tracking" } }, new Dictionary<string, string> { { "value", "false/true" } }); }
@@ -317,6 +336,24 @@ namespace Unity.XR.PXR.Editor
                 doc.CreateElementInTag(parentPath, tagName, filterDic);
             }
             else UpdateOrCreateAttribute(targetElement, attributeDic);
+        }
+        public static void RemoveAttributeInTargetTag(this XmlDocument doc, string tagPath, Dictionary<string, string> filterDic)
+        {
+            if (filterDic != null)
+            {
+                XmlNodeList nodeList = doc.SelectNodes(tagPath);
+                if (nodeList != null)
+                {
+                    foreach (XmlNode node in nodeList)
+                    {
+                        if (FilterCheck(node as XmlElement, filterDic))
+                        {
+                            node.ParentNode?.RemoveChild(node);
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         public static void RemoveNameValueElementInTag(this XmlDocument doc, string parentPath, string tag, string name,

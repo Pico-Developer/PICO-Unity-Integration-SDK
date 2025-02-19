@@ -1,4 +1,4 @@
-#if AR_FOUNDATION
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
 using Unity.XR.PXR;
 using UnityEngine;
 using UnityEngine.XR.ARSubsystems;
@@ -25,7 +25,13 @@ public class PXR_RaycastSubsystem : XRRaycastSubsystem
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void RegisterDescriptor()
     {
+#if AR_FOUNDATION_5
         XRRaycastSubsystemDescriptor.RegisterDescriptor(new XRRaycastSubsystemDescriptor.Cinfo
+#endif
+
+#if AR_FOUNDATION_6
+        XRRaycastSubsystemDescriptor.Register(new XRRaycastSubsystemDescriptor.Cinfo
+#endif
         {
             id = k_SubsystemId,
             providerType = typeof(RaycastProvider),

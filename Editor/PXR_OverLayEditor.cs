@@ -89,6 +89,7 @@ namespace Unity.XR.PXR.Editor
                         overlayTarget.isExternalAndroidSurfaceDRM = EditorGUILayout.Toggle(guiContent, overlayTarget.isExternalAndroidSurfaceDRM);
 
                         guiContent.text = "3D Surface Type";
+                        guiContent.tooltip = "The functions of '3D Surface Type' and 'Source Rects' are similar, and only one of them can be used. ";
                         overlayTarget.externalAndroidSurface3DType = (PXR_OverLay.Surface3DType)EditorGUILayout.EnumPopup(guiContent, overlayTarget.externalAndroidSurface3DType);
                         EditorGUILayout.EndVertical();
 
@@ -113,6 +114,7 @@ namespace Unity.XR.PXR.Editor
 
                             EditorGUILayout.EndVertical();
                         }
+                        guiContent.tooltip = "";
                     }
                     else
                     {
@@ -137,7 +139,6 @@ namespace Unity.XR.PXR.Editor
                         guiContent.text = "Radius";
                         overlayTarget.radius = EditorGUILayout.FloatField(guiContent, Mathf.Abs(overlayTarget.radius));
                     }
-
                 }
 
                 if (overlayTarget.overlayShape == PXR_OverLay.OverlayShape.Quad ||
@@ -150,39 +151,56 @@ namespace Unity.XR.PXR.Editor
                     overlayTarget.useImageRect = EditorGUILayout.Toggle(guiContent, overlayTarget.useImageRect);
                     if (overlayTarget.useImageRect)
                     {
+                        EditorGUI.indentLevel++;
+                        if (PXR_OverLay.Surface3DType.Single != overlayTarget.externalAndroidSurface3DType)
+                        {
+                            GUI.enabled = false;
+                        }
                         guiContent.text = "Source Rects";
+                        guiContent.tooltip = "The functions of '3D Surface Type' and 'Source Rects' are similar, and only one of them can be used. ";
                         overlayTarget.textureRect = (PXR_OverLay.TextureRect)EditorGUILayout.EnumPopup(guiContent, overlayTarget.textureRect);
 
-                        if (overlayTarget.textureRect == PXR_OverLay.TextureRect.Custom)
+                        if (PXR_OverLay.Surface3DType.Single == overlayTarget.externalAndroidSurface3DType)
                         {
-                            EditorGUILayout.BeginVertical("frameBox");
+                            if (overlayTarget.textureRect == PXR_OverLay.TextureRect.Custom)
+                            {
+                                EditorGUILayout.BeginVertical("frameBox");
 
-                            EditorGUILayout.BeginHorizontal();
-                            EditorGUILayout.LabelField("Left Rect");
-                            EditorGUILayout.LabelField("Right Rect");
-                            EditorGUILayout.EndHorizontal();
+                                EditorGUILayout.BeginHorizontal();
+                                EditorGUILayout.LabelField("Left Rect");
+                                EditorGUILayout.LabelField("Right Rect");
+                                EditorGUILayout.EndHorizontal();
 
-                            EditorGUILayout.BeginHorizontal();
-                            overlayTarget.srcRectLeft = ClampRect(EditorGUILayout.RectField(overlayTarget.srcRectLeft));
-                            EditorGUILayout.Space(15);
-                            guiContent.text = "Right";
-                            overlayTarget.srcRectRight = ClampRect(EditorGUILayout.RectField(overlayTarget.srcRectRight));
-                            EditorGUILayout.EndHorizontal();
+                                EditorGUILayout.BeginHorizontal();
+                                overlayTarget.srcRectLeft = ClampRect(EditorGUILayout.RectField(overlayTarget.srcRectLeft));
+                                EditorGUILayout.Space(15);
+                                guiContent.text = "Right";
+                                overlayTarget.srcRectRight = ClampRect(EditorGUILayout.RectField(overlayTarget.srcRectRight));
+                                EditorGUILayout.EndHorizontal();
 
-                            EditorGUILayout.EndVertical();
-                            EditorGUILayout.Space();
+                                EditorGUILayout.EndVertical();
+                                EditorGUILayout.Space();
+                            }
+                            else if (overlayTarget.textureRect == PXR_OverLay.TextureRect.MonoScopic)
+                            {
+                                overlayTarget.srcRectLeft = new Rect(0, 0, 1, 1);
+                                overlayTarget.srcRectRight = new Rect(0, 0, 1, 1);
+                            }
+                            else if (overlayTarget.textureRect == PXR_OverLay.TextureRect.StereoScopic)
+                            {
+                                overlayTarget.srcRectLeft = new Rect(0, 0, 0.5f, 1);
+                                overlayTarget.srcRectRight = new Rect(0.5f, 0, 0.5f, 1);
+                            }
                         }
-                        else if (overlayTarget.textureRect == PXR_OverLay.TextureRect.MonoScopic)
+                        else
                         {
+                            overlayTarget.textureRect = PXR_OverLay.TextureRect.MonoScopic;
                             overlayTarget.srcRectLeft = new Rect(0, 0, 1, 1);
                             overlayTarget.srcRectRight = new Rect(0, 0, 1, 1);
                         }
-                        else if (overlayTarget.textureRect == PXR_OverLay.TextureRect.StereoScopic)
-                        {
-                            overlayTarget.srcRectLeft = new Rect(0, 0, 0.5f, 1);
-                            overlayTarget.srcRectRight = new Rect(0.5f, 0, 0.5f, 1);
-                        }
 
+                        guiContent.tooltip = "";
+                        GUI.enabled = true;
                         if (overlayTarget.overlayShape == PXR_OverLay.OverlayShape.Quad ||
                             overlayTarget.overlayShape == PXR_OverLay.OverlayShape.Equirect ||
                             overlayTarget.overlayShape == PXR_OverLay.OverlayShape.Fisheye)
@@ -211,10 +229,13 @@ namespace Unity.XR.PXR.Editor
                             }
                             else
                             {
+                                GUI.enabled = false;
                                 overlayTarget.dstRectLeft = new Rect(0, 0, 1, 1);
                                 overlayTarget.dstRectRight = new Rect(0, 0, 1, 1);
+                                GUI.enabled = true;
                             }
                         }
+                        EditorGUI.indentLevel--;
                     }
                 }
 
@@ -266,7 +287,6 @@ namespace Unity.XR.PXR.Editor
                     guiContent.text = "Overlap Factor";
                     overlayTarget.overlapFactor = EditorGUILayout.FloatField(guiContent, overlayTarget.overlapFactor);
                     //overlayTarget.SetEACFactor(overlapFactor);
-
                 }
 
                 guiContent.text = "Override Color Scale";
@@ -287,6 +307,153 @@ namespace Unity.XR.PXR.Editor
 
                 guiContent.text = "isAlphaPremultiplied";
                 overlayTarget.isPremultipliedAlpha = EditorGUILayout.Toggle(guiContent, overlayTarget.isPremultipliedAlpha);
+
+                //Super Resolution
+                var superresolutionContent = new GUIContent();
+                superresolutionContent.text = "Super Resolution";
+                superresolutionContent.tooltip = "Single pass spatial aware upscaling technique.\n\nThis can't be used with Sharpening. \nAlso can't be used along with subsample feature due to unsupported texture format. \n\nThis effect won't work properly under low resolutions when Adaptive Resolution is also enabled.";
+                overlayTarget.superResolution = EditorGUILayout.Toggle(superresolutionContent, overlayTarget.superResolution);
+
+                //Supersampling
+                var supersamplingContent = new GUIContent();
+                supersamplingContent.text = "Supersampling Mode";
+                supersamplingContent.tooltip = "Normal: Normal Quality \n\nQuality: Higher Quality, higher GPU usage\n\nThis effect won't work properly under low resolutions when Adaptive Resolution or Sharpening is also enabled.\n\nThis can't be used with Super Resolution or Sharpening. It will be automatically disabled when you enable Super Resolution or Sharpening. \nAlso can't be used along with subsample feature due to unsupported texture format";
+
+                var supersamplingEnhanceContent = new GUIContent();
+                supersamplingEnhanceContent.text = "Supersampling Enhance Mode";
+                supersamplingEnhanceContent.tooltip = "None: Full screen will be super sampled\n\nFixed Foveated: Only the central fixation point will be sharpened\n\nSelf Adaptive: Only when contrast between the current pixel and the surrounding pixels exceeds a certain threshold will be sharpened.\n\nThis menu will be only enabled while Sharpening (either Normal or Quality) is enabled.";
+
+                if (overlayTarget.superResolution)
+                {
+                    GUI.enabled = false;
+                    overlayTarget.supersamplingMode = SuperSamplingMode.None;
+                    overlayTarget.supersamplingEnhance = SuperSamplingEnhance.None;
+                }
+                else
+                {
+                    GUI.enabled = true;
+                }
+
+                overlayTarget.supersamplingMode = (SuperSamplingMode)EditorGUILayout.EnumPopup(supersamplingContent, overlayTarget.supersamplingMode);
+                if (overlayTarget.supersamplingMode == SuperSamplingMode.None)
+                {
+                    overlayTarget.supersamplingEnhance = SuperSamplingEnhance.None;
+                }
+                else
+                {
+                    EditorGUI.indentLevel++;
+                    overlayTarget.supersamplingEnhance = (SuperSamplingEnhance)EditorGUILayout.EnumPopup(supersamplingEnhanceContent, overlayTarget.supersamplingEnhance);
+                    EditorGUI.indentLevel--;
+                }
+
+                if (overlayTarget.supersamplingMode != SuperSamplingMode.None)
+                {
+                    if (overlayTarget.supersamplingMode == SuperSamplingMode.Normal)
+                    {
+                        overlayTarget.normalSupersampling = true;
+                        overlayTarget.qualitySupersampling = false;
+                    }
+                    else
+                    {
+                        overlayTarget.normalSupersampling = false;
+                        overlayTarget.qualitySupersampling = true;
+                    }
+
+                    if (overlayTarget.supersamplingEnhance == SuperSamplingEnhance.FixedFoveated)
+                    {
+                        overlayTarget.fixedFoveatedSupersampling = true;
+                    }
+                    else
+                    {
+                        overlayTarget.fixedFoveatedSupersampling = false;
+                    }
+                }
+                else
+                {
+                    overlayTarget.normalSupersampling = false;
+                    overlayTarget.qualitySupersampling = false;
+                    overlayTarget.fixedFoveatedSupersampling = false;
+                }
+
+                //Sharpening
+                var sharpeningContent = new GUIContent();
+                sharpeningContent.text = "Sharpening Mode";
+                sharpeningContent.tooltip = "Normal: Normal Quality \n\nQuality: Higher Quality, higher GPU usage\n\nThis effect won't work properly under low resolutions when Adaptive Resolution is also enabled.\n\nThis can't be used with Super Resolution and Supersampling. It will be automatically disabled when you enable Super Resolution or Supersampling. \nAlso can't be used along with subsample feature due to unsupported texture format";
+                var sharpeningEnhanceContent = new GUIContent();
+                sharpeningEnhanceContent.text = "Sharpening Enhance Mode";
+                sharpeningEnhanceContent.tooltip = "None: Full screen will be sharpened\n\nFixed Foveated: Only the central fixation point will be sharpened\n\nSelf Adaptive: Only when contrast between the current pixel and the surrounding pixels exceeds a certain threshold will be sharpened.\n\nThis menu will be only enabled while Sharpening (either Normal or Quality) is enabled.";
+
+                if (overlayTarget.superResolution || overlayTarget.normalSupersampling || overlayTarget.qualitySupersampling || overlayTarget.fixedFoveatedSupersampling)
+                {
+                    GUI.enabled = false;
+                    overlayTarget.sharpeningMode = SharpeningMode.None;
+                    overlayTarget.sharpeningEnhance = SharpeningEnhance.None;
+                }
+                else
+                {
+                    GUI.enabled = true;
+                }
+
+                overlayTarget.sharpeningMode = (SharpeningMode)EditorGUILayout.EnumPopup(sharpeningContent, overlayTarget.sharpeningMode);
+                if (overlayTarget.sharpeningMode == SharpeningMode.None)
+                {
+                    overlayTarget.sharpeningEnhance = SharpeningEnhance.None;
+                }
+                else
+                {
+                    EditorGUI.indentLevel++;
+                    overlayTarget.sharpeningEnhance = (SharpeningEnhance)EditorGUILayout.EnumPopup(sharpeningEnhanceContent, overlayTarget.sharpeningEnhance);
+                    EditorGUI.indentLevel--;
+                }
+
+                if (overlayTarget.sharpeningMode != SharpeningMode.None)
+                {
+                    if (overlayTarget.sharpeningMode == SharpeningMode.Normal)
+                    {
+                        overlayTarget.normalSharpening = true;
+                        overlayTarget.qualitySharpening = false;
+                    }
+                    else
+                    {
+                        overlayTarget.normalSharpening = false;
+                        overlayTarget.qualitySharpening = true;
+                    }
+
+                    if (overlayTarget.sharpeningEnhance == SharpeningEnhance.Both)
+                    {
+                        overlayTarget.fixedFoveatedSharpening = true;
+                        overlayTarget.selfAdaptiveSharpening = true;
+                    }
+                    else if (overlayTarget.sharpeningEnhance == SharpeningEnhance.FixedFoveated)
+                    {
+                        overlayTarget.fixedFoveatedSharpening = true;
+                        overlayTarget.selfAdaptiveSharpening = false;
+                    }
+                    else if (overlayTarget.sharpeningEnhance == SharpeningEnhance.SelfAdaptive)
+                    {
+                        overlayTarget.fixedFoveatedSharpening = false;
+                        overlayTarget.selfAdaptiveSharpening = true;
+                    }
+                    else
+                    {
+                        overlayTarget.fixedFoveatedSharpening = false;
+                        overlayTarget.selfAdaptiveSharpening = false;
+                    }
+                }
+                else
+                {
+                    overlayTarget.normalSharpening = false;
+                    overlayTarget.qualitySharpening = false;
+                    overlayTarget.fixedFoveatedSharpening = false;
+                    overlayTarget.selfAdaptiveSharpening = false;
+                }
+
+                if (GUI.changed)
+                {
+                    EditorUtility.SetDirty(overlayTarget);
+                    EditorUtility.SetDirty(overlayTarget);
+                }
+                serializedObject.ApplyModifiedProperties();
             }
 
             if (GUI.changed)

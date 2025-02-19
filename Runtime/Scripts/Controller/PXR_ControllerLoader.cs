@@ -14,6 +14,7 @@ using System.Collections;
 using System.IO;
 using LitJson;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Unity.XR.PXR
 {
@@ -228,6 +229,14 @@ namespace Unity.XR.PXR
 
         private void LoadControllerFromPrefab(PXR_Input.Controller hand)
         {
+#if UNITY_6000_0_OR_NEWER && !URP
+            if (GraphicsDeviceType.OpenGLES3 == SystemInfo.graphicsDeviceType && QualitySettings.activeColorSpace == ColorSpace.Linear 
+                && PXR_Settings.GetSettings().stereoRenderingModeAndroid == PXR_Settings.StereoRenderingModeAndroid.Multiview)
+            {
+                loadModelSuccess = false;
+                return;
+            }
+#endif
             switch (controllerType)
             {
                 case 5:

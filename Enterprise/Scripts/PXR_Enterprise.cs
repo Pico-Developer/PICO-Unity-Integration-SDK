@@ -12,7 +12,9 @@ PICO Technology Co., Ltd.
 
 using System;
 using System.Collections.Generic;
+using AOT;
 using UnityEngine;
+using UnityEngine.Android;
 using UnityEngine.XR;
 
 namespace Unity.XR.PICO.TOBSupport
@@ -1975,9 +1977,9 @@ namespace Unity.XR.PICO.TOBSupport
         /// </summary>
         /// <param name="predictTime">Predict time.</param>
         /// <returns>The predicted status of the sensor.</returns>
-        public static SensorState GetPredictedMainSensorState(double predictTime)
+        public static SensorState GetPredictedMainSensorState(double predictTime,bool isGlobal=true)
         {
-            return PXR_EnterprisePlugin.UPxr_GetPredictedMainSensorState(predictTime);
+            return PXR_EnterprisePlugin.UPxr_GetPredictedMainSensorState(predictTime,isGlobal);
         }
 
         /// <summary>
@@ -3663,5 +3665,261 @@ namespace Unity.XR.PICO.TOBSupport
         {
             return PXR_EnterprisePlugin.UPxr_GetScreenRecordFrameRate();
         }
+        
+        
+        
+        private const string _permissionCAMERA = "android.permission.CAMERA";
+
+        public static void RequestUserPermission(Action<string> _PermissionGranted,Action<string> notGranted)
+        {
+            List<string> _permissions = new List<string>();
+          
+            if (!Permission.HasUserAuthorizedPermission(_permissionCAMERA))
+            {
+                _permissions.Add(_permissionCAMERA);
+            }
+
+            if (_permissions.Count>0)
+            {
+                var callbacks = new PermissionCallbacks();
+                callbacks.PermissionGranted += _PermissionGranted;
+                callbacks.PermissionDenied += notGranted;
+                callbacks.PermissionDeniedAndDontAskAgain += notGranted;
+                Permission.RequestUserPermissions(_permissions.ToArray(),callbacks);
+            }
+            else
+            {
+                if (_PermissionGranted != null)
+                {
+                    _PermissionGranted("Granted");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Opens the camera. After the camera is opened, you can use the APIs for retrieving camera data and more.
+        /// @note Only supported by PICO 4 Ultra Enterprise.
+        /// </summary>
+        /// <param name="callback">Asynchronously returns whether the camera is opened. 
+        /// - `true`: opened
+        /// - `false`: not opened
+        /// </param>
+        public static void OpenCameraAsyncfor4U(Action<bool> callback)
+        {
+            RequestUserPermission(Granted =>
+            {
+                Debug.Log($"PermissionCallbacks_PermissionGranted Granted: {Granted}");
+                PXR_EnterprisePlugin.setCapturelibCallBack(EventDataCapturelibCallBackFunction);
+                bool ret = PXR_EnterprisePlugin.OpenCameraAsync();
+                if (!ret)
+                {
+                    callback(false);
+                }
+                else
+                {
+                    openCameraAsyncSuccess = callback;
+                }
+            },notGranted =>
+            {
+                Debug.Log($"PermissionCallbacks_PermissionGranted notGranted: {notGranted}");
+                if (callback!=null)
+                {
+                    callback(false);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Configures camera parameters.
+        /// @note Only supported by PICO 4 Ultra Enterprise.
+        /// </summary>
+        /// <param name="enableMvHevc">Specifies whether to record videos in MV-HEVC. This is currently not supported, so pass `false`.</param>
+        /// <param name="videoFps">Specifies the frame rate of videos. When the value specified is greater than 0, that value will be used. When the value specified is smaller than or equal to 0, the default 60fps will be used.</param>
+        public static void Configurefor4U(bool enableMvHevc, int videoFps)
+        {
+            PXR_EnterprisePlugin.Configure(enableMvHevc,videoFps);
+        }
+
+        /// <summary>
+        /// Uses the default camera settings. The default frame rate is 60fps.
+        /// @note Only supported by PICO 4 Ultra Enterprise.
+        /// </summary>
+        public static void Configurefor4U()
+        {
+            PXR_EnterprisePlugin.Configure();
+        }
+
+        /// <summary>
+        /// Renders content to the specified surface with the specified PXRCaptureRenderMode.
+        /// @note Only supported by PICO 4 Ultra Enterprise.
+        /// </summary>
+        /// <param name="surfaceObj">Specifies the pointer to the surface object.</param>
+        /// <param name="mode">Specifies the render mode by choosing one from the following:
+        /// - `PXRCapture_RenderMode_LEFT`: Render the image from the left-eye camera to the surface
+        /// - `PXRCapture_RenderMode_RIGHT`: Render the image from the right-eye camera to the surface
+        /// - `PXRCapture_RenderMode_3D`: Stitch the images from the left-eye and right-eye cameras into one image and render this image to the surface
+        /// - `PXRCapture_RenderMode_Interlace`: Render the images from the left-eye and right-eye cameras interlacedly, and the interval is 1 nanosecond
+        /// </param>
+        /// <returns>
+        /// - `true`: success
+        /// - `false`: failure
+        /// </returns>
+        public static bool StartPreviewfor4U(IntPtr surfaceObj, PXRCaptureRenderMode mode)
+        {
+           return PXR_EnterprisePlugin.StartPreview(surfaceObj,mode);
+        }
+        private static Action<Frame> onImageAvailable;
+        private static Action<bool> openCameraAsyncSuccess;
+        private static CameraFrame cameraFrame;
+
+        /// <summary>
+        /// Sets a frame buffer for the camera. The frame buffer is used to store image data with specified width and height.
+        /// @note Only supported by PICO 4 Ultra Enterprise.
+        /// </summary>
+        /// <param name="width">Specifies the width of the frame buffer.</param>
+        /// <param name="height">Specifies the height of the frame buffer.</param>
+        /// <param name="data">Specifies the pointer to the image data.</param>
+        public static void SetCameraFrameBufferfor4U(int width, int height, ref IntPtr data, Action<Frame> imageAvailable)
+        {
+            onImageAvailable = imageAvailable;
+            cameraFrame.width=(uint)width;
+            cameraFrame.height=(uint)height;
+            cameraFrame.data=data;
+            PXR_EnterprisePlugin.setCameraFrameBuffer(ref cameraFrame);
+        }
+        [MonoPInvokeCallback(typeof(PXR_EnterprisePlugin.CapturelibCallBack))]
+        static void EventDataCapturelibCallBackFunction(int type)
+        {
+            switch (type)
+            {
+                case 0:
+                    if (onImageAvailable!=null)
+                    {
+                        SensorState a = GetPredictedMainSensorState(cameraFrame.time/ 1000000,false);
+                        Frame pxrFrame;
+                        pxrFrame.width = cameraFrame.width;
+                        pxrFrame.height = cameraFrame.height;
+                        pxrFrame.data = cameraFrame.data;
+    
+                        pxrFrame.pose = a.pose;
+                        pxrFrame.timestamp = cameraFrame.time;
+                        pxrFrame.status=a.status;
+                        pxrFrame.datasize=cameraFrame.size;
+                        onImageAvailable(pxrFrame);
+                    }
+                    break;
+                case 1:
+                   
+                    if (openCameraAsyncSuccess!=null)
+                    {
+                        openCameraAsyncSuccess(true);
+                    }
+                    break;
+            }
+            
+        }
+   
+        /// <summary>
+        /// Starts getting image data with the specified PXRCaptureRenderMode.
+        /// @note Only supported by PICO 4 Ultra Enterprise.
+        /// </summary>
+        /// <param name="mode">Specifies the image output mode by choosing one from the following:
+        /// - `PXRCapture_RenderMode_LEFT`: Output the image from the left-eye camera
+        /// - `PXRCapture_RenderMode_RIGHT`: Output the image from the right-eye camera
+        /// - `PXRCapture_RenderMode_3D`: Stitch the images from the left-eye and right-eye cameras into one image and output this image
+        /// - `PXRCapture_RenderMode_Interlace`: Output the images from the left-eye and right-eye cameras interlacedly, and the interval is 1 nanosecond
+        /// </param>
+        /// <param name="width">Specifies the same width you set for the frame buffer in `SetCameraFrameBufferfor4U`.</param>
+        /// <param name="height">Specifies the same height you set for the frame buffer in `SetCameraFrameBufferfor4U`.</param>
+        /// <returns>
+        /// - `true`: success
+        /// - `false`: failure
+        /// </returns>
+        public static bool StartGetImageDatafor4U(PXRCaptureRenderMode mode, int width, int height)
+        {
+            return PXR_EnterprisePlugin.StartPerformance(mode,width,height);
+        }
+   
+        /// <summary>
+        /// Closes the camera.
+        /// @note Only supported by PICO 4 Ultra Enterprise.
+        /// </summary>
+        /// <returns>
+        /// - `true`: success
+        /// - `false`: failure
+        /// </returns>
+        public static bool CloseCamerafor4U()
+        {
+            return PXR_EnterprisePlugin.CloseCamera();
+        }
+
+        /// <summary>
+        /// Gets the values of the intrinsic parameters (cx, cy, fx, fy) for the camera. These values are calculated based on the width, height, horizontal FOV, and vertical FOV you specify.
+        /// @note Only supported by PICO 4 Ultra Enterprise.
+        /// </summary>
+        /// <param name="width">Specifies the width.</param>
+        /// <param name="height">Specifies the height.</param>
+        /// <param name="h_fov">Specifies the horizontal FOV.</param>
+        /// <param name="v_fov">Specifies the vertical FOV.</param>
+        /// <returns>
+        /// The values of `cx`, `cy`, `fx`, and `fy`.
+        /// - `fx`: The camera's focal length on the X-axis
+        /// - `fy`: The camera's focal length on the Y-axis
+        /// - `cx`: The optical center's position in the X-axis of the pixel coordinate of the image, the final position is presented as (x,y)
+        /// - `cy`: The optical center's position in the Y-axis of the pixel coordinate of the image, the final position is presented as (x,y)
+        /// </returns>
+        public static double[] GetCameraIntrinsicsfor4U(int width, int height, double h_fov, double v_fov)
+        {
+            return PXR_EnterprisePlugin.GetCameraIntrinsics(width, height, h_fov, v_fov);
+        }
+
+        /// <summary>
+        /// Gets the extrinsic parameters for the camera.
+        /// @note Only supported by PICO 4 Ultra Enterprise.
+        /// </summary>
+        /// <param name="left">Returns the position and rotation of the left-eye camera.</param>
+        /// <param name="right">Returns the position and rotation of the right-eye camera.</param>
+        /// <returns>
+        /// - `true`: success
+        /// - `false`: failure
+        /// </returns>
+        public static bool GetCameraExtrinsicsfor4U(out Matrix4x4 left, out Matrix4x4 right)
+        {
+            bool ret=PXR_EnterprisePlugin.GetCameraExtrinsics(out var leftExtrinsics,out var rightExtrinsics);
+            left= PXR_EnterprisePlugin.DoubleArrayToMatrix4x4(leftExtrinsics);
+            right=  PXR_EnterprisePlugin.DoubleArrayToMatrix4x4(rightExtrinsics);
+            return ret;
+        }
+
+        /// <summary>
+        /// Gets the values of the cameras' intrinsic and extrinsic parameters. The values are calculated based on the width and height you specify.
+        /// @note Only supported by PICO 4 Ultra Enterprise. 
+        /// </summary>
+        /// <param name="width">Specifies the width.</param>
+        /// <param name="height">Specifies the height.</param>
+        /// <returns>
+        /// Returns the `RGBCameraParamsNew` that includes the following data.
+        /// Below are the intrinsic parameters:
+        /// - `fx`: The camera's focal length on the X-axis
+        /// - `fy`: The camera's focal length on the Y-axis
+        /// - `cx`: The optical center's position in the X-axis of the pixel coordinate of the image, the final position is presented as (x,y)
+        /// - `cy`: The optical center's position in the Y-axis of the pixel coordinate of the image, the final position is presented as (x,y)
+        /// Below are the extrinsic parameters:
+        /// - `l_pos`: Vector3, the position of the left-eye camera
+        /// - `l_rot`: Quaternion, the rotation of the left-eye camera
+        /// - `r_pos`: Vector3, the position of the right-eye camera
+        /// - `r_rot`: Quaternion, the rotation of the right-eye camera
+        /// </returns>
+        public static RGBCameraParamsNew GetCameraParametersNewfor4U(int width, int height)
+        {
+            RGBCameraParamsNew rgbCameraParams = new RGBCameraParamsNew();
+            bool ret=PXR_EnterprisePlugin.GetCameraParametersNew(width,height,ref rgbCameraParams);
+            if (!ret)
+            {
+                rgbCameraParams.identity();
+            }
+            return rgbCameraParams;
+        }
+
     }
 }

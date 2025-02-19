@@ -29,7 +29,7 @@ using System.Linq;
 using UnityEditor;
 #endif
 
-#if AR_FOUNDATION
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
 using UnityEngine.XR.ARSubsystems;
 #endif
 
@@ -71,7 +71,7 @@ namespace Unity.XR.PXR
 #if XR_HANDS
         private static List<XRHandSubsystemDescriptor> handSubsystemDescriptors = new List<XRHandSubsystemDescriptor>();
 #endif
-#if AR_FOUNDATION
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
         private static List<XRSessionSubsystemDescriptor> sessionSubsystemDescriptors = new List<XRSessionSubsystemDescriptor>();
         private static List<XRCameraSubsystemDescriptor> cameraSubsystemDescriptors = new List<XRCameraSubsystemDescriptor>();
         private static List<XRFaceSubsystemDescriptor> faceSubsystemDescriptors = new List<XRFaceSubsystemDescriptor>();
@@ -196,7 +196,7 @@ namespace Unity.XR.PXR
             CreateSubsystem<XRHandSubsystemDescriptor, XRHandSubsystem>(handSubsystemDescriptors, "PICO Hands");
 #endif
 
-#if AR_FOUNDATION       
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
             if (PXR_ProjectSetting.GetProjectConfig().arFoundation)
             {
                 CreateSubsystem<XRSessionSubsystemDescriptor, XRSessionSubsystem>(sessionSubsystemDescriptors, PXR_SessionSubsystem.k_SubsystemId);
@@ -270,7 +270,7 @@ namespace Unity.XR.PXR
 #if XR_HANDS
             StartSubsystem<XRHandSubsystem>();
 #endif
-#if AR_FOUNDATION        
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
             if (PXR_ProjectSetting.GetProjectConfig().arFoundation)
             {
                 StartSubsystem<XRCameraSubsystem>();
@@ -327,11 +327,11 @@ namespace Unity.XR.PXR
             {
                 StopSubsystem<XRDisplaySubsystem>();
             }
- 
+
 #if XR_HANDS
             StopSubsystem<XRHandSubsystem>();
 #endif
-#if AR_FOUNDATION       
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
             if (PXR_ProjectSetting.GetProjectConfig().arFoundation)
             {
                 StopSubsystem<XRCameraSubsystem>();
@@ -383,7 +383,7 @@ namespace Unity.XR.PXR
 #if XR_HANDS
             DestroySubsystem<XRHandSubsystem>();
 #endif
-#if AR_FOUNDATION
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
             if (PXR_ProjectSetting.GetProjectConfig().arFoundation)
             {
                 DestroySubsystem<XRCameraSubsystem>();
@@ -444,7 +444,7 @@ namespace Unity.XR.PXR
                     {
                         PXR_Plugin.System.SessionStateChanged(state);
                     }
-#if AR_FOUNDATION
+#if AR_FOUNDATION_5 || AR_FOUNDATION_6
                     PXR_SessionSubsystem.instance?.OnSessionStateChange(state);
 #endif
                     break;

@@ -31,7 +31,7 @@ static class PXR_ProjectValidationRecommend
         const BuildTargetGroup recommendedBuildTarget = BuildTargetGroup.Android;
 #endif
         var androidGlobalRules = new[]
-        {                
+        {
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
@@ -61,28 +61,6 @@ static class PXR_ProjectValidationRecommend
                     FixIt = () =>
                     {
                         PlayerSettings.Android.preferredInstallLocation = AndroidPreferredInstallLocation.Auto;
-                    },
-                    Error = false
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = "Use ARM64 architecture and IL2CPP scripting.",
-                    IsRuleEnabled = IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        if ((PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARM64) != AndroidArchitecture.None)
-                        {
-                            return PlayerSettings.GetScriptingBackend(recommendedBuildTarget) == ScriptingImplementation.IL2CPP;
-                        }
-                        return false;
-                    },
-                    FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > Android tab and ensure 'Scripting Backend'" +
-                        " is set to 'IL2CPP'. Then under 'Target Architectures' enable 'ARM64'.",
-                    FixIt = () =>
-                    {
-                        PlayerSettings.SetScriptingBackend(recommendedBuildTarget, ScriptingImplementation.IL2CPP);
-                        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
                     },
                     Error = false
                 },
@@ -124,7 +102,7 @@ static class PXR_ProjectValidationRecommend
                     Message = "When using ETFR/FFR, it is recommended to enable subsampling to improve performance.",
                     IsRuleEnabled = IsPXRPluginEnabled,
                     CheckPredicate = () =>
-                    {                        
+                    {
                         if (PXR_ProjectSetting.GetProjectConfig().recommendSubsamping)
                         {
                             return PXR_ProjectSetting.GetProjectConfig().enableSubsampled;
@@ -243,12 +221,12 @@ static class PXR_ProjectValidationRecommend
                     IsRuleEnabled = IsPXRPluginEnabled,
                     CheckPredicate = () =>
                     {
-                        return PlayerSettings.GetMobileMTRendering(BuildTargetGroup.Android);
+                        return PlayerSettings.GetMobileMTRendering(recommendedBuildTarget);
                     },
                     FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > 'Multithreaded Rendering' set to enable.",
                     FixIt = () =>
                     {
-                        PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android, true);
+                        PlayerSettings.SetMobileMTRendering(recommendedBuildTarget, true);
                     },
                     Error = false
                 },
@@ -406,6 +384,23 @@ static class PXR_ProjectValidationRecommend
                     },
                     Error = false
                 },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = $"A single scene recommended up to 4 compositor layers.",
+                    IsRuleEnabled = IsPXRPluginEnabled,
+                    CheckPredicate = () =>
+                    {
+                        return FindComponentsInScene<PXR_OverLay>().Where(component => component.isActiveAndEnabled).ToList().Count <= 4;
+                    },
+                    FixItMessage = "You can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it. ",
+                    FixIt = () =>
+                    {
+                        string url = "https://developer.picoxr.com/en/document/unity/vr-compositor-layers/";
+                        Application.OpenURL(url);
+                    },
+                    Error = false
+                },
 #if URP
             new BuildValidationRule
                 {
@@ -415,7 +410,11 @@ static class PXR_ProjectValidationRecommend
                     {
                         if (QualitySettings.renderPipeline != null && GraphicsSettings.currentRenderPipeline!= null)
                         {
+#if UNITY_6000_0_OR_NEWER
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+#else
                             UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.renderPipelineAsset;
+#endif
                             var path = AssetDatabase.GetAssetPath(universalRenderPipelineAsset);
                             var dependency = AssetDatabase.GetDependencies(path);
                             for (int i = 0; i < dependency.Length; i++)
@@ -434,7 +433,11 @@ static class PXR_ProjectValidationRecommend
                     {
                         if (QualitySettings.renderPipeline != null && GraphicsSettings.currentRenderPipeline!= null)
                         {
+#if UNITY_6000_0_OR_NEWER
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+#else
                             UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.renderPipelineAsset;
+#endif
                             var path = AssetDatabase.GetAssetPath(universalRenderPipelineAsset);
                             var dependency = AssetDatabase.GetDependencies(path);
                             for (int i = 0; i < dependency.Length; i++)
@@ -457,7 +460,11 @@ static class PXR_ProjectValidationRecommend
                     {
                         if (QualitySettings.renderPipeline != null && GraphicsSettings.currentRenderPipeline!= null)
                         {
+#if UNITY_6000_0_OR_NEWER
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+#else
                             UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.renderPipelineAsset;
+#endif
                             var path = AssetDatabase.GetAssetPath(universalRenderPipelineAsset);
                             var dependency = AssetDatabase.GetDependencies(path);
                             for (int i = 0; i < dependency.Length; i++)
@@ -477,7 +484,11 @@ static class PXR_ProjectValidationRecommend
                     {
                         if (QualitySettings.renderPipeline != null && GraphicsSettings.currentRenderPipeline!= null)
                         {
+#if UNITY_6000_0_OR_NEWER
+                            UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+#else
                             UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.renderPipelineAsset;
+#endif
                             var path = AssetDatabase.GetAssetPath(universalRenderPipelineAsset);
                             var dependency = AssetDatabase.GetDependencies(path);
                             for (int i = 0; i < dependency.Length; i++)
@@ -519,7 +530,7 @@ static class PXR_ProjectValidationRecommend
 #endif
 
         };
-        BuildValidator.AddRules(BuildTargetGroup.Android, androidGlobalRules); 
+        BuildValidator.AddRules(BuildTargetGroup.Android, androidGlobalRules);
     }
 
     static bool IsPXRPluginEnabled()

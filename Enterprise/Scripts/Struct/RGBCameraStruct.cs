@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using Unity.XR.PXR;
+using UnityEngine;
 
 namespace Unity.XR.PICO.TOBSupport
 {
@@ -101,5 +103,60 @@ namespace Unity.XR.PICO.TOBSupport
         public double rx;
         public double ry;
         public double rz;
+    }
+
+    public struct RGBCameraParamsNew
+    {
+        // Intrinsics
+        public double fx;
+        public double fy;
+        public double cx;
+        public double cy;
+
+        // Extrinsics
+        public Vector3 l_pos;
+        public Quaternion l_rot;
+        public Vector3 r_pos;
+        public Quaternion r_rot;
+        public void identity()
+        {
+            this.fx = 0;
+            this.fy = 0;
+            this.cx = 0;
+            this.cy = 0;
+            l_pos = Vector3.zero;
+            l_rot = Quaternion.identity;
+            r_pos =Vector3.zero;
+            r_rot = Quaternion.identity;
+        }
+    }
+
+    public enum PXRCaptureRenderMode
+    {
+        PXRCapture_RenderMode_LEFT, //左camera数据
+        PXRCapture_RenderMode_RIGHT, //右camera数据
+        PXRCapture_RenderMode_3D, //左右camera拼接成一张图
+        PXRCapture_RenderMode_Interlace, //左右camera数据依次发送，时间戳间隔相差1
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PXRFrame
+    {
+        public UInt32 width; // width
+        public UInt32 height; // height
+        public UInt32 size;
+        public IntPtr data; // image data 
+        public PxrSensorState2 sensorState; // Sensor data
+        public long time; //
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct CameraFrame
+    {
+        public UInt32 width; // width
+        public UInt32 height; // height
+        public UInt32 size;
+        public IntPtr data; // image data 
+        public UInt64 time; //
     }
 }

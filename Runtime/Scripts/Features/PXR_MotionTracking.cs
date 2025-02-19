@@ -1322,7 +1322,6 @@ namespace Unity.XR.PXR
         /// <Returns>
         /// The ID and battery level of the PICO Motion Tracker.
         /// - For PICO Motion Tracker (Beta), the value range of battery level is [0,5].
-        /// - For PICO Motion Tracker (Official), the value range of battery level is [0,10].
         /// `0` indicates a low battery, which can affect the tracking accuracy.
         /// </returns>
         public static Action<int, int> MotionTrackerBatteryLevel;

@@ -67,14 +67,11 @@ public class PXR_Hand : MonoBehaviour
     {
         if (PXR_HandTracking.GetJointLocations(handType, ref handJointLocations))
         {
-            if (handJointLocations.isActive == 0) return;
-
             if (isaAdaptiveScales)
             {
                 float scale = 0;
                 PXR_HandTracking.GetHandScale(handType,ref scale);
                 Basemesh.localScale = Vector3.one*scale;
-            
             }
 
             for (int i = 0; i < handJoints.Count; ++i)
