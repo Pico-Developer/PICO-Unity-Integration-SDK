@@ -151,7 +151,7 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
         PXR_Audio.Spatializer.Result ret = Context.AddSourceWithConfig(
             ref sourceConfig,
             ref sourceId,
-            true);
+            false);
         if (ret != PXR_Audio.Spatializer.Result.Success)
         {
             Debug.LogError("Failed to add source.");

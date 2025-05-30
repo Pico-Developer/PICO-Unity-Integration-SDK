@@ -2,6 +2,8 @@
     Properties{
         _MainTex("Base (RGB) Trans (A)", 2D) = "white" {}
         _premultiply("Pre-multiply alpha", Int) = 0
+        _Gamma("Gamma", Range(0.1, 5)) = 1.0
+
     }
     SubShader{
         Tags{ "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
@@ -32,6 +34,7 @@
                 sampler2D _MainTex;
                 float4 _MainTex_ST;
                 int _premultiply;
+                float _Gamma;
 
                 v2f vert (appdata_t v)
                 {
@@ -47,6 +50,9 @@
 
                     if (_premultiply)
                         col.rgb *= col.a;
+
+                    if(_Gamma != 1)
+                        col.rgb = pow(col.rgb, _Gamma);
 
                     return col;
                 }

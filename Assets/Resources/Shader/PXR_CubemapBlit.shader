@@ -2,6 +2,7 @@
 	Properties{
 		_MainTex("MainTex", CUBE) = "white" {}
 		_d("Direction", Int) = 0
+		_Gamma("Gamma", Range(0.1, 5)) = 1.0
 	}
 		SubShader{
 			Tags{ "Queue" = "Transparent" "IgnoreProjector" = "True" "RenderType" = "Transparent" }
@@ -30,6 +31,7 @@
 
 					samplerCUBE _MainTex;
 					int _d;
+					float _Gamma;
 
 					v2f vert(appdata v)
 					{
@@ -45,6 +47,9 @@
 					fixed4 frag(v2f v) : COLOR
 					{
 						fixed4 col = texCUBE(_MainTex, v.cubedir);
+
+						if (_Gamma != 1)
+							col.rgb = pow(col.rgb, _Gamma);
 						return col;
 					}
 				ENDCG

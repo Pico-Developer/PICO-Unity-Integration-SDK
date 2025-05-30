@@ -22,7 +22,7 @@ static class PXR_ProjectValidationOptional
                 {
                     Category = k_Catergory,
                     Message = "When enabling ET or ETFR, option 'Eye Tracking Calibration' can be used.",
-                    IsRuleEnabled = IsPXRPluginEnabled,
+                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
                     CheckPredicate = () =>
                     {
                         if (PXR_ProjectSetting.GetProjectConfig().eyeTracking || PXR_ProjectSetting.GetProjectConfig().enableETFR)
@@ -35,6 +35,7 @@ static class PXR_ProjectValidationOptional
                     FixIt = () =>
                     {
                         PXR_ProjectSetting.GetProjectConfig().eyetrackingCalibration = true;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_EyeTrackingCalibration);
                     },
                     Error = false
                 },
@@ -42,7 +43,7 @@ static class PXR_ProjectValidationOptional
                 {
                     Category = k_Catergory,
                     Message = "Disable Realtime GI.",
-                    IsRuleEnabled = IsPXRPluginEnabled,
+                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
                     CheckPredicate = () =>
                     {
                         return !Lightmapping.realtimeGI;
@@ -51,6 +52,7 @@ static class PXR_ProjectValidationOptional
                     FixIt = () =>
                     {
                         Lightmapping.realtimeGI = false;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_DisableRealtimeGI);
                     },
                     Error = false
                 },
@@ -58,7 +60,7 @@ static class PXR_ProjectValidationOptional
                 {
                     Category = k_Catergory,
                     Message = "Enable GPU Skinning.",
-                    IsRuleEnabled = IsPXRPluginEnabled,
+                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
                     CheckPredicate = () =>
                     {
                         return PlayerSettings.gpuSkinning;
@@ -67,21 +69,11 @@ static class PXR_ProjectValidationOptional
                     FixIt = () =>
                     {
                         PlayerSettings.gpuSkinning = true;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_GPUSkinning);
                     },
                     Error = false
                 },
         };
         BuildValidator.AddRules(BuildTargetGroup.Android, androidGlobalRules);
     }
-    static bool IsPXRPluginEnabled()
-        {
-            var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(
-                BuildTargetGroup.Android);
-            if (generalSettings == null)
-                return false;
-
-            var managerSettings = generalSettings.AssignedSettings;
-
-            return managerSettings != null && managerSettings.activeLoaders.Any(loader => loader is PXR_Loader);
-        }
 }

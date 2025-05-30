@@ -4,13 +4,21 @@ using System.Linq;
 using Unity.XR.CoreUtils;
 using Unity.XR.CoreUtils.Editor;
 using UnityEditor;
+using UnityEditor.Callbacks;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager.UI;
 using UnityEditor.SceneManagement;
+using UnityEditor.XR.Management;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using static Unity.XR.CoreUtils.XROrigin;
+using UnityEngine.Rendering;
+using UnityEditor.Build;
+#if URP
+using UnityEngine.Rendering.Universal;
+#endif
 
 namespace Unity.XR.PXR
 {
@@ -18,6 +26,8 @@ namespace Unity.XR.PXR
     internal static class PXR_Utils
     {
         public static string BuildingBlock = "[Building Block]";
+        public const string BuildingBlockPathO = "GameObject/PICO Building Blocks/";
+        public const string BuildingBlockPathP = "PICO/PICO Building Blocks/";
         public static string sdkPackageName = "Packages/com.unity.xr.picoxr/";
 
         public static string xriPackageName = "com.unity.xr.interaction.toolkit";
@@ -30,6 +40,13 @@ namespace Unity.XR.PXR
         public static string xriHandsInteractionDemoSampleName = "Hands Interaction Demo";
         public static string xri2HandsSetupPefabName = "XR Interaction Hands Setup";
         public static string xri3HandsSetupPefabName = "XR Origin Hands (XR Rig)";
+
+        public static AndroidSdkVersions minSdkVersionInEditor = AndroidSdkVersions.AndroidApiLevel29;
+#if UNITY_2021_2_OR_NEWER
+        public static NamedBuildTarget recommendedBuildTarget = NamedBuildTarget.Android;
+#else
+        public static BuildTargetGroup recommendedBuildTarget = BuildTargetGroup.Android;
+#endif
 
         public static PackageVersion XRICurPackageVersion
         {
@@ -297,9 +314,9 @@ namespace Unity.XR.PXR
                     cameraOrigin.AddComponent<PXR_Manager>();
                 }
 
-                if (cameraOrigin.GetComponent<CharacterController>())
+                if (cameraOrigin.transform.Find("Locomotion/Move"))
                 {
-                    cameraOrigin.GetComponent<CharacterController>().enabled = false;
+                    cameraOrigin.transform.Find("Locomotion/Move").gameObject.SetActive(false);
                 }
 
                 buildingBlockGO.name = k_BuildingBlocksXRI300OriginName;
@@ -457,5 +474,91 @@ namespace Unity.XR.PXR
             return 0; 
         }
 
+        public static bool IsPXRPluginEnabled()
+        {
+            var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(
+                BuildTargetGroup.Android);
+            if (generalSettings == null)
+                return false;
+
+            var managerSettings = generalSettings.AssignedSettings;
+
+            return managerSettings != null && managerSettings.activeLoaders.Any(loader => loader is PXR_Loader);
+        }
+
+        [DidReloadScripts]
+        [InitializeOnLoadMethod]
+        public static void IsPicoSpatializerAvailable()
+        {
+            string name = "PICO_SPATIALIZER";
+#if UNITY_EDITOR
+            string spatializerPath = sdkPackageName + "SpatialAudio/Pico.Spatializer.asmdef";
+            var asmDef = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(spatializerPath);
+            if (asmDef == null)
+            {
+                RemoveDefineSymbol(name);
+            }
+            else
+            {
+                SetDefineSymbols(name);
+            }
+#endif
+        }
+
+        [Obsolete]
+        public static bool SetDefineSymbols(string name)
+        {
+            string defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            //Debug.Log($"SetDefineSymbols : {defines} , targetGroup={EditorUserBuildSettings.selectedBuildTargetGroup}");
+            if (!defines.Contains(name))
+            {
+                defines += ";" + name;
+                PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, defines);
+                //Debug.Log($"Added {name} to scripting define symbols.");
+                return true;
+            }
+            else
+            {
+                //Debug.Log($"{name} already exists.");
+                return false;
+            }
+        }
+
+        [Obsolete]
+        public static void RemoveDefineSymbol(string name)
+        {
+            string currentDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+
+            Debug.Log($"RemoveDefineSymbol : {currentDefines} , targetGroup={EditorUserBuildSettings.selectedBuildTargetGroup}");
+            string[] definesArray = currentDefines.Split(';');
+            List<string> definesList = new List<string>(definesArray);
+
+            if (definesList.Contains(name))
+            {
+                definesList.Remove(name);
+            }
+
+            string newDefines = string.Join(";", definesList.ToArray());
+
+            PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, newDefines);
+            Debug.Log($"Removed {name} from scripting define symbols.");
+        }
+
+#if URP
+        public static UniversalRenderPipelineAsset GetCurrentURPAsset()
+        {
+            UniversalRenderPipelineAsset universalRenderPipelineAsset = null;
+            if (QualitySettings.renderPipeline != null)
+            {
+                universalRenderPipelineAsset = (UniversalRenderPipelineAsset)QualitySettings.renderPipeline;
+
+            }
+            else if (GraphicsSettings.currentRenderPipeline != null)
+            {
+                universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+            }
+            return universalRenderPipelineAsset;
+        }
+#endif
     }
 }

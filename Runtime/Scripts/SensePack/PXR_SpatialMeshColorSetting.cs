@@ -77,6 +77,8 @@ namespace Unity.XR.PXR
                     new Color(0.5f, 1f, 0.5f),
                     //WallArt
                     new Color(0.5f, 0f, 0.25f),
+                    //Stairway
+                    new Color(0.25f, 0f, 0.25f),
 
                 };
                 string path = Application.dataPath + "/Resources";

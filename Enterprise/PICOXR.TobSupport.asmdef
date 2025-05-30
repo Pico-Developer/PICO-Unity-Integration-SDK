@@ -1,12 +1,14 @@
 {
     "name": "PICO.TobSupport",
+    "rootNamespace": "",
     "references": [
         "Unity.XR.PICO.Editor",
         "Unity.XR.Interaction.Toolkit",
         "Unity.XR.PICO",
         "Unity.XR.OpenXR.Features.PICOSupport.Editor",
         "Unity.XR.OpenXR.Features.PICOSupport",
-        "Unity.XR.OpenXR"
+        "Unity.XR.OpenXR",
+        "Unity.XR.CompositionLayers"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -18,17 +20,23 @@
     "versionDefines": [
         {
             "name": "com.unity.xr.picoxr",
-            "expression": "2.3.3",
+            "expression": "",
             "define": "PICO_XR"
         },
         {
             "name": "com.unity.xr.interaction.toolkit",
-            "expression": "2.4.0",
+            "expression": "[2.4.0,3.0.0]",
             "define": "XRI_240"
-        },  {
+        },
+        {
             "name": "com.unity.xr.interaction.toolkit",
             "expression": "3.0.0",
             "define": "XRI_300"
+        },
+        {
+            "name": "com.unity.xr.compositionlayers",
+            "expression": "",
+            "define": "UNITY_XR_COMPOSITIONLAYERS"
         }
     ],
     "noEngineReferences": false

@@ -65,7 +65,8 @@ namespace Unity.XR.PXR.Editor
                 projectConfig.recommendSubsamping = false;
                 projectConfig.validationFFREnabled = false;
                 projectConfig.validationETFREnabled = false;
-                manager.foveationLevel = (FoveationLevel)EditorGUILayout.EnumPopup("Foveated Rendering Level", manager.foveationLevel);
+                projectConfig.foveationLevel= manager.foveationLevel = (FoveationLevel)EditorGUILayout.EnumPopup("Foveated Rendering Level", manager.foveationLevel);
+                manager.eyeFoveationLevel = FoveationLevel.None;
                 if (FoveationLevel.None != manager.foveationLevel)
                 {
                     projectConfig.validationFFREnabled = true;
@@ -87,7 +88,8 @@ namespace Unity.XR.PXR.Editor
                 projectConfig.recommendSubsamping = false;
                 projectConfig.validationFFREnabled = false;
                 projectConfig.validationETFREnabled = false;
-                manager.eyeFoveationLevel = (FoveationLevel)EditorGUILayout.EnumPopup("Foveated Rendering Level", manager.eyeFoveationLevel);
+                projectConfig.foveationLevel=manager.eyeFoveationLevel = (FoveationLevel)EditorGUILayout.EnumPopup("Foveated Rendering Level", manager.eyeFoveationLevel);
+                manager.foveationLevel = FoveationLevel.None;
                 if (FoveationLevel.None != manager.eyeFoveationLevel)
                 {
                     projectConfig.validationETFREnabled = true;
@@ -269,7 +271,7 @@ namespace Unity.XR.PXR.Editor
 
             }
 
-#if UNITY_2021_1_OR_NEWER
+#if UNITY_2021_3_OR_NEWER
             XROrigin xrOrigin = FindAnyObjectByType<XROrigin>();
 #else
             XROrigin xrOrigin = FindObjectOfType<XROrigin>();
@@ -304,6 +306,10 @@ namespace Unity.XR.PXR.Editor
             mrSafeguardContent.tooltip =
                 "MR safety, if you choose this option, your application will adopt MR safety policies during runtime. If not selected, it will continue to use VR safety policies by default.";
             projectConfig.mrSafeguard = EditorGUILayout.Toggle(mrSafeguardContent, projectConfig.mrSafeguard);
+
+            var secureMRContent = new GUIContent();
+            secureMRContent.text = "SecureMR";
+            projectConfig.secureMR = EditorGUILayout.Toggle(secureMRContent, projectConfig.secureMR);
 
             //Super Resolution
             var superresolutionContent = new GUIContent();

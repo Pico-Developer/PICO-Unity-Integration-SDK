@@ -19,7 +19,7 @@ public class PXR_FaceSubsystem : XRFaceSubsystem
 
     public unsafe static int GetBlendShapeCoefficients(ref PxrFaceTrackingInfo ftInfo)
     {
-        PXR_System.GetFaceTrackingData(0, GetDataType.PXR_GET_FACE_DATA_DEFAULT, ref ftInfo);
+        // PXR_System.GetFaceTrackingData(0, GetDataType.PXR_GET_FACE_DATA_DEFAULT, ref ftInfo);
         return 0;
     }
 
@@ -58,25 +58,25 @@ public class PXR_FaceSubsystem : XRFaceSubsystem
 
         public override void Start()
         {
-            PXR_MotionTracking.GetFaceTrackingSupported(ref isFaceTrackingSupported, ref supportedModesCount, ref supportedModes);
-            if (isFaceTrackingSupported)
-            {
-                FaceTrackingStartInfo startInfo = new FaceTrackingStartInfo();
-                startInfo.mode = FaceTrackingMode.PXR_FTM_FACE_LIPS_BS;
-                inited = PXR_MotionTracking.StartFaceTracking(ref startInfo);
-            }
-            Debug.Log($"{k_SubsystemId} Start(). isFaceTrackingSupported:{isFaceTrackingSupported}, init:{inited}");
+            // PXR_MotionTracking.GetFaceTrackingSupported(ref isFaceTrackingSupported, ref supportedModesCount, ref supportedModes);
+            // if (isFaceTrackingSupported)
+            // {
+            //     FaceTrackingStartInfo startInfo = new FaceTrackingStartInfo();
+            //     startInfo.mode = FaceTrackingMode.PXR_FTM_FACE_LIPS_BS;
+            //     inited = PXR_MotionTracking.StartFaceTracking(ref startInfo);
+            // }
+            // Debug.Log($"{k_SubsystemId} Start(). isFaceTrackingSupported:{isFaceTrackingSupported}, init:{inited}");
         }
 
         public override void Stop()
         {
-            if (isFaceTrackingSupported)
-            {
-                FaceTrackingStopInfo stopInfo = new FaceTrackingStopInfo();
-                stopInfo.pause = 0;
-                inited = PXR_MotionTracking.StopFaceTracking(ref stopInfo);
-            }
-            Debug.Log($"{k_SubsystemId} Stop(). isFaceTrackingSupported:{isFaceTrackingSupported}, init:{inited}");
+            // if (isFaceTrackingSupported)
+            // {
+            //     FaceTrackingStopInfo stopInfo = new FaceTrackingStopInfo();
+            //     stopInfo.pause = 0;
+            //     inited = PXR_MotionTracking.StopFaceTracking(ref stopInfo);
+            // }
+            // Debug.Log($"{k_SubsystemId} Stop(). isFaceTrackingSupported:{isFaceTrackingSupported}, init:{inited}");
         }
 
         public override string ToString()

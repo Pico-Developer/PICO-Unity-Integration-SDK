@@ -44,9 +44,9 @@ public class PXR_CameraSubsystem : XRCameraSubsystem
         /// </summary>
         public override void Destroy() { }
 
-        public void EnableVST(int state)
+        public void EnableVST(XrSessionState state)
         {
-            if (state == 2)
+            if (state == XrSessionState.Ready)
             {
                 PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(true);
             }

@@ -39,7 +39,7 @@ namespace Unity.XR.PXR
             {
                 Debug.Log(showFrameCount
                     ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
-                    : string.Format("{0}>>>>>>{1}", tag, message));
+                    : string.Format("{0} FrameID >>>>>>{1}", tag, message));
             }
         }
 
@@ -49,7 +49,7 @@ namespace Unity.XR.PXR
             {
                 Debug.Log(showFrameCount
                     ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
-                    : string.Format("{0}>>>>>>{1}", tag, message));
+                    : string.Format("{0} FrameID >>>>>>{1}", tag, message));
             }
         }
 
@@ -59,7 +59,7 @@ namespace Unity.XR.PXR
             {
                 Debug.Log(showFrameCount
                     ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
-                    : string.Format("{0}>>>>>>{1}", tag, message));
+                    : string.Format("{0} FrameID >>>>>>{1}", tag, message));
             }
         }
 
@@ -69,7 +69,7 @@ namespace Unity.XR.PXR
             {
                 Debug.Log(showFrameCount
                     ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
-                    : string.Format("{0}>>>>>>{1}", tag, message));
+                    : string.Format("{0} FrameID >>>>>>{1}", tag, message));
             }
         }
 
@@ -79,7 +79,7 @@ namespace Unity.XR.PXR
             {
                 Debug.Log(showFrameCount
                     ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
-                    : string.Format("{0}>>>>>>{1}", tag, message));
+                    : string.Format("{0} FrameID >>>>>>{1}", tag, message));
             }
         }
 
@@ -89,7 +89,7 @@ namespace Unity.XR.PXR
             {
                 Debug.Log(showFrameCount
                     ? string.Format("{0} FrameID={1}>>>>>>{2}", tag, Time.frameCount, message)
-                    : string.Format("{0}>>>>>>{1}", tag, message));
+                    : string.Format("{0} FrameID >>>>>>{1}", tag, message));
             }
         }
     }

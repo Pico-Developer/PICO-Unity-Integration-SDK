@@ -88,6 +88,9 @@ namespace Unity.XR.PICO.TOBSupport
         /// * `CAMERA_TEMPERATURE_CELSIUS`: camera's temperature in Celsius
         /// * `CAMERA_TEMPERATURE_FAHRENHEIT`: camera's temperature in Fahrenheit
         /// * `LARGESPACE_MAP_INFO`: large space map information
+        /// * `CURRENT_CHARGING_PROTOCOL`: the charging protocol
+        /// * `USB_PWOER_MAX`: the maximum charging power
+        /// * `HMD_POSITION_AND_ORIENTATION`: the position and orientation of the HMD
         /// </param>
         /// <param name="ext">Reserved parameter. Default to `0`.</param>
         /// <returns>The specified type of device information. For `CHARGING_STATUS`, an int value will be returned: `2`-charging; `3`-not charging.</returns>
@@ -369,6 +372,10 @@ namespace Unity.XR.PICO.TOBSupport
         /// * `SFS_USB_TETHERING`: USB tethering
         /// * `SFS_REAL_TIME_RESPONSE_HMD_BACK_KEY_IN_VR_APP`: Respond to the headset's Back button in real-time for VR apps. Switch on: When the headset's Back button is pressed, a `DOWN` event is sent, and when released, an `UP` event is sent. Switch off: When the headset's Back button is pressed, no `DOWN` event is sent, but when the button is released, both a `DOWN` and an `UP` event are sent simultaneously
         /// * `SFS_RETRIEVE_MAP_BY_MARKER_FIRST`: Prioritize using the marker point to relocate on the map
+        /// * `SFS_CONTROLLER_STILL`: whether the controllers enter the still state
+        /// * `SFS_SHORTCUT_SHOW_PERFORMANCE_UI`: whether to display the Performance tab in shortcut settings (supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// * `SFS_BATTERY_STATUS_DISPLAY`: wherther to display battery state
+        /// * `SFS_QUICK_RELOCATION`: quick relocation
         /// </param>
         /// <param name="switchEnum">Whether to switch the function on/off:
         /// * `S_ON`: switch on
@@ -1239,6 +1246,10 @@ namespace Unity.XR.PICO.TOBSupport
         /// * `SFS_USB_TETHERING`: USB tethering
         /// * `SFS_REAL_TIME_RESPONSE_HMD_BACK_KEY_IN_VR_APP`: Respond to the headset's Back button in real-time for VR apps. Switch on: When the headset's Back button is pressed, a `DOWN` event is sent, and when released, an `UP` event is sent. Switch off: When the headset's Back button is pressed, no `DOWN` event is sent, but when the button is released, both a `DOWN` and an `UP` event are sent simultaneously
         /// * `SFS_RETRIEVE_MAP_BY_MARKER_FIRST`: Prioritize using the marker point to relocate on the map
+        /// * `SFS_CONTROLLER_STILL`: whether the controllers enter the still state
+        /// * `SFS_SHORTCUT_SHOW_PERFORMANCE_UI`: whether to display the Performance tab in shortcut settings (supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// * `SFS_BATTERY_STATUS_DISPLAY`: wherther to display battery state
+        /// * `SFS_QUICK_RELOCATION`: quick relocation
         /// </param>
         /// <param name="callback">The callback that returns the switch's status:
         /// * `0`: off
@@ -1725,24 +1736,38 @@ namespace Unity.XR.PICO.TOBSupport
 
         /// <summary>
         /// Displays or hides the specified tab or option on the Settings pane.
-        /// @note Supported by PICO Neo3 Pro and PICO 4 Enterprise with system version 5.5.0 or later.
+        /// @note Supported by PICO Neo3 Pro and PICO 4 Enterprise with system version 5.5.0 or later, PICO G3 with system version 5.6.0 or later, and PICO 4 Ultra with system version 5.13.0 or later. Some enum values have other requirements for use.
         /// </summary>
         /// <param name="customizeSettingsTabEnum">Specifies the tab or option to display or hide. Enumerations:
-        /// * `CUSTOMIZE_SETTINGS_TAB_WLAN`: the "WLAN" tab
-        /// * `CUSTOMIZE_SETTINGS_TAB_CONTROLLER`: the "Controller" tab
-        /// * `CUSTOMIZE_SETTINGS_TAB_BLUETOOTH`: the "Bluetooth" tab
-        /// * `CUSTOMIZE_SETTINGS_TAB_DISPLAY`: the "Display" tab
-        /// * `CUSTOMIZE_SETTINGS_TAB_LAB`: the "LAB" tab
-        /// * `CUSTOMIZE_SETTINGS_TAB_GENERAL_FACTORY_RESET`: the "Factory Reset" option on the "General" tab
-        /// * `CUSTOMIZE_SETTINGS_TAB_GENERAL_LOCKSCREEN`: the "Lock Screen" option on the "General" tab
+        /// - `CUSTOMIZE_SETTINGS_TAB_WLAN`: the "WLAN" tab
+        /// - `CUSTOMIZE_SETTINGS_TAB_CONTROLLER`: the "Controller" tab
+        /// - `CUSTOMIZE_SETTINGS_TAB_BLUETOOTH`: the "Bluetooth" tab
+        /// - `CUSTOMIZE_SETTINGS_TAB_DISPLAY`: the "Display" tab
+        /// - `CUSTOMIZE_SETTINGS_TAB_LAB`: the "LAB" tab
+        /// - `CUSTOMIZE_SETTINGS_TAB_GENERAL_FACTORY_RESET`: the "Factory Reset" option on the "General" tab
+        /// - `CUSTOMIZE_SETTINGS_TAB_GENERAL_LOCKSCREEN`: the "Lock Screen" option on the "General" tab
+        /// - `CUSTOMIZE_SETTINGS_TAB_ACCOUNTS`: the Account tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_SYSTEM_UPDATE`: the System Update tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_INTERACTION`: the Interaction tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_PUPIL_DISTANCE`: the Pupil Distance tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_CAMERA_SEETHROUGH`: the Camera Seethrough tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_VIRTUAL_ENVIRONMENT`: the Virtual Environment tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_SAFEGUARD`:the Safeguard tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_ROOM_CAPTURE`: the Room Capture tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_PERFORMANCE`: the Performance tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_CONTROL_CENTRE`: the Control Center tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_NOTIFICATIONS`: the Notification tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_APP_MANAGEMENT`: the App Managament tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_ABOUT`: the About tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
+        /// - `CUSTOMIZE_SETTINGS_TAB_HELP_FEEDBACK`: the Help and Feedback tab (only supported by PICO 4 Ultra with system version 5.13.0 or later)
         /// </param>
         /// <param name="switchEnum">Sets to display or hide the specified tab or option:
-        /// * `S_ON`: display
-        /// * `S_OFF`: hide
+        /// - `S_ON`: display
+        /// - `S_OFF`: hide
         /// </param>
         /// <returns>
-        /// * `0`: success
-        /// * `1`: failure
+        /// - `0`: success
+        /// - `1`: failure
         /// </returns>
         public static int UPxr_CustomizeSettingsTabStatus(CustomizeSettingsTabEnum customizeSettingsTabEnum, SwitchEnum switchEnum, int ext=0)
         {
@@ -2642,12 +2667,12 @@ namespace Unity.XR.PICO.TOBSupport
         /// <returns>
         /// Returns the `displayID` for success, and `-101` for failure.
         /// </returns>
-        public static int CreateVirtualDisplay(string displayName, IntPtr surfaceObj, int densityDpi, int flags)
+        public static int CreateVirtualDisplay(string displayName, IntPtr surfaceObj, int densityDpi, int flags,int width=1024, int height=1024)
         {
-            return PXR_EnterprisePlugin.UPxr_CreateVirtualDisplay(displayName, surfaceObj, 1024, 1024, densityDpi,
+            return PXR_EnterprisePlugin.UPxr_CreateVirtualDisplay(displayName, surfaceObj, width, height, densityDpi,
                 flags);
         }
-
+        
         /// <summary>Starts an app on the virtual display.</summary>
         /// <param name="displayId">Specifies the ID of the virtual display.</param>
         /// <param name="intent">Specifies the intent of `startActivity`. The intent type is provied by PICO SDK.</param>        
@@ -2712,7 +2737,14 @@ namespace Unity.XR.PICO.TOBSupport
         /// </returns>  
         public static int InjectEvent(int displayId, int action, int source, float x, float y)
         {
-            return PXR_EnterprisePlugin.UPxr_InjectEvent(displayId, action, source, 1024*x, 1024*y);
+            if (x<1&&y<1)
+            {
+                return PXR_EnterprisePlugin.UPxr_InjectEvent(displayId, action, source, 1024*x, 1024*y);
+            }
+            else
+            {
+                return PXR_EnterprisePlugin.UPxr_InjectEvent(displayId, action, source, x, y);
+            }
         }
 
         /// <summary>Injects the input event.</summary>
@@ -3920,6 +3952,109 @@ namespace Unity.XR.PICO.TOBSupport
             }
             return rgbCameraParams;
         }
+        
+        /// <summary>
+        /// Sets an app as the device owner app.
+        /// @note Only supported by PICO 4 Ultra with device system version 5.13.0 or later.
+        /// </summary>
+        /// <param name="pkg">Specifies the package name of the owner app.</param>
+        /// <param name="cls">Specifies the class name of the admin component.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// - `2`: permission verification failed
+        /// </returns>
+        public static int SetDeviceOwner(String pkg, String cls)
+        {
+            return PXR_EnterprisePlugin.UPxr_SetDeviceOwner(pkg, cls);
+        }
 
+        /// <summary>
+        /// Gets the device owner app.
+        /// @note Only supported by PICO 4 Ultra with device system version 5.13.0 or later.
+        /// </summary>
+        /// <returns>
+        /// Android component name object containing the app package name and class name. Returns null if no device owner is set
+        /// </returns>
+        public static ComponentName GetDeviceOwner()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetDeviceOwner();
+        }
+        
+        /// <summary>
+        /// Sets a home page for the browser.
+        /// @note Only supported by PICO 4 Ultra with device system version 5.13.0 or later.
+        /// </summary>
+        /// <param name="url">Specifies home page URL to set.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// - `-2`: not supported by the current device
+        /// </returns>
+        public static int SetBrowserHomePage(String url)
+        {
+            return PXR_EnterprisePlugin.UPxr_SetBrowserHomePage(url);
+        }
+
+        /// <summary>
+        /// Gets the home page of the browser.
+        /// @note Only supported by PICO 4 Ultra with device system version 5.13.0 or later.
+        /// </summary>
+        /// <returns>
+        /// The current home page URL of the browser. `null` indicates the default home page URL.
+        /// </returns>
+        public static string GetBrowserHomePage()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetBrowserHomePage();
+        }
+
+        /// <summary>
+        /// Sets the capability for the PICO Motion Tracker to automatically power on when plugged in.
+        /// @note Only supported by PICO 4 Ultra with device system version 5.13.0 or later.
+        /// </summary>
+        /// <param name="enable">
+        /// - `true`: enable this capability
+        /// - `false`: disable this capability
+        /// </param>
+        /// <returns>
+        /// - `track1SN:track1Result,track2SN:track2Result,xxx` for success
+        /// - `1`: failure
+        /// - `-2`: not supported by the current device
+        /// </returns>
+        public static string SetMotionTrackerAutoStart(bool enable)
+        {
+            return PXR_EnterprisePlugin.UPxr_SetMotionTrackerAutoStart(enable?1:0);
+        }
+
+        /// <summary>
+        /// Enables the device to automatically join a WiFi.
+        /// @note Only supported by PICO 4 Ultra with device system version 5.13.0 or later.
+        /// </summary>
+        /// <param name="configuration">Specifies the WiFi configuration, whose priority is higher than `networkID`.</param>
+        /// <param name="networkID">Specifies the ID of the network to join. Only valid when `WifiConfiguration` is null.</param>
+        /// <param name="allowAutoJoin">Sets whether to allow auto-join:
+        /// - `true`: allow
+        /// - `false`: not allow
+        /// </param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
+        public static int AllowWifiAutoJoin(WifiConfiguration configuration, int networkID, bool allowAutoJoin)
+        {
+            return PXR_EnterprisePlugin.UPxr_AllowWifiAutoJoin(configuration,networkID,allowAutoJoin);
+        }
+
+        /// <summary>
+        /// Gets the bound information of the large space.
+        /// @note Only supported by PICO 4 Ultra with device system version 5.13.0 or later.
+        /// </summary>
+        /// <returns>
+        /// The bound information of the large space.
+        /// </returns>
+        public static LargeSpaceBoundsInfo[] GetLargeSpaceBoundsInfoWithType()
+        {
+            return PXR_EnterprisePlugin.UPxr_GetLargeSpaceBoundsInfoWithType();
+        }
     }
 }

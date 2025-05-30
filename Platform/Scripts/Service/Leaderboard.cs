@@ -11,6 +11,7 @@ PICO Technology Co., Ltd.
 *******************************************************************************/
 
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Pico.Platform.Models;
 using UnityEngine;
@@ -182,6 +183,12 @@ namespace Pico.Platform
             if (!CoreService.Initialized)
             {
                 Debug.LogError(CoreService.NotInitializedError);
+                return null;
+            }
+
+            if (userIDs == null || userIDs.Any(p => p == null))
+            {
+                Debug.LogError($"{nameof(userIDs)} cannot be null");
                 return null;
             }
 

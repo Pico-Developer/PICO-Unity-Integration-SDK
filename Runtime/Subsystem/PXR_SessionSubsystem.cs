@@ -17,7 +17,7 @@ public class PXR_SessionSubsystem : XRSessionSubsystem
         instance = this;
     }
 
-    internal void OnSessionStateChange(int newState)
+    internal void OnSessionStateChange(XrSessionState newState)
            => ((SessionProvider)provider).OnSessionStateChange(newState);
 
     class SessionProvider : Provider
@@ -76,24 +76,11 @@ public class PXR_SessionSubsystem : XRSessionSubsystem
             }
         }
 
-        public void OnSessionStateChange(int newState)
+        public void OnSessionStateChange(XrSessionState newState)
         {
-            m_SessionState = (XrSessionState)newState;
+            m_SessionState = newState;
             PLog.i(k_SubsystemId, $" OnSessionStateChange m_SessionState:{m_SessionState}");
         }
-    }
-
-    enum XrSessionState
-    {
-        Unknown = 0,
-        Idle = 1,
-        Ready = 2,
-        Synchronized = 3,
-        Visible = 4,
-        Focused = 5,
-        Stopping = 6,
-        LossPending = 7,
-        Exiting = 8,
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]

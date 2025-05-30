@@ -17,8 +17,7 @@ using UnityEngine;
 
 namespace Unity.XR.PXR
 {
-    public delegate void EventDataBufferCallBack(ref PxrEventDataBuffer dataBuffer);
-
+    public delegate void XrEventDataBufferCallBack(ref XrEventDataBuffer dataBuffer);
     public class PXR_System
     {
         /// <summary>
@@ -51,9 +50,10 @@ namespace Unity.XR.PXR
         /// * `true`: success
         /// * `false`: failure
         /// </returns>
+        [Obsolete("SetExtraLatencyMode has been deprecated", true)]
         public static bool SetExtraLatencyMode(int mode)
         {
-            return PXR_Plugin.System.UPxr_SetExtraLatencyMode(mode);
+            return false;
         }
 
         /// <summary>
@@ -86,7 +86,14 @@ namespace Unity.XR.PXR
         {
             return PXR_Plugin.System.UPxr_GetSystemDisplayFrequency();
         }
-
+        /// <summary>
+        /// Gets the available display frequencies
+        /// </summary>
+        /// <returns></returns>
+        public static  float[] GetDisplayFrequenciesAvailable()
+        {
+            return PXR_Plugin.System.UPxr_GetDisplayFrequenciesAvailable();
+        }
         /// <summary>
         /// Gets the predicted status of the sensor.
         /// </summary>
@@ -123,8 +130,9 @@ namespace Unity.XR.PXR
         /// * `true`: enable
         /// * `false`: disable
         /// </param>
-        public static void EnableFaceTracking(bool enable) {
-            PXR_Plugin.System.UPxr_EnableFaceTracking(enable);
+        [Obsolete("EnableFaceTracking has been deprecated", true)]
+        public static void EnableFaceTracking(bool enable)
+        {
         }
 
         /// <summary>
@@ -135,8 +143,9 @@ namespace Unity.XR.PXR
         /// * `true`: enable
         /// * `false`: disable
         /// </param>
-        public static void EnableLipSync(bool enable){
-            PXR_Plugin.System.UPxr_EnableLipSync(enable);
+        [Obsolete("EnableLipSync has been deprecated", true)]
+        public static void EnableLipSync(bool enable)
+        {
         }
 
         /// <summary>
@@ -158,8 +167,9 @@ namespace Unity.XR.PXR
         /// * `emotionProb`: float[], the emotion factor.
         /// * `reserved`: float[], reserved field.
         /// </param>
-        public static void GetFaceTrackingData(Int64 ts, GetDataType flags, ref PxrFaceTrackingInfo faceTrackingInfo) {
-            PXR_Plugin.System.UPxr_GetFaceTrackingData( ts,  (int)flags, ref  faceTrackingInfo);
+        [Obsolete("GetFaceTrackingData has been deprecated", true)]
+        public static void GetFaceTrackingData(Int64 ts, GetDataType flags, ref PxrFaceTrackingInfo faceTrackingInfo)
+        {
         }
 
         /// <summary>Sets a GPU or CPU level for the device.</summary>
@@ -213,9 +223,10 @@ namespace Unity.XR.PXR
         /// * `0`: success
         /// * `1`: failure
         /// </returns>
+        [Obsolete("SetEyeFOV has been deprecated", true)]
         public static int SetEyeFOV(EyeType eye, float fovLeft, float fovRight, float fovUp, float fovDown)
         {
-            return PXR_Plugin.Render.UPxr_SetEyeFOV(eye, fovLeft, fovRight, fovUp, fovDown);
+            return 1;
         }
 
         /// <summary>
@@ -232,8 +243,9 @@ namespace Unity.XR.PXR
         /// `0`: success
         /// `1`: failure
         /// </returns>
+        [Obsolete("SetFaceTrackingStatus has been deprecated", true)]
         public static int SetFaceTrackingStatus(PxrFtLipsyncValue value) {
-            return PXR_Plugin.System.UPxr_SetFaceTrackingStatus(value);
+            return 1;
         }
 
         /// <summary>
@@ -296,27 +308,30 @@ namespace Unity.XR.PXR
         /// * `true`: success
         /// * `false`: failure
         /// </returns>
+        [Obsolete("SetCommonBrightness has been deprecated", true)]
         public static bool SetCommonBrightness(int brightness)
         {
-            return PXR_Plugin.System.UPxr_SetBrightness(brightness);
+            return false;
         }
 
         /// <summary>
         /// Gets the brightness of the current HMD.
         /// </summary>
         /// <returns>An int value that indicates the brightness. Value range: [0,255].</returns>
+        [Obsolete("GetCommonBrightness has been deprecated", true)]
         public static int GetCommonBrightness()
         {
-            return PXR_Plugin.System.UPxr_GetCurrentBrightness();
+            return -1;
         }
 
         /// <summary>
         /// Gets the brightness level of the current screen.
         /// </summary>
         /// <returns>An int array. The first bit is the total brightness level supported, the second bit is the current brightness level, and it is the interval value of the brightness level from the third bit to the end bit.</returns>
+        [Obsolete("GetScreenBrightnessLevel has been deprecated", true)]
         public static int[] GetScreenBrightnessLevel()
         {
-            return PXR_Plugin.System.UPxr_GetScreenBrightnessLevel();
+            return null;
         }
 
         /// <summary>
@@ -327,9 +342,9 @@ namespace Unity.XR.PXR
         /// * `1`: custom brightness setting, you can then set param `level`.
         /// </param>
         /// <param name="level">Brightness level. Value range: [1,255].</param>
+        [Obsolete("GetScreenBrightnessLevel has been deprecated", true)]
         public static void SetScreenBrightnessLevel(int brightness, int level)
         {
-            PXR_Plugin.System.UPxr_SetScreenBrightnessLevel(brightness, level);
         }
 
         /// <summary>

@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+#if PICO_XR
 using Unity.XR.PXR;
+#else
+using Unity.XR.OpenXR.Features.PICOSupport;
+#endif
 using UnityEngine;
 
 namespace Unity.XR.PICO.TOBSupport

@@ -13,6 +13,7 @@ PICO Technology Co., Ltd.
 #define PICO_PLATFORM
 #endif
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -63,7 +64,7 @@ namespace Unity.XR.PICO.TOBSupport
         public static extern int getCameraParameters(string token, out RGBCameraParams rgb_Camera_Params);
 
 #if PICO_XR
-        [DllImport("pxr_api", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(PXR_Plugin.PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
 #else
         [DllImport("openxr_pico", EntryPoint = "PICO_GetPredictedDisplayTime",
             CallingConvention = CallingConvention.Cdecl)]
@@ -71,7 +72,7 @@ namespace Unity.XR.PICO.TOBSupport
         public static extern int Pxr_GetPredictedDisplayTime(ref double predictedDisplayTime);
         
 #if PICO_XR
-         [DllImport("pxr_api", CallingConvention = CallingConvention.Cdecl)]
+         [DllImport(PXR_Plugin.PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
 #else
         [DllImport("openxr_pico", EntryPoint = "PICO_GetPredictedMainSensorState2",
             CallingConvention = CallingConvention.Cdecl)]
@@ -3009,6 +3010,100 @@ namespace Unity.XR.PICO.TOBSupport
             {
                 return false;
             }
+        }
+        
+        public static int UPxr_SetDeviceOwner(string pkg, string cls)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= tobHelper.Call<int>("pbsSetDeviceOwner",pkg,cls);
+#endif
+            return value;
+        }
+
+        public static ComponentName UPxr_GetDeviceOwner()
+        {
+          
+#if PICO_PLATFORM
+            string[] value = tobHelper.Call<String[]>("pbsGetDeviceOwner");
+            if (value!=null&&value.Length==6)
+            {
+                return new ComponentName(value[0], value[1], value[2], value[3], value[4], value[5]);
+            }
+#endif
+            return new ComponentName("", "");
+        }
+        public static int UPxr_SetBrowserHomePage(string url)
+        {
+            int value = 1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("setBrowserHomePage",url);
+#endif
+            return value;
+        }
+        public static string UPxr_GetBrowserHomePage()
+        {
+            string value = "";
+#if PICO_PLATFORM
+            value= IToBService.Call<string>("getBrowserHomePage");
+#endif
+            return value;
+        }
+        public static string UPxr_SetMotionTrackerAutoStart(int enable)
+        {
+            string value = "";
+#if PICO_PLATFORM
+            value= IToBService.Call<string>("setMotionTrackerAutoStart",enable);
+#endif
+            return value;
+        }
+
+        public static int UPxr_AllowWifiAutoJoin(WifiConfiguration configuration, int networkID, bool allowAutoJoin)
+        {
+            int value = 1;
+           
+#if PICO_PLATFORM
+             if (configuration == null)
+            {
+                value = IToBService.Call<int>("allowWifiAutoJoin", null, networkID, allowAutoJoin);
+            }
+            else
+            {
+                value = tobHelper.Call<int>("pbsAllowWifiAutoJoin", configuration.ssid, configuration.password, configuration.isClient, networkID,
+                    allowAutoJoin);
+            }
+#endif
+            return value;
+        }
+        
+        public static LargeSpaceBoundsInfo[] UPxr_GetLargeSpaceBoundsInfoWithType()
+        {
+            string[] value = null;
+            List<LargeSpaceBoundsInfo> LargeSpaceBoundsInfos = new List<LargeSpaceBoundsInfo>();
+          
+#if PICO_PLATFORM
+              value=tobHelper.Call<String[]>("pbsGetLargeSpaceBoundsInfoWithType");
+            if (value!=null)
+            {
+                foreach (var json in value)
+                {
+                    LargeSpaceBoundsInfo temp = new LargeSpaceBoundsInfo();
+                    JsonData jsonData = JsonMapper.ToObject(json);
+                    temp.setType(int.Parse(jsonData["type"].ToString()));
+                    IDictionary dictionary = jsonData["bounds"] as IDictionary;
+                    for (int i = 0; i < dictionary.Count; i++)
+                    {
+                        Point3D model = new Point3D();
+                        model.x = double.Parse(jsonData["bounds"][i]["x"].ToString());
+                        model.y = double.Parse(jsonData["bounds"][i]["y"].ToString());
+                        model.z = double.Parse(jsonData["bounds"][i]["z"].ToString());
+                        temp.addPoint3D(model);;
+                    }
+                    LargeSpaceBoundsInfos.Add(temp);
+                }
+            }
+#endif
+            return LargeSpaceBoundsInfos.ToArray();
         }
     }
    

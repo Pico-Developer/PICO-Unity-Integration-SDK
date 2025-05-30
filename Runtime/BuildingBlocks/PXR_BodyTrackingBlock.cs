@@ -17,8 +17,8 @@ public class PXR_BodyTrackingBlock : MonoBehaviour
     private BodyTrackingGetDataInfo bdi = new BodyTrackingGetDataInfo();
     private BodyTrackingData bd = new BodyTrackingData();
     private Transform[] boneMapping = new Transform[(int)BodyTrackerRole.ROLE_NUM];
-
-
+    BodyTrackingStatus bs = new BodyTrackingStatus();
+    bool istracking = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -30,13 +30,19 @@ public class PXR_BodyTrackingBlock : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // Get the current tracking mode, either bodytracking or motiontracking.
-        MotionTrackerMode trackingMode = PXR_MotionTracking.GetMotionTrackerMode();
+      
 
 #if UNITY_ANDROID
         // Update bodytracking pose.
-        if (updateBT && trackingMode == MotionTrackerMode.BodyTracking)
+        if (updateBT )
         {
+            PXR_MotionTracking.GetBodyTrackingState(ref istracking, ref bs);
+
+            // If not calibrated, invoked system motion tracker app for calibration.
+            if (bs.stateCode!=BodyTrackingStatusCode.BT_VALID)
+            {
+                return;
+            }
             // Get the position and orientation data of each body node.
             int ret = PXR_MotionTracking.GetBodyTrackingData(ref bdi, ref bd);
 
@@ -69,22 +75,19 @@ public class PXR_BodyTrackingBlock : MonoBehaviour
         BodyTrackingBoneLength bones = new BodyTrackingBoneLength();
 
         // Start BodyTracking
-        PXR_MotionTracking.StartBodyTracking(BodyTrackingMode.BTM_FULL_BODY_HIGH, bones);
-
-        int calibrated = -1;
-        // Has Pico motion tracker completed calibration (0: not completed; 1: completed)?
-        PXR_Input.GetMotionTrackerCalibState(ref calibrated);
+        PXR_MotionTracking.StartBodyTracking(BodyJointSet.BODY_JOINT_SET_BODY_FULL_START, bones);
+        
+        PXR_MotionTracking.GetBodyTrackingState(ref istracking, ref bs);
 
         // If not calibrated, invoked system motion tracker app for calibration.
-        if (calibrated != 1)
+        if (bs.stateCode!=BodyTrackingStatusCode.BT_VALID)
         {
-            PXR_MotionTracking.StartMotionTrackerCalibApp();
+            if (bs.message==BodyTrackingMessage.BT_MESSAGE_TRACKER_NOT_CALIBRATED||bs.message==BodyTrackingMessage.BT_MESSAGE_UNKNOWN)
+            {
+                PXR_MotionTracking.StartMotionTrackerCalibApp();
+            }
         }
-
-        bool istracking = false;
-        BodyTrackingState bs = new BodyTrackingState();
-        int ret = PXR_MotionTracking.GetBodyTrackingState(ref istracking, ref bs);
-
+        
         skeletonJoints.gameObject.SetActive(true);
         updateBT = true;
     }

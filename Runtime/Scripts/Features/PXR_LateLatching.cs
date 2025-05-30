@@ -69,7 +69,7 @@ namespace Unity.XR.PXR
 
         }
 
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && UNITY_2021_2_OR_NEWER
         private void OnPreRender()
         {
             s_DisplaySubsystem.BeginRecordingIfLateLatched(m_LateLatchingCamera);

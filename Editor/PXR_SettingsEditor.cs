@@ -75,22 +75,23 @@ namespace Unity.XR.PXR.Editor
                 EditorGUILayout.PropertyField(systemDisplayFrequency, guiDisplayFrequency);
                 EditorGUILayout.PropertyField(optimizeBufferDiscards, guiOptimizeBuffer);
 
-                bool aswDiabled = false;
+                bool aswDisabled = false;
 #if !UNITY_2021_1_OR_NEWER
-                aswDiabled = true;
+                aswDisabled = true;
 #endif
                 if (GraphicsDeviceType.OpenGLES3 == PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget)[0])
                 {
                     GUI.enabled = false;
                     serializedObject.FindProperty("enableAppSpaceWarp").boolValue = false;
                     EditorGUILayout.PropertyField(serializedObject.FindProperty("enableAppSpaceWarp"), new GUIContent("Application SpaceWarp", "Set Graphics API to Vulkan."));
-                }else if (aswDiabled)
+                }
+                else if (aswDisabled)
                 {
                     GUI.enabled = false;
                     serializedObject.FindProperty("enableAppSpaceWarp").boolValue = false;
                     EditorGUILayout.PropertyField(serializedObject.FindProperty("enableAppSpaceWarp"), new GUIContent("Application SpaceWarp", "Unity Editor: 2021 LTS or later."));
                 }
-                else if (serializedObject.FindProperty("stereoRenderingModeAndroid").intValue ==0)
+                else if (serializedObject.FindProperty("stereoRenderingModeAndroid").intValue == 0)
                 {
                     GUI.enabled = false;
                     serializedObject.FindProperty("enableAppSpaceWarp").boolValue = false;

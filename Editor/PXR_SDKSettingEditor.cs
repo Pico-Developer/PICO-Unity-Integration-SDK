@@ -11,434 +11,814 @@ PICO Technology Co., Ltd.
 *******************************************************************************/
 
 using System.IO;
-using Unity.XR.PXR;
 using UnityEditor;
-using UnityEditor.Build;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
+using System;
+using UnityEditor.XR.Management;
+using UnityEngine.XR.Management;
+using UnityEditor.XR.Management.Metadata;
 
 namespace Unity.XR.PXR.Editor
 {
     [InitializeOnLoad]
     public class PXR_SDKSettingEditor : EditorWindow
     {
-        public static PXR_SDKSettingEditor window;
         public static string assetPath = "Assets/Resources/";
-        GUIContent myTitleContent = new GUIContent();
-        static Language language = Language.English;
+        private const string titleName = "PICO Integration SDK";
+        private const string windowName = titleName + "Window";
+        private static PXR_SDKSettingEditor instance;
+        private static PXR_EditorStyles _styles;
+        public event Action<Response> WhenResponded = delegate { };
+        private const string PICO_ICON_NAME = "PICO developer.png";
+        private Vector2 scrollPosition = Vector2.zero;
+        private const BuildTarget recommendedBuildTarget = BuildTarget.Android;
 
-        const BuildTarget recommendedBuildTarget = BuildTarget.Android;
-        const UIOrientation recommendedOrientation = UIOrientation.LandscapeLeft;
-
-
-        public bool toggleBuildTarget = true;
-        public bool toggleOrientation = true;
-        GUIStyle styleApply;
-
-        static string[] strWindowName = { "PXR SDK Setting", "PXR SDK 设置" };
-        string strseparate = "______________________________________________________________________________________________________________________________________________";
-        string[] strNoticeText = { "Notice: Recommended project settings for PXR SDK", "注意：PXR SDK 推荐项目配置" };
-        string[] strBtnChange = { "切换至中文", "Switch to English" };
-        string[] strApplied = { "Applied", "已应用" };
-
-        string[] strInformationText = { "Information:", "信息说明" };
-
-        string[] strInfo1Text =
+        public enum Response
         {
-        "1 Support Unity Version: Unity2020.3.21 and above",
-        "1 支持Unity版本：Unity2020.3.21及以上版本"
-    };
-        string[] strInfo2Text =
-        {
-        "2 Player Setting: " + "  Default Orientation setting Landscape Left",
-        "2 Player Setting: " + "  Default Orientation setting Landscape Left"
-    };
-    
-        string[] strInfo5Text = { "3 Get the lastest version of SDK:", "3 获取最新版本的SDK:" };
-        string[] strInfoURL = { "https://developer-global.pico-interactive.com/", "https://developer-global.pico-interactive.com/" };
-
-
-        string[] strConfigurationText = { "Configuration:", "配置" };
-
-        string[] strConfiguration1Text =
-        {
-        "1 current:             Build Target = {0}\n" +
-        "   Recommended:  Build Target = {1}\n",
-        "1 当前:             Build Target = {0}\n" +
-        "   推荐:             Build Target = {1}\n"
-    };
-
-        string[] strConfiguration3Text =
-        {
-        "3 current:             Orientation = {0}\n" +
-        "    Recommended:  Orientation = {1}\n",
-        "3 当前:             Orientation = {0}\n" +
-        "    推荐:             Orientation = {1}\n"
-    };
-
-        string[] strBtnApply = { "Apply", "应用" };
-        string[] strBtnClose = { "Close", "关闭" };
-
-        static PXR_SDKSettingEditor()
-        {
-            EditorApplication.update += Update;
+            Configs,
+            Tools,
+            Samples,
+            About,
         }
 
-        static void Init()
+        private Dictionary<Response, bool> buttonClickedStates = new Dictionary<Response, bool>()
         {
-            IsIgnoreWindow();
+            { Response.Configs, false },
+            { Response.Tools, false },
+            { Response.Samples, false },
+            { Response.About, false }
+        };
 
-            ShowSettingWindow();
-        }
-
-        static void Update()
+        Action openProjectValidationAction = () =>
         {
-            bool allApplied = IsAllApplied();
-            bool showWindow = !allApplied;
+            SettingsService.OpenProjectSettings("Project/XR Plug-in Management/Project Validation");
 
-            bool isIgnoreWindow = IsIgnoreWindow();
-            if (isIgnoreWindow)
-            {
-                showWindow = false;
-            }
-            if (showWindow)
-            {
-                ShowSettingWindow();
-            }
-
-            EditorApplication.update -= Update;
-        }
-
-        public static bool IsIgnoreWindow()
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_ProjectValidation_Open);
+        };
+        Action applyMinAndroidAPIAction = () =>
         {
-            string path = assetPath + typeof(PXR_SDKSettingAsset).ToString() + ".asset";
-            if (File.Exists(path))
+            PlayerSettings.Android.minSdkVersion = PXR_Utils.minSdkVersionInEditor;
+
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_RequiredAndroidSdkVersionsApplied);
+        };
+
+        Action applyPICOXRPluginAction = () =>
+        {
+            var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
+            if (generalSettings)
             {
-                PXR_SDKSettingAsset asset = AssetDatabase.LoadAssetAtPath<PXR_SDKSettingAsset>(path);
-                if (asset)
+                IReadOnlyList<XRLoader> list = generalSettings.Manager.activeLoaders;
+                while (list.Count > 0)
                 {
-                    return asset.ignoreSDKSetting;
+                    string nameTemp = list[0].GetType().FullName;
+                    XRPackageMetadataStore.RemoveLoader(generalSettings.Manager, nameTemp, BuildTargetGroup.Android);
+                }
+                XRPackageMetadataStore.AssignLoader(generalSettings.Manager, "PXR_Loader", BuildTargetGroup.Android);
+            }
+
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_RequiredPICOXRPluginApplied);
+        };
+        Action applyBuildTargetAction = () =>
+        {
+            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, recommendedBuildTarget);
+            EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Android;
+
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_RequiredBuildTargetAndroidApplied);
+        };
+
+
+        [MenuItem("PICO/Portal", false, 0)]
+        public static void ShowWindow()
+        {
+            if (instance == null)
+            {
+                instance = GetWindow<PXR_SDKSettingEditor>();
+                instance.Show();
+            }
+            else
+            {
+                instance.Focus();
+            }
+            string version = "_UnityXR_" + PXR_Plugin.System.UPxr_GetSDKVersion() + "_" + Application.unityVersion;
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Enter + version);
+        }
+
+        [InitializeOnLoadMethod]
+        private static void InitializeOnLoad()
+        {
+            if (!PXR_ProjectSetting.GetProjectConfig().portalInited)
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    EditorApplication.update += UpdateOnce;
+                };
+
+            }
+        }
+
+        static void UpdateOnce()
+        {
+            EditorApplication.update -= UpdateOnce;
+            ShowWindow();
+            PXR_ProjectSetting.GetProjectConfig().portalInited = true;
+            PXR_ProjectSetting.SaveAssets();
+        }
+
+        private void Awake()
+        {
+            _styles ??= new PXR_EditorStyles();
+            titleContent = new GUIContent(titleName);
+            minSize = new Vector2(1080, 640);
+            maxSize = minSize + new Vector2(2, 2);
+            EditorApplication.delayCall += () => maxSize = new Vector2(4000, 4000);
+
+            buttonClickedStates[Response.Configs] = true;
+        }
+
+        private void OnDestroy()
+        {
+            instance = null;
+        }
+
+
+        private void OnGUI()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                CloseWindow();
+            }
+
+            using (new EditorGUILayout.VerticalScope())
+            {
+                EditorGUILayout.Space(20);
+                DrawTitle(titleName);
+                EditorGUILayout.Space(10);
+
+                EditorGUILayout.Separator();
+
+                DrawHorizontalLine(_styles.colorLine, 2);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Space(30);
+                    DrawLeftButton();
+                    GUILayout.Space(30);
+                    DrawVerticalLine(_styles.colorLine, 2);
+                    GUILayout.Space(30);
+
+                    Rect windowRect = position;
+                    float xOffset = 30 + 200 + 30;
+                    float width = windowRect.width - xOffset;
+                    float topSpaceUsed = 30 + _styles.HeaderText.fixedHeight + 30;
+                    float height = windowRect.height - topSpaceUsed - 30 - 2;
+
+                    _styles.BackgroundColor.fixedWidth = width;
+                    _styles.BackgroundColor.fixedHeight = height;
+                    using (new GUILayout.VerticalScope(_styles.BackgroundColor))
+                    {
+                        if (buttonClickedStates[Response.Configs])
+                        {
+                            scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, true);
+                            GUILayout.Space(30);
+                            using (new EditorGUILayout.VerticalScope())
+                            {
+                                string title = "Information";
+                                GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(true));
+                                string bodyContent = "Supported Unity Version: Unity 2020.3.21 and above.";
+                                EditorGUILayout.LabelField(bodyContent, _styles.ContentText);
+
+                                GUILayout.Space(30);
+                                title = "Configuration";
+                                GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(true));
+
+                                string strinfo = "Required: PICO XR plugin needs to be enabled and unique.";
+                                EditorConfigurations(strinfo, PXR_Utils.IsPXRPluginEnabled(), applyPICOXRPluginAction);
+
+                                strinfo = $"Required: Build Target = {recommendedBuildTarget}";
+                                bool appliedBuildTarget = EditorUserBuildSettings.activeBuildTarget == recommendedBuildTarget;
+                                EditorConfigurations(strinfo, appliedBuildTarget, applyBuildTargetAction);
+
+                                strinfo = $"Required: AndroidSdkVersions = {PXR_Utils.minSdkVersionInEditor}";
+                                bool appliedAdroidSdkVersions = PlayerSettings.Android.minSdkVersion == PXR_Utils.minSdkVersionInEditor;
+                                EditorConfigurations(strinfo, appliedAdroidSdkVersions, applyMinAndroidAPIAction);
+
+                                bool applied = PXR_Utils.IsPXRPluginEnabled() && appliedBuildTarget && appliedAdroidSdkVersions;
+                                if (!applied)
+                                {
+                                    using (new EditorGUILayout.VerticalScope())
+                                    {
+                                        GUILayout.Space(10);
+                                        bodyContent = "For one-click configuration, you can click 'To Apply' one by one or use 'To Apply All'.";
+                                        EditorGUILayout.LabelField(bodyContent, _styles.ContentText);
+
+                                        GUILayout.Space(10);
+
+                                        using (new EditorGUILayout.HorizontalScope())
+                                        {
+                                            GUILayout.Space(8);
+                                            bodyContent = "To Apply All";
+                                            if (GUILayout.Button(bodyContent, _styles.ButtonToOpen, GUILayout.ExpandWidth(false)))
+                                            {
+                                                applyPICOXRPluginAction.Invoke();
+                                                applyBuildTargetAction.Invoke();
+                                                applyMinAndroidAPIAction.Invoke();
+
+                                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_ToApplyAllApplied);
+                                            }
+
+                                            var buttonRectToApplyAll = GUILayoutUtility.GetLastRect();
+                                            if (Event.current.type == EventType.Repaint)
+                                            {
+                                                EditorGUIUtility.AddCursorRect(buttonRectToApplyAll, MouseCursor.Link);
+                                            }
+                                        }
+                                    }
+                                }
+
+                                GUILayout.Space(20);
+
+                                using (new EditorGUILayout.VerticalScope())
+                                {
+                                    bodyContent = "For more configuration items, open Project Validation.";
+                                    EditorGUILayout.LabelField(bodyContent, _styles.ContentText);
+                                    GUILayout.Space(10);
+
+                                    using (new EditorGUILayout.HorizontalScope())
+                                    {
+                                        GUILayout.Space(8);
+                                        bodyContent = "Project Validation";
+                                        if (GUILayout.Button(bodyContent, _styles.ButtonToOpen, GUILayout.ExpandWidth(false)))
+                                        {
+                                            SettingsService.OpenProjectSettings("Project/XR Plug-in Management/Project Validation");
+                                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_ProjectValidation);
+                                        }
+                                        var buttonRectProjectValidation = GUILayoutUtility.GetLastRect();
+                                        if (Event.current.type == EventType.Repaint)
+                                        {
+                                            EditorGUIUtility.AddCursorRect(buttonRectProjectValidation, MouseCursor.Link);
+                                        }
+                                    }
+                                }
+
+                                GUILayout.Space(30);
+                                title = "PICO XR Project Setting";
+                                GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(true));
+                                bodyContent = $"SDK Settings for turning on and off features. You can locate it at this filepath: {assetPath}PXR_ProjectSetting.asset."; ;
+                                EditorGUILayout.LabelField(bodyContent, _styles.ContentText);
+
+                                GUILayout.Space(10);
+
+                                using (new EditorGUILayout.HorizontalScope())
+                                {
+                                    GUILayout.Space(8);
+                                    bodyContent = "Open " + title;
+                                    if (GUILayout.Button(bodyContent, _styles.ButtonToOpen, GUILayout.ExpandWidth(false)))
+                                    {
+                                        PXR_ProjectSetting asset;
+                                        string path = assetPath + "PXR_ProjectSetting.asset";
+                                        if (!File.Exists(path))
+                                        {
+                                            asset = new PXR_ProjectSetting();
+                                            ScriptableObjectUtility.CreateAsset<PXR_ProjectSetting>(asset, PXR_SDKSettingEditor.assetPath);
+                                        }
+
+                                        asset = AssetDatabase.LoadAssetAtPath<PXR_ProjectSetting>(path);
+                                        if (asset != null)
+                                        {
+                                            AssetDatabase.OpenAsset(asset);
+                                        }
+                                        else
+                                        {
+                                            Debug.LogError("Asset not found at path: " + assetPath);
+                                        }
+
+                                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_OpenPICOXRProjectSetting);
+                                    }
+                                    var buttonRectProjectSetting = GUILayoutUtility.GetLastRect();
+                                    if (Event.current.type == EventType.Repaint)
+                                    {
+                                        EditorGUIUtility.AddCursorRect(buttonRectProjectSetting, MouseCursor.Link);
+                                    }
+                                }
+                            }
+                            GUILayout.EndScrollView();
+                        }
+                        else if (buttonClickedStates[Response.Tools])
+                        {
+                            scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, true);
+                            GUILayout.Space(30);
+                            using (new EditorGUILayout.VerticalScope())
+                            {
+                                string title = "Unity Editor Tools and Developer Tools";
+                                GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(true));
+
+                                title = "Project Validation";
+                                string links = "https://developer.picoxr.com/document/unity/project-validation/";
+                                GUIContent bodyContent = new GUIContent("Project Validation can display the validation rules requiredby the installed XR package. For any validation rules that are not properly set up, you can use thhis feature to automatically fix them with a single click.");
+                                DrawTwoRowLayout(title, bodyContent, links, openProjectValidationAction);
+
+                                title = "PICO Building Blocks";
+                                links = "https://developer.picoxr.com/document/unity/pico-building-blocks/";
+                                bodyContent = new GUIContent("The PICO Building Block system allows you to set up features, including those in the SDK and Unity Engine, with a single click.");
+                                DrawTwoRowLayout(title, bodyContent, links);
+
+                                title = "PICO XR Toolkit-MR";
+                                links = "https://developer.picoxr.com/document/unity/sense-pack-overview/";
+                                bodyContent = new GUIContent("The PICO XR Toolkit-MR part is a set of tools included in the SensePack on top of the Mixed Reality API. It is used to perform common operations when building spatial perception applications.");
+                                DrawTwoRowLayout(title, bodyContent, links);
+
+                                title = "XR Profiling Toolkit";
+                                links = "https://github.com/Pico-Developer/XR-Profiling-Toolkit";
+                                bodyContent = new GUIContent("An automated and customizable graphics profiling tool for evaluating the performance of XR applications on cross-vendor headsets.");
+                                DrawTwoRowLayout(title, bodyContent, links);
+
+                                title = "PICO Developer Center";
+                                links = "https://developer.picoxr.com/resources/#pdc";
+                                bodyContent = new GUIContent("PICO Developer Center (referred to as PDC tools below) is a developer service platform that integrates essential tools like the ADB command debugging tool and real-time preview tool. You can efficiently manage, develop, and debug your apps using the PDC tool.");
+                                DrawTwoRowLayout(title, bodyContent, links);
+
+                                title = "Emulator";
+                                links = "https://developer.picoxr.com/resources/#emulator";
+                                bodyContent = new GUIContent("You can install your app on PICO Emulator and run it, so as to preview how your app performs.");
+                                DrawTwoRowLayout(title, bodyContent, links);
+
+                                title = "More Developer Tools";
+                                links = "https://developer.picoxr.com/document/unity/developer-tools-overview/";
+                                bodyContent = new GUIContent("PICO provides a range of developer tools covering app debugging, performance monitoring, haptic editing, and more.See the Developer Tools Documentationpage to learn more details.");
+                                DrawTwoRowLayout(title, bodyContent, links);
+                            }
+                            GUILayout.EndScrollView();
+                        }
+                        else if (buttonClickedStates[Response.Samples])
+                        {
+                            scrollPosition = GUILayout.BeginScrollView(scrollPosition, false, true);
+                            GUILayout.Space(30);
+                            using (new EditorGUILayout.VerticalScope())
+                            {
+                                string title = "PICO Unity Integration SDK Samples";
+                                GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(true));
+
+                                GUILayout.Space(30);
+                                string bodyContent = "Besides the Samples you can import through the Unity Paackage Manager interface, PICO provides comprehensive sample projects that coverthe core features of the Unity Integration SDK on GitHub.";
+                                EditorGUILayout.LabelField(bodyContent, _styles.ContentText);
+
+                                title = "Mixed Reality Sample";
+                                string gitHubLink = "https://github.com/Pico-Developer/MRSample-Unity";
+                                string documentationLink = "https://developer.picoxr.com/document/unity/mixed-reality-sample/";
+                                DrawSDKSampleLayout(title, documentationLink, gitHubLink);
+
+                                title = "Interaction Sample";
+                                gitHubLink = "https://github.com/Pico-Developer/InteractionSample-Unity";
+                                documentationLink = "https://developer.picoxr.com/document/unity/y3lpmdhw/";
+                                DrawSDKSampleLayout(title, documentationLink, gitHubLink);
+
+                                title = "Motion Tracker Sample";
+                                gitHubLink = "https://github.com/Pico-Developer/PICOMotionTrackerSample-Unity";
+                                documentationLink = "https://developer.picoxr.com/document/unity/6bona7fv/";
+                                DrawSDKSampleLayout(title, documentationLink, gitHubLink);
+
+                                title = "Platform Services Sample";
+                                gitHubLink = "https://github.com/Pico-Developer/PlatformSample-Unity";
+                                documentationLink = "https://developer.picoxr.com/document/unity/simple-demo/";
+                                DrawSDKSampleLayout(title, documentationLink, gitHubLink);
+
+                                title = "Spatial Audio Sample";
+                                gitHubLink = "https://github.com/Pico-Developer/SpatialAudioSample-Unity";
+                                documentationLink = "https://developer.picoxr.com/document/unity/spatial-audio-sample/";
+                                DrawSDKSampleLayout(title, documentationLink, gitHubLink);
+
+                                title = "AR Foundation Sample";
+                                gitHubLink = "https://github.com/Pico-Developer/PICOARFoundationSamples-Unity";
+                                documentationLink = "https://developer.picoxr.com/document/unity/ar-foundation-for-pico-unity-integration-sdk/";
+                                DrawSDKSampleLayout(title, documentationLink, gitHubLink);
+
+                                title = "Adaptive Resolution Sample";
+                                gitHubLink = "https://github.com/Pico-Developer/AdaptiveResolutionSample-Unity";
+                                documentationLink = "https://developer.picoxr.com/document/unity/adaptive-resolution-demo/";
+                                DrawSDKSampleLayout(title, documentationLink, gitHubLink);
+
+                                title = "Toon World";
+                                gitHubLink = "https://github.com/Pico-Developer/ToonSample-Unity";
+                                documentationLink = "https://developer.picoxr.com/document/unity/toon-world/";
+                                DrawSDKSampleLayout(title, documentationLink, gitHubLink);
+
+                                title = "MicroWar";
+                                gitHubLink = "https://github.com/picoxr/MicroWar";
+                                documentationLink = "https://developer.picoxr.com/document/unity/micro-war/";
+                                DrawSDKSampleLayout(title, documentationLink, gitHubLink);
+
+                                title = "PICO Avatar Sample";
+                                gitHubLink = "https://github.com/Pico-Developer/PICO-Avatar-SDK-Unity";
+                                DrawSDKSampleLayout(title, null, gitHubLink);
+
+                                title = "URP Fork";
+                                gitHubLink = "https://github.com/Pico-Developer/PICO-URP-Fork";
+                                DrawSDKSampleLayout(title, null, gitHubLink);
+                            }
+                            GUILayout.EndScrollView();
+                        }
+                        else if (buttonClickedStates[Response.About])
+                        {
+                            string title = "About the SDK";
+                            GUIContent bodyContent = new GUIContent("PICO's official Unity package for developing applications for PICO XR devices.");
+                            DrawTwoRowLayout(title, bodyContent);
+
+                            title = "Features";
+                            bodyContent = new GUIContent("The SDK provides features covering rendering, input and interaction, mixed reality, spatial audio, motion tracker, platform services, and enterprise features, etc.");
+                            DrawTwoRowLayout(title, bodyContent);
+
+                            title = "Documentation";
+                            bodyContent = new GUIContent("Please visit the following page on PICO Developer Website for the latest documentation and samples:");
+                            DrawTwoRowLayout(title, bodyContent);
+                            string link = "https://developer.picoxr.com/document/unity";
+                            if (GUILayout.Button(link, _styles.SmallBlueLinkStyle, GUILayout.ExpandWidth(false)))
+                            {
+                                Application.OpenURL(link);
+                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_About_Documentation);
+                            }
+                            var buttonRectDocumentation = GUILayoutUtility.GetLastRect();
+                            if (Event.current.type == EventType.Repaint)
+                            {
+                                EditorGUIUtility.AddCursorRect(buttonRectDocumentation, MouseCursor.Link);
+                            }
+
+                            title = "Installation";
+                            bodyContent = new GUIContent("We recommend using 'add package from git URL' to add the SDK from the PICO Developer GitHub:");
+                            DrawTwoRowLayout(title, bodyContent);
+
+                            link = "https://github.com/Pico-Developer/PICO-Unity-Integration-SDK";
+                            if (GUILayout.Button(link, _styles.SmallBlueLinkStyle, GUILayout.ExpandWidth(false)))
+                            {
+                                Application.OpenURL(link);
+                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_About_Installation);
+                            }
+
+                            var buttonRectInstallation = GUILayoutUtility.GetLastRect();
+                            if (Event.current.type == EventType.Repaint)
+                            {
+                                EditorGUIUtility.AddCursorRect(buttonRectInstallation, MouseCursor.Link);
+                            }
+                        }
+                        GUILayout.FlexibleSpace();
+                    }
                 }
             }
-            return false;
         }
 
-        public void OnDisable()
+        private void DrawTitle(string title)
         {
-            PXR_SDKSettingAsset asset;
-            string assetPath = PXR_SDKSettingEditor.assetPath + typeof(PXR_SDKSettingAsset).ToString() + ".asset";
-            if (File.Exists(assetPath))
+            using (new GUILayout.HorizontalScope())
             {
-                asset = AssetDatabase.LoadAssetAtPath<PXR_SDKSettingAsset>(assetPath);
+                EditorGUILayout.LabelField(title, _styles.HeaderText, GUILayout.ExpandWidth(true));
+
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.LabelField("Version " + PXR_Plugin.System.UPxr_GetSDKVersion(), _styles.VersionText, GUILayout.ExpandWidth(true));
+
+                string iconPath = Path.Combine(PXR_Utils.sdkPackageName, assetPath, PICO_ICON_NAME);
+                var content = EditorGUIUtility.TrIconContent(iconPath, "PICO Logo");
+                EditorGUILayout.LabelField(content, _styles.IconStyle,
+                    GUILayout.Width(_styles.IconStyle.fixedWidth),
+                    GUILayout.Height(_styles.IconStyle.fixedHeight), GUILayout.ExpandWidth(true));
             }
-            else
-            {
-                asset = new PXR_SDKSettingAsset();
-                ScriptableObjectUtility.CreateAsset<PXR_SDKSettingAsset>(asset, PXR_SDKSettingEditor.assetPath);
-            }
-            PXR_ProjectSetting.GetProjectConfig();
         }
 
-        static void ShowSettingWindow()
+        public void DrawTwoRowLayout(string title, GUIContent bodyContent, string link = null, System.Action buttonAction = null, string button = null)
         {
-            if (window != null)
-                return;
-            window = (PXR_SDKSettingEditor)GetWindow(typeof(PXR_SDKSettingEditor), true, strWindowName[(int)language], true);
-            window.autoRepaintOnSceneChange = true;
-            window.minSize = new Vector2(960, 620);
+            GUILayout.Space(30);
+            using (new EditorGUILayout.VerticalScope())
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(true));
+                    if (link != null)
+                    {
+                        if (GUILayout.Button("Documentation", _styles.SmallBlueLinkStyle, GUILayout.Width(200)))
+                        {
+                            Application.OpenURL(link);
+
+                            if (title == "Project Validation")
+                            {
+                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_ProjectValidation_Documentation);
+                            }
+                            else if (title == "PICO Building Blocks")
+                            {
+                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_BuildingBlocks);
+                            }
+                            else if (title == "PICO XR Toolkit-MR")
+                            {
+                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_PICOXRToolkitMR);
+                            }
+                            else if (title == "XR Profiling Toolkit")
+                            {
+                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_XRProfilingToolkit);
+                            }
+                            else if (title == "PICO Developer Center")
+                            {
+                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_PICODeveloperCenter);
+                            }
+                            else if (title == "Emulator")
+                            {
+                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_Emulator);
+                            }
+                            else if (title == "More Developer Tools")
+                            {
+                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_MoreDeveloperTools);
+                            }
+                        }
+
+                        var buttonRect = GUILayoutUtility.GetLastRect();
+                        if (Event.current.type == EventType.Repaint)
+                        {
+                            EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
+                        }
+                    }
+                    if (buttonAction != null)
+                    {
+                        string buttonText = button != null ? button : "Open " + title;
+                        if (GUILayout.Button(buttonText, _styles.ButtonToOpen, GUILayout.ExpandWidth(false)))
+                        {
+                            buttonAction?.Invoke();
+                        }
+
+                        var buttonRect = GUILayoutUtility.GetLastRect();
+                        if (Event.current.type == EventType.Repaint)
+                        {
+                            EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
+                        }
+                    }
+                    else
+                    {
+                        GUIStyle Box = new GUIStyle()
+                        {
+                            fixedWidth = 250,
+                        };
+                        GUILayout.Box("", Box, GUILayout.ExpandWidth(false));
+                    }
+
+                    GUILayout.Space(30);
+                }
+                EditorGUILayout.Space(10);
+                if (bodyContent != null)
+                {
+                    EditorGUILayout.LabelField(bodyContent, _styles.ContentText);
+                }
+            }
         }
 
-        string GetResourcePath()
+        private void DrawHorizontalLine(Color color, int thickness)
         {
-            var ms = MonoScript.FromScriptableObject(this);
-            var path = AssetDatabase.GetAssetPath(ms);
-            path = Path.GetDirectoryName(path);
-            return path.Substring(0, path.Length - "Editor".Length) + "Textures/";
+            Rect rect = EditorGUILayout.GetControlRect(false, thickness);
+            EditorGUI.DrawRect(rect, color);
+        }
+        private void DrawVerticalLine(Color color, int thickness)
+        {
+            Rect rect = new Rect(220, 122, thickness, Screen.height);
+            EditorGUI.DrawRect(rect, color);
         }
 
-        public void OnGUI()
+        private void DrawLeftButton()
         {
-            myTitleContent.text = strWindowName[(int)language];
-            if (window != null)
+            using (new EditorGUILayout.VerticalScope())
             {
-                window.titleContent = myTitleContent;
+                EditorGUILayout.Space(30);
+
+                var buttons = new[] {
+                    ("<size=18>Configs</size>", Response.Configs),
+                    ("<size=18>Tools</size>", Response.Tools),
+                    ("<size=18>Samples</size>", Response.Samples),
+                    ("<size=18>About</size>", Response.About)
+                 };
+
+                foreach (var (btnText, response) in buttons)
+                {
+                    bool isClicked = GUILayout.Button(btnText,
+                        buttonClickedStates[response] ? _styles.ButtonSelected : _styles.Button,
+                        GUILayout.ExpandHeight(false));
+
+                    var rect = GUILayoutUtility.GetLastRect();
+                    if (Event.current.type == EventType.Repaint)
+                    {
+                        EditorGUIUtility.AddCursorRect(rect, MouseCursor.Link);
+                    }
+
+                    if (isClicked)
+                    {
+                        ClickedButton(response);
+                    }
+                    EditorGUILayout.Space(30);
+                }
             }
-            ShowNoticeTextAndChangeBtn();
+        }
 
-            GUIStyle styleSlide = new GUIStyle();
-            styleSlide.normal.textColor = Color.white;
-            GUILayout.Label(strseparate, styleSlide);
-
-            GUILayout.Label(strInformationText[(int)language]);
-            GUILayout.Label(strInfo1Text[(int)language]);
-            GUILayout.Label(strInfo2Text[(int)language]);
-            GUILayout.Label(strInfo5Text[(int)language]);
-            string strURL = strInfoURL[(int)language];
-            GUIStyle style = new GUIStyle();
-            style.normal.textColor = new Color(0, 122f / 255f, 204f / 255f);
-            if (GUILayout.Button("    " + strURL, style, GUILayout.Width(200)))
+        private void ClickedButton(Response responseT)
+        {
+            var keys = buttonClickedStates.Keys.ToArray();
+            for (int i = 0; i < keys.Length; i++)
             {
-                Application.OpenURL(strURL);
+                var response = keys[i];
+                buttonClickedStates[response] = responseT == response;
             }
+            WhenResponded.Invoke(responseT);
+            switch (responseT)
+            {
+                case Response.Configs:
+                    PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_Open);
+                    break;
+                case Response.Tools:
+                    PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_Open);
+                    break;
+                case Response.Samples:
+                    PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Sample_Open);
+                    break;
+                case Response.About:
+                    PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_About_Open);
+                    break;
+                default:
+                    break;
+            }
+        }
 
-            GUILayout.Label(strseparate, styleSlide);
+        private void DrawSDKSampleLayout(string title, string documentationLink, string gitHubLink)
+        {
+            GUILayout.Space(20);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _styles.BigWhiteTitleStyle.fontStyle = FontStyle.Bold;
+                GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(false));
 
-            GUILayout.Label(strConfigurationText[(int)language]);
+                if (documentationLink != null)
+                {
+                    GUILayout.Label(" | ", _styles.BigWhiteTitleStyle, GUILayout.Width(20));
+                    if (GUILayout.Button("Documentation", _styles.SmallBlueLinkStyle, GUILayout.ExpandWidth(false)))
+                    {
+                        Application.OpenURL(documentationLink);
 
-            string strinfo1 = string.Format(strConfiguration1Text[(int)language], EditorUserBuildSettings.activeBuildTarget, recommendedBuildTarget);
-            EditorConfigurations(strinfo1, EditorUserBuildSettings.activeBuildTarget == recommendedBuildTarget, ref toggleBuildTarget);
-            
-            string strinfo3 = string.Format(strConfiguration3Text[(int)language],
-                PlayerSettings.defaultInterfaceOrientation, recommendedOrientation);
-            EditorConfigurations(strinfo3, PlayerSettings.defaultInterfaceOrientation == recommendedOrientation,
-                ref toggleOrientation);
+                        if (title == "Mixed Reality Sample")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_MixedRealitySample_Documentation);
+                        }
+                        else if (title == "Interaction Sample")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_InteractionSample_Documentation);
+                        }
+                        else if (title == "Motion Tracker Sample")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_MotionTrackerSample_Documentation);
+                        }
+                        else if (title == "Platform Services Sample")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_PlatformServicesSample_Documentation);
+                        }
+                        else if (title == "Spatial Audio Sample")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_SpatialAudioSample_Documentation);
+                        }
+                        else if (title == "AR Foundation Sample")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_ARFoundationSample_Documentation);
+                        }
+                        else if (title == "Adaptive Resolution Sample")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_AdaptiveResolutionSample_Documentation);
+                        }
+                        else if (title == "Toon World")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_ToonWorldSample_Documentation);
+                        }
+                        else if (title == "MicroWar")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_MicroWarSample_Documentation);
+                        }
+                        else if (title == "PICO Avatar Sample")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_PICOAvatarSample_Documentation);
+                        }
+                        else if (title == "URP Fork")
+                        {
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_URPFork_Documentation);
+                        }
+                    }
 
-            EditorGUILayout.Space();
+                    var buttonRectDoc = GUILayoutUtility.GetLastRect();
+                    if (Event.current.type == EventType.Repaint)
+                    {
+                        EditorGUIUtility.AddCursorRect(buttonRectDoc, MouseCursor.Link);
+                    }
+                }
+
+                GUILayout.Label(" | ", _styles.BigWhiteTitleStyle, GUILayout.Width(20));
+                if (GUILayout.Button("GitHub", _styles.SmallBlueLinkStyle, GUILayout.ExpandWidth(false)))
+                {
+                    Application.OpenURL(gitHubLink);
+
+                    if (title == "Mixed Reality Sample")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_MixedRealitySample_GitHub);
+                    }
+                    else if (title == "Interaction Sample")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_InteractionSample_GitHub);
+                    }
+                    else if (title == "Motion Tracker Sample")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_MotionTrackerSample_GitHub);
+                    }
+                    else if (title == "Platform Services Sample")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_PlatformServicesSample_GitHub);
+                    }
+                    else if (title == "Spatial Audio Sample")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_SpatialAudioSample_GitHub);
+                    }
+                    else if (title == "AR Foundation Sample")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_ARFoundationSample_GitHub);
+                    }
+                    else if (title == "Adaptive Resolution Sample")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_AdaptiveResolutionSample_GitHub);
+                    }
+                    else if (title == "Toon World")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_ToonWorldSample_GitHub);
+                    }
+                    else if (title == "MicroWar")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_MicroWarSample_GitHub);
+                    }
+                    else if (title == "PICO Avatar Sample")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_PICOAvatarSample_GitHub);
+                    }
+                    else if (title == "URP Fork")
+                    {
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Samples_URPFork_GitHub);
+                    }
+                }
+
+                var buttonRectGitHub = GUILayoutUtility.GetLastRect();
+                if (Event.current.type == EventType.Repaint)
+                {
+                    EditorGUIUtility.AddCursorRect(buttonRectGitHub, MouseCursor.Link);
+                }
+            }
+        }
+
+        void EditorConfigurations(string strConfiguration, bool enable, Action buttonAction)
+        {
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("", GUILayout.Width(200));
-
-            if (IsAllApplied())
+            var iconStyle = new GUIStyle
             {
-                styleApply = new GUIStyle("ObjectPickerBackground");
-                styleApply.alignment = TextAnchor.MiddleCenter;
-            }
-            else
-            {
-                styleApply = new GUIStyle("LargeButton");
-                styleApply.alignment = TextAnchor.MiddleCenter;
-            }
-            if (GUILayout.Button(strBtnApply[(int)language], styleApply, GUILayout.Width(100), GUILayout.Height(30)))
-            {
-                EditorApplication.delayCall += OnClickApply;
-            }
-            styleApply = null;
-
-            EditorGUILayout.LabelField("", GUILayout.Width(200));
-            if (GUILayout.Button(strBtnClose[(int)language], GUILayout.Width(100), GUILayout.Height(30)))
-            {
-                OnClickClose();
-            }
-            EditorGUILayout.EndHorizontal();
-        }
-
-        public void OnClickApply()
-        {
-            if (toggleOrientation && PlayerSettings.defaultInterfaceOrientation != recommendedOrientation)
-            {
-                PlayerSettings.defaultInterfaceOrientation = recommendedOrientation;
-            }
-
-            if (toggleBuildTarget && EditorUserBuildSettings.activeBuildTarget != recommendedBuildTarget)
-            {
-                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, recommendedBuildTarget);
-                EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Android;
-            }
-
-            PXR_SDKSettingAsset asset;
-            string assetPath = PXR_SDKSettingEditor.assetPath + typeof(PXR_SDKSettingAsset).ToString() + ".asset";
-            if (File.Exists(assetPath))
-            {
-                asset = AssetDatabase.LoadAssetAtPath<PXR_SDKSettingAsset>(assetPath);
-            }
-            else
-            {
-                asset = new PXR_SDKSettingAsset();
-                ScriptableObjectUtility.CreateAsset<PXR_SDKSettingAsset>(asset, PXR_SDKSettingEditor.assetPath);
-            }
-            PXR_ProjectSetting.GetProjectConfig();
-        }
-
-        void OnClickClose()
-        {
-            bool allApplied = IsAllApplied();
-            if (allApplied)
-            {
-                Close();
-            }
-            else
-            {
-                PXR_SettingMessageBoxEditor.Init(language);
-            }
-            PXR_ProjectSetting.GetProjectConfig();
-        }
-
-        public static bool IsAllApplied()
-        {
-            bool notApplied = (EditorUserBuildSettings.activeBuildTarget != recommendedBuildTarget) ||
-                            (PlayerSettings.defaultInterfaceOrientation != recommendedOrientation);
-
-            return !notApplied;
-        }
-
-        void EditorConfigurations(string strConfiguration, bool enable, ref bool toggle)
-        {
-            EditorGUILayout.BeginHorizontal();
-
-            GUILayout.Label(strConfiguration, GUILayout.Width(500));
-
-            GUIStyle styleApplied = new GUIStyle();
-            styleApplied.normal.textColor = Color.green;
+                fixedWidth = 30,
+                stretchHeight = true,
+                alignment = TextAnchor.MiddleCenter,
+            };
             if (enable)
             {
-                GUILayout.Label(strApplied[(int)language], styleApplied);
+                GUI.color = Color.green;
+                GUILayout.Label(EditorGUIUtility.IconContent("FilterSelectedOnly"), iconStyle);
             }
             else
             {
-                toggle = EditorGUILayout.Toggle(toggle);
+                GUI.color = Color.yellow;
+                GUILayout.Label(EditorGUIUtility.IconContent("console.warnicon"), iconStyle);
+            }
+            GUI.color = Color.white;
+            GUILayout.Label(strConfiguration, _styles.ContentText, GUILayout.Width(480));
+            _styles.ContentText.normal.textColor = Color.white;
+
+            GUIStyle styleApplied = new GUIStyle();
+            styleApplied.fontSize = 16;
+            styleApplied.fixedWidth = 100;
+            styleApplied.padding = new RectOffset(4, 4, 4, 4);
+            styleApplied.alignment = TextAnchor.MiddleCenter;
+            if (enable)
+            {
+                styleApplied.normal.textColor = Color.green;
+                GUILayout.Label("Applied", styleApplied);
+            }
+            else
+            {
+                styleApplied.normal.textColor = Color.white;
+                styleApplied.normal.background = _styles.MakeTexture(2, 2, _styles.colorSelected);
+                if (GUILayout.Button("To Apply", styleApplied))
+                {
+                    buttonAction?.Invoke();
+                }
+
+                var buttonRectToApply = GUILayoutUtility.GetLastRect();
+                if (Event.current.type == EventType.Repaint)
+                {
+                    EditorGUIUtility.AddCursorRect(buttonRectToApply, MouseCursor.Link);
+                }
             }
 
             EditorGUILayout.EndHorizontal();
         }
 
-        void ShowLogo()
-        {
-            var resourcePath = GetResourcePath();
-            var logo = AssetDatabase.LoadAssetAtPath<Texture2D>(resourcePath + "logo.png");
-            if (logo)
-            {
-                var rect = GUILayoutUtility.GetRect(position.width, 150, GUI.skin.box);
-                GUI.DrawTexture(rect, logo, ScaleMode.ScaleToFit);
-            }
-        }
-
-        void ShowNoticeTextAndChangeBtn()
-        {
-            EditorGUILayout.BeginHorizontal();
-
-            GUIStyle styleNoticeText = new GUIStyle();
-            styleNoticeText.alignment = TextAnchor.UpperCenter;
-            styleNoticeText.fontSize = 20;
-            GUILayout.Label(strNoticeText[(int)language], styleNoticeText);
-
-            if (GUILayout.Button(strBtnChange[(int)language], GUILayout.Width(150), GUILayout.Height(30)))
-            {
-                SwitchLanguage();
-            }
-
-            EditorGUILayout.EndHorizontal();
-        }
-
-        void SwitchLanguage()
-        {
-            if (language == Language.Chinese)
-                language = Language.English;
-            else if (language == Language.English)
-                language = Language.Chinese;
-        }
-
-        private void SaveAssetAppIDChecked()
-        {
-            PXR_SDKSettingAsset asset;
-            string assetPath = PXR_SDKSettingEditor.assetPath + typeof(PXR_SDKSettingAsset).ToString() + ".asset";
-            if (File.Exists(assetPath))
-            {
-                asset = AssetDatabase.LoadAssetAtPath<PXR_SDKSettingAsset>(assetPath);
-            }
-            else
-            {
-                asset = new PXR_SDKSettingAsset();
-                ScriptableObjectUtility.CreateAsset<PXR_SDKSettingAsset>(asset, PXR_SDKSettingEditor.assetPath);
-            }
-            asset.appIDChecked = true;
-            EditorUtility.SetDirty(asset);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();//must Refresh
-        }
-    }
-
-    public enum Language
-    {
-        English,
-        Chinese,
-    }
-
-    public class PXR_SettingMessageBoxEditor : EditorWindow
-    {
-        static PXR_SettingMessageBoxEditor myWindow;
-        static Language language = Language.English;
-        static string[] strWindowName = { "Ignore the recommended configuration", "忽略推荐配置" };
-        string[] strTipInfo = { "                                   No more prompted \n" +
-            "             You can get recommended configuration from  \n" +
-            "                            Development documentation.",
-             "                               点击\"忽略\"后,不再提示！\n"+
-            "                       可从开发者文档中获取推荐配置说明  \n"};
-
-        string[] strBtnIgnore = { "Ignore", "忽略" };
-        string[] strBtnCancel = { "Cancel", "取消" };
-
-        public static void Init(Language language)
-        {
-            PXR_SettingMessageBoxEditor.language = language;
-            myWindow = (PXR_SettingMessageBoxEditor)GetWindow(typeof(PXR_SettingMessageBoxEditor), true, strWindowName[(int)language], true);
-            myWindow.autoRepaintOnSceneChange = true;
-            myWindow.minSize = new Vector2(360, 200);
-            myWindow.Show(true);
-            Rect pos;
-            if (PXR_SDKSettingEditor.window != null)
-            {
-                Rect frect = PXR_SDKSettingEditor.window.position;
-                pos = new Rect(frect.x + 300, frect.y + 200, 200, 140);
-            }
-            else
-            {
-                pos = new Rect(700, 400, 200, 140);
-            }
-            myWindow.position = pos;
-        }
-
-        void OnGUI()
-        {
-            for (int i = 0; i < 10; i++)
-            {
-                EditorGUILayout.Space();
-            }
-            GUILayout.Label(strTipInfo[(int)language]);
-
-            for (int i = 0; i < 3; i++)
-            {
-                EditorGUILayout.Space();
-            }
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("", GUILayout.Width(20));
-            if (GUILayout.Button(strBtnIgnore[(int)language], GUILayout.Width(100), GUILayout.Height(30)))
-            {
-                OnClickIgnore();
-            }
-            EditorGUILayout.LabelField("", GUILayout.Width(50));
-            if (GUILayout.Button(strBtnCancel[(int)language], GUILayout.Width(130), GUILayout.Height(30)))
-            {
-                OnClickCancel();
-            }
-            EditorGUILayout.EndHorizontal();
-        }
-
-        void OnClickIgnore()
-        {
-            SaveAssetDataBase();
-            PXR_SDKSettingEditor.window.Close();
-            Close();
-        }
-
-        private void SaveAssetDataBase()
-        {
-            PXR_SDKSettingAsset asset;
-            string assetPath = PXR_SDKSettingEditor.assetPath + typeof(PXR_SDKSettingAsset).ToString() + ".asset";
-            if (File.Exists(assetPath))
-            {
-                asset = AssetDatabase.LoadAssetAtPath<PXR_SDKSettingAsset>(assetPath);
-            }
-            else
-            {
-                asset = new PXR_SDKSettingAsset();
-                ScriptableObjectUtility.CreateAsset<PXR_SDKSettingAsset>(asset, PXR_SDKSettingEditor.assetPath);
-            }
-            asset.ignoreSDKSetting = true;
-
-            EditorUtility.SetDirty(asset);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-        }
-
-        void OnClickCancel()
+        private void CloseWindow()
         {
             Close();
         }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.XR.PXR;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -7,6 +8,9 @@ public class PXR_ObjectTrackingBlock : MonoBehaviour
     private Transform objectTrackers;
     private bool updateOT = true;
     private int objectTrackersMaxNum = 3;
+    int DeviceCount = 1;
+    List<long> trackerIds = new List<long>();
+   
 
     // Start is called before the first frame update
     void Start()
@@ -31,27 +35,30 @@ public class PXR_ObjectTrackingBlock : MonoBehaviour
                 }
             }
         }
-
+        PXR_MotionTracking.RequestMotionTrackerCompleteAction += RequestMotionTrackerComplete;
         int res = -1;
-        res = PXR_MotionTracking.CheckMotionTrackerModeAndNumber(MotionTrackerMode.MotionTracking);
+        res = PXR_MotionTracking.CheckMotionTrackerNumber(MotionTrackerNum.TWO);
         if (res == 0)
         {
             objectTrackers.gameObject.SetActive(true);
-            updateOT = true;
+           
         }
     }
-
+    private void RequestMotionTrackerComplete(RequestMotionTrackerCompleteEventData obj)
+    {
+        DeviceCount = (int)obj.trackerCount;
+        for (int i = 0; i < DeviceCount; i++)
+        {
+            trackerIds.Add(obj.trackerIds[i]);
+        }
+        
+        updateOT = true;
+    }
     // Update is called once per frame
     void Update()
     {
 #if UNITY_ANDROID
-        // Get the current tracking mode, either bodytracking or motiontracking.
-        MotionTrackerMode trackingMode = PXR_MotionTracking.GetMotionTrackerMode();
-        if (trackingMode != MotionTrackerMode.MotionTracking)
-        {
-            PXR_MotionTracking.CheckMotionTrackerModeAndNumber(MotionTrackerMode.MotionTracking);
-        }
-
+       
         for (int i = 0; i < objectTrackersMaxNum; i++)
         {
             var child = objectTrackers.GetChild(i);
@@ -62,39 +69,23 @@ public class PXR_ObjectTrackingBlock : MonoBehaviour
         }
 
         // Update motiontrackers pose.
-        if (updateOT && trackingMode == MotionTrackerMode.MotionTracking)
+        if (updateOT )
         {
-            // Get the serial numbers of the motion trackers to identify them.
-            MotionTrackerConnectState mtcs = new MotionTrackerConnectState();
-            int ret = PXR_MotionTracking.GetMotionTrackerConnectStateWithSN(ref mtcs);
-
-            if (ret == 0)
+            MotionTrackerLocation location = new MotionTrackerLocation();
+            for (int i = 0; i < trackerIds.Count; i++)
             {
-                if (mtcs.trackersSN.Length > 0)
-                {
-                    for (int i = 0; i < mtcs.trackerSum; i++)
-                    {
-                        string sn = mtcs.trackersSN[i].value.ToString().Trim();
-                        if (!string.IsNullOrEmpty(sn))
-                        {
-                            // Get the position and rotation estimates of each tracker.
-                            MotionTrackerLocations locations = new MotionTrackerLocations();
-                            MotionTrackerConfidence confidence = new MotionTrackerConfidence();
-                            int result = PXR_MotionTracking.GetMotionTrackerLocations(mtcs.trackersSN[i], ref locations, ref confidence);
+                bool isValidPose = false;
+                int result = PXR_MotionTracking.GetMotionTrackerLocation(trackerIds[i], ref location, ref isValidPose);
 
-                            // if the return is successful
-                            if (result == 0)
-                            {
-                                MotionTrackerLocation localLocation = locations.localLocation;
-                                var child = objectTrackers.GetChild(i);
-                                if (child)
-                                {
-                                    child.localPosition = localLocation.pose.Position.ToVector3();
-                                    child.localRotation = localLocation.pose.Orientation.ToQuat();
-                                    child.localScale = Vector3.one * 0.1f;
-                                }
-                            }
-                        }
+                // if the return is successful
+                if (result == 0)
+                {
+                    var child = objectTrackers.GetChild(i);
+                    if (child)
+                    {
+                        child.localPosition = location.pose.Position.ToVector3();
+                        child.localRotation = location.pose.Orientation.ToQuat();
+                        child.localScale = Vector3.one * 0.1f;
                     }
                 }
             }

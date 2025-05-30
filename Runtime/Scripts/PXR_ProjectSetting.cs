@@ -29,6 +29,7 @@ namespace Unity.XR.PXR
         public bool eyeTracking;
         public bool eyetrackingCalibration;
         public bool enableETFR;
+        public FoveationLevel foveationLevel;
         public bool latelatching;
         public bool latelatchingDebug;
         public bool enableSubsampled;
@@ -40,6 +41,7 @@ namespace Unity.XR.PXR
         public bool sceneCapture;
         public bool sharedAnchor;
         public bool spatialMesh;
+        public bool secureMR;
         public PxrMeshLod meshLod;
         public bool superResolution;
         public bool normalSharpening;
@@ -56,6 +58,7 @@ namespace Unity.XR.PXR
         public bool validationFFREnabled;
         public bool validationETFREnabled;
         #endregion
+        public bool portalInited;
 
         public static PXR_ProjectSetting GetProjectConfig()
         {
@@ -96,9 +99,12 @@ namespace Unity.XR.PXR
                 projectConfig.enableRecommendMSAA = false;
                 projectConfig.recommendSubsamping = false;
                 projectConfig.recommendMSAA = false;
+                projectConfig.foveationLevel = FoveationLevel.None;
                 projectConfig.validationFFREnabled = false;
                 projectConfig.validationETFREnabled = false;
+                projectConfig.portalInited = false;
                 projectConfig.meshLod = PxrMeshLod.Low;
+                projectConfig.secureMR = false;
 
                 string path = Application.dataPath + "/Resources";
                 if (!Directory.Exists(path))

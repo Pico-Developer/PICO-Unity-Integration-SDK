@@ -300,6 +300,7 @@ namespace Unity.XR.PXR
                     PxrSemanticLabel.Lamp => new Color(0.5f, 1f, 0.5f),
                     //Dark Purple
                     PxrSemanticLabel.WallArt => new Color(0.5f, 0f, 0.25f),
+                    PxrSemanticLabel.Stairway => new Color(0.25f, 0f, 0.25f),
                     _ => Color.white,
                 };
             }

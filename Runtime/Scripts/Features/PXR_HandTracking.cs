@@ -10,6 +10,7 @@ material is strictly forbidden unless prior written permission is obtained from
 PICO Technology Co., Ltd. 
 *******************************************************************************/
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -291,12 +292,11 @@ namespace Unity.XR.PXR
         /// * `true`: enabled
         /// * `false`: disabled
         /// </returns>
+        ///interface has been deprecated
+        [Obsolete("interface has been deprecated", true)]
         public static bool GetSettingState()
         {
-#if PICO_LIVE_PREVIEW && UNITY_EDITOR
-            return PXR_PTApi.UPxr_GetSettingState();
-#endif
-            return PXR_Plugin.HandTracking.UPxr_GetHandTrackerSettingState();
+            return false;
             
         }
 
@@ -308,9 +308,6 @@ namespace Unity.XR.PXR
         /// </returns>
         public static ActiveInputDevice GetActiveInputDevice()
         {
-#if PICO_LIVE_PREVIEW && UNITY_EDITOR
-            return PXR_PTApi.UPxr_GetGetHandTrackerActiveState() ? ActiveInputDevice.HandTrackingActive : ActiveInputDevice.ControllerActive;
-#endif
             return PXR_Plugin.HandTracking.UPxr_GetHandTrackerActiveInputType();
         }
 
@@ -344,21 +341,6 @@ namespace Unity.XR.PXR
         {
             if (!PXR_ProjectSetting.GetProjectConfig().handTracking) 
                 return false;
-
-#if PICO_LIVE_PREVIEW && UNITY_EDITOR
-            PICO.LivePreview.HandAimState lPHandAimState = new PICO.LivePreview.HandAimState();
-            PXR_PTApi.UPxr_GetHandTrackerAimState((int)hand, ref lPHandAimState);
-            aimState.aimStatus = (HandAimStatus)lPHandAimState.aimStatus;
-            aimState.touchStrengthRay = lPHandAimState.touchStrengthRay;
-            aimState.aimRayPose.Position.x = lPHandAimState.aimRayPose.Position.x;
-            aimState.aimRayPose.Position.y = lPHandAimState.aimRayPose.Position.y;
-            aimState.aimRayPose.Position.z = lPHandAimState.aimRayPose.Position.z;
-            aimState.aimRayPose.Orientation.x = lPHandAimState.aimRayPose.Orientation.x;
-            aimState.aimRayPose.Orientation.y = lPHandAimState.aimRayPose.Orientation.y;
-            aimState.aimRayPose.Orientation.z = lPHandAimState.aimRayPose.Orientation.z;
-            aimState.aimRayPose.Orientation.w = lPHandAimState.aimRayPose.Orientation.w;
-            return true;
-#endif
             return PXR_Plugin.HandTracking.UPxr_GetHandTrackerAimState(hand, ref aimState);
         }
 
@@ -376,28 +358,6 @@ namespace Unity.XR.PXR
         {
             if (!PXR_ProjectSetting.GetProjectConfig().handTracking) 
                 return false;
-#if PICO_LIVE_PREVIEW && UNITY_EDITOR
-            PICO.LivePreview.HandJointLocations lPHandJointLocations = new PICO.LivePreview.HandJointLocations();
-            PXR_PTApi.UPxr_GetHandTrackerJointLocations((int)hand,ref lPHandJointLocations);
-            jointLocations.handScale = lPHandJointLocations.handScale;
-            jointLocations.isActive = lPHandJointLocations.isActive;
-            jointLocations.jointCount = lPHandJointLocations.jointCount;
-            jointLocations.jointLocations = new HandJointLocation[lPHandJointLocations.jointCount];
-            for (int i = 0; i < lPHandJointLocations.jointCount; i++)
-            {
-                jointLocations.jointLocations[i].locationStatus = (HandLocationStatus)lPHandJointLocations.jointLocations[i].locationStatus;
-                jointLocations.jointLocations[i].radius = lPHandJointLocations.jointLocations[i].radius;
-                jointLocations.jointLocations[i].pose.Position.x = lPHandJointLocations.jointLocations[i].pose.Position.x;
-                jointLocations.jointLocations[i].pose.Position.y = lPHandJointLocations.jointLocations[i].pose.Position.y;
-                jointLocations.jointLocations[i].pose.Position.z = lPHandJointLocations.jointLocations[i].pose.Position.z;
-                jointLocations.jointLocations[i].pose.Orientation.x = lPHandJointLocations.jointLocations[i].pose.Orientation.x;
-                jointLocations.jointLocations[i].pose.Orientation.y = lPHandJointLocations.jointLocations[i].pose.Orientation.y;
-                jointLocations.jointLocations[i].pose.Orientation.z = lPHandJointLocations.jointLocations[i].pose.Orientation.z;
-                jointLocations.jointLocations[i].pose.Orientation.w = lPHandJointLocations.jointLocations[i].pose.Orientation.w;
-
-            }
-            return true;
-#endif
             return PXR_Plugin.HandTracking.UPxr_GetHandTrackerJointLocations(hand, ref jointLocations);
         }
 

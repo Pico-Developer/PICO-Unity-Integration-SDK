@@ -12,7 +12,8 @@
         "Unity.XR.Interaction.Toolkit",
         "Unity.InputSystem",
         "Unity.XR.Hands.Samples.VisualizerSample",
-        "Unity.XR.Hands"
+        "Unity.XR.Hands",
+        "Pico.Spatializer"
     ],
     "includePlatforms": [
         "Editor"

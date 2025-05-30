@@ -57,7 +57,7 @@ namespace Unity.XR.PXR.Editor
 
         public static void OnBuild(BuildPlayerOptions options)
         {
-#if UNITY_2021_1_OR_NEWER
+#if UNITY_2021_2_OR_NEWER
             NamedBuildTarget recommendedBuildTarget = NamedBuildTarget.Android;
 #else
             BuildTargetGroup recommendedBuildTarget = BuildTargetGroup.Android;

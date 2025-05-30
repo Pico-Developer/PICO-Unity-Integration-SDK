@@ -104,7 +104,6 @@ namespace Unity.XR.PXR
                 return GetLoadedSubsystem<XRMeshSubsystem>();
             }
         }
-
         internal enum LoaderState
         {
             Uninitialized,
@@ -130,14 +129,14 @@ namespace Unity.XR.PXR
             LoaderState.StartAttempted,
             LoaderState.Started
         };
-
         public override bool Initialize()
         {
             Debug.Log($"{TAG} Initialize() currentLoaderState={currentLoaderState}");
 #if UNITY_INPUT_SYSTEM
             InputLayoutLoader.RegisterInputLayouts();
 #endif
-#if UNITY_ANDROID && !UNITY_EDITOR
+// #if UNITY_ANDROID 
+       
             PXR_Settings settings = GetSettings();
             if (settings != null)
             {
@@ -148,7 +147,7 @@ namespace Unity.XR.PXR
                     useContentProtect = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().useContentProtect),
                     systemDisplayFrequency = settings.GetSystemDisplayFrequency(),
                     optimizeBufferDiscards = settings.GetOptimizeBufferDiscards(),
-                    enableAppSpaceWarp = Convert.ToUInt16(settings.enableAppSpaceWarp),                    
+                    enableAppSpaceWarp = Convert.ToUInt16(settings.enableAppSpaceWarp),
                     enableSubsampled = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().enableSubsampled),
                     lateLatchingDebug = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().latelatchingDebug),
                     enableStageMode = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().stageMode),
@@ -157,18 +156,19 @@ namespace Unity.XR.PXR
                     qualitySharpening = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().qualitySharpening),
                     fixedFoveatedSharpening = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().fixedFoveatedSharpening),
                     selfAdaptiveSharpening = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().selfAdaptiveSharpening),
+                    enableETFR = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().enableETFR),
+                    foveationLevel = Convert.ToUInt16((int)PXR_ProjectSetting.GetProjectConfig().foveationLevel + 1),
                     spatialMeshLod = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().meshLod),
+                    enableEyeTracking = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().eyeTracking),
+                    dynamicFoveation =1,
                 };
-
-                PXR_Plugin.System.UPxr_Construct(ConvertRotationWith2Vector);
-                PXR_Plugin.System.UPxr_SetEventDataBufferCallBack(EventDataBufferFunction);
+                
                 PXR_Plugin.System.UPxr_SetUserDefinedSettings(userDefinedSettings);
-
             }
-#endif
+            PXR_Plugin.System.UPxr_SetXrEventDataBufferCallBack(XrEventDataBufferFunction);
+// #endif
 
             PXR_Plugin.System.ProductName = PXR_Plugin.System.UPxr_GetProductName();
-
             if (currentLoaderState == LoaderState.Initialized)
                 return true;
 
@@ -430,171 +430,168 @@ namespace Unity.XR.PXR
             return Quaternion.FromToRotation(from, to);
         }
 
-        [MonoPInvokeCallback(typeof(EventDataBufferCallBack))]
-        static void EventDataBufferFunction(ref PxrEventDataBuffer eventDB)
+        [MonoPInvokeCallback(typeof(XrEventDataBufferCallBack))]
+        static void XrEventDataBufferFunction(ref XrEventDataBuffer eventDB)
         {
             int status, action;
-
+            PLog.d("PxrUnity",$"XrEventDataBufferFunction eventType={eventDB.type}",false);
             switch (eventDB.type)
             {
-                case PxrStructureType.SessionStateChanged:
-
-                    int state = BitConverter.ToInt32(eventDB.data, 0);
+                case XrStructureType.XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED:
+                    
+                    int sessionstate = BitConverter.ToInt32(eventDB.data, 8);
                     if (PXR_Plugin.System.SessionStateChanged != null)
                     {
-                        PXR_Plugin.System.SessionStateChanged(state);
+                        PXR_Plugin.System.SessionStateChanged((XrSessionState)sessionstate);
                     }
 #if AR_FOUNDATION_5 || AR_FOUNDATION_6
-                    PXR_SessionSubsystem.instance?.OnSessionStateChange(state);
+                    PXR_SessionSubsystem.instance?.OnSessionStateChange((XrSessionState)sessionstate);
 #endif
                     break;
-                case PxrStructureType.Controller:
-                    PxrDeviceEventType eventType = (PxrDeviceEventType)eventDB.data[0];
+                case XrStructureType.XR_TYPE_EVENT_CONTROLLER_STATE_CHANGED_PICO:
+
+                    XrDeviceEventType eventType = (XrDeviceEventType)eventDB.data[0];
                     status = eventDB.data[5];
                     action = eventDB.data[6];
-                    PLog.d(TAG, $"Controller eventType={eventType}, status={status}, action={action}");
+                    PLog.i(TAG, $"Controller eventType={eventType}, status={status}, action={action}", false);
                     switch (eventType)
                     {
-                        case PxrDeviceEventType.INPUTDEVICE_CHANGED:
+                        case XrDeviceEventType.XR_DEVICE_INPUTDEVICE_CHANGED:
                             if (PXR_Plugin.System.InputDeviceChanged != null)
                             {
                                 PXR_Plugin.System.InputDeviceChanged(status);
                             }
-                            if (PXR_Input.InputDeviceChanged != null)
-                            {
-                                PXR_Input.InputDeviceChanged((ActiveInputDevice)status);
-                            }
-                            break;
-                        case PxrDeviceEventType.MOTION_TRACKER_STATE:
-                            if (status == 0 || status == 1)
-                            {
-                                if (PXR_MotionTracking.MotionTrackerNumberOfConnections != null)
-                                {
-                                    PXR_MotionTracking.MotionTrackerNumberOfConnections(status, action);
-                                }
-                            }
-                            else if (status == 2)
-                            {
-                                if (PXR_MotionTracking.BodyTrackingAbnormalCalibrationData != null)
-                                {
-                                    PXR_MotionTracking.BodyTrackingAbnormalCalibrationData(status, action);
-                                }
-                            }
-                            break;
-                        case PxrDeviceEventType.MOTION_TRACKER_BATTERY:
-                            if (PXR_MotionTracking.MotionTrackerBatteryLevel != null)
-                            {
-                                PXR_MotionTracking.MotionTrackerBatteryLevel(status, action);
-                            }
-                            break;
-                        case PxrDeviceEventType.BODYTRACKING_STATE_ERROR_CODE:
-                            if (PXR_MotionTracking.BodyTrackingStateError != null)
-                            {
-                                PXR_MotionTracking.BodyTrackingStateError((BodyTrackingStatusCode)status, (BodyTrackingErrorCode)action);
-                            }
-                            break;
-                        case PxrDeviceEventType.BODYTRACKING_ACTION:
-                            if (PXR_MotionTracking.BodyTrackingAction != null)
-                            {
-                                if ((action & (int)BodyActionList.PxrTouchGround) != 0)
-                                {
-                                    PXR_MotionTracking.BodyTrackingAction(status, BodyActionList.PxrTouchGround);
-                                }
-
-                                if ((action & (int)BodyActionList.PxrKeepStatic) != 0)
-                                {
-                                    PXR_MotionTracking.BodyTrackingAction(status, BodyActionList.PxrKeepStatic);
-                                }
-
-                                if ((action & (int)BodyActionList.PxrTouchGroundToe) != 0)
-                                {
-                                    PXR_MotionTracking.BodyTrackingAction(status, BodyActionList.PxrTouchGroundToe);
-                                }
-
-                                if ((action & (int)BodyActionList.PxrFootDownAction) != 0)
-                                {
-                                    PXR_MotionTracking.BodyTrackingAction(status, BodyActionList.PxrFootDownAction);
-                                }
-                            }
                             break;
                     }
+
                     break;
-                case PxrStructureType.SeethroughStateChanged:
+                case XrStructureType.XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_FB:
+                    float drRate = BitConverter.ToSingle(eventDB.data, 4);
+                    if (PXR_Plugin.System.DisplayRefreshRateChangedAction != null)
+                    {
+                        PXR_Plugin.System.DisplayRefreshRateChangedAction(drRate);
+                    }
+
+                    PLog.i(TAG, $"RefreshRateChanged value ={drRate}", false);
+                    break;
+                case XrStructureType.XR_TYPE_EVENT_SEETHROUGH_STATE_CHANGED:
                     status = BitConverter.ToInt32(eventDB.data, 0);
                     PXR_Plugin.Boundary.seeThroughState = status;
                     if (PXR_Plugin.Boundary.SeethroughStateChangedAction != null)
                     {
                         PXR_Plugin.Boundary.SeethroughStateChangedAction(status);
                     }
-                    PLog.i(TAG, $"SeethroughStateChanged status ={status}");
+
+                    PLog.i(TAG, $"SeethroughStateChanged status ={status}", false);
                     break;
-                case PxrStructureType.RefreshRateChanged:
-                    float drRate = BitConverter.ToSingle(eventDB.data, 0);
-                    if (PXR_Plugin.System.DisplayRefreshRateChangedAction != null)
-                    {
-                        PXR_Plugin.System.DisplayRefreshRateChangedAction(drRate);
-                    }
-                    PLog.i(TAG, $"RefreshRateChanged value ={drRate}");
-                    break;
-                case PxrStructureType.SDKLoglevelChanged:
+                case XrStructureType.XR_TYPE_EVENT_DATA_MRC_STATUS_CHANGED_PICO:
                     status = BitConverter.ToInt32(eventDB.data, 0);
+                    PLog.i(TAG, $"XR_TYPE_EVENT_DATA_MRC_STATUS_CHANGED_PICO status ={status}", false);
+                    PXR_Plugin.System.enableMRC = status == 1;
+                    if (PXR_Plugin.System.MRCStateChangedAction != null)
+                    {
+                        PXR_Plugin.System.MRCStateChangedAction(status == 1);
+                    }
+
+                    break;
+                case XrStructureType.XR_TYPE_EVENT_LOG_LEVEL_CHANGE:
+                    status = BitConverter.ToInt32(eventDB.data, 4);
                     PLog.logLevel = (PLog.LogLevel)status;
-                    PLog.i(TAG, $"SDKLoglevelChanged logLevel ={status}");
+                    PLog.i(TAG, $"SDKLoglevelChanged logLevel ={status}", false);
+
                     break;
-                case PxrStructureType.MotionTrackerKeyEvent:
-                    if (PXR_MotionTracking.MotionTrackerKeyAction != null)
+                case XrStructureType.XR_TYPE_EVENT_DATA_USER_PRESENCE_CHANGED_EXT:
+                    bool isUserPresent = BitConverter.ToBoolean(eventDB.data, 8);
+                    if (PXR_Plugin.System.UserPresenceChangedAction != null)
                     {
-                        MotionTrackerEventData result = new MotionTrackerEventData();
-                        result.trackerSN.value = System.Text.Encoding.ASCII.GetString(eventDB.data.Take(24).ToArray());
-                        result.code = BitConverter.ToInt32(eventDB.data, 24);
-                        result.action = BitConverter.ToInt32(eventDB.data, 28);
-                        result.repeat = BitConverter.ToInt32(eventDB.data, 32);
-                        result.shortPress = BitConverter.ToBoolean(eventDB.data, 36);
-                        PLog.i(TAG, $" code={result.code}, action={result.action}, repeat={result.repeat}, shortPress={result.shortPress},trackerSN={result.trackerSN.value} ");
-                        PXR_MotionTracking.MotionTrackerKeyAction(result);
+                        PXR_Plugin.System.UserPresenceChangedAction(isUserPresent);
+                    }
+
+                    break;
+                case XrStructureType.XR_TYPE_EVENT_KEY_EVENT:
+                    if (PXR_Plugin.System.RecenterSuccess != null)
+                    {
+                        PXR_Plugin.System.RecenterSuccess();
+                    }
+
+                    break;
+                
+                case XrStructureType.XR_TYPE_EVENT_DATA_ENVIRONMENT_BLEND_MODE_CHANGED_EXT:
+                {
+                    if (PXR_Manager.VstDisplayStatusChanged != null)
+                    {
+                        int status_ = BitConverter.ToInt32(eventDB.data, 8);
+                        PXR_Manager.VstDisplayStatusChanged(status_==1?PxrVstStatus.Disabled:PxrVstStatus.Enabled);
+                    }
+                }
+                    break;
+                case XrStructureType.XR_TYPE_EVENT_DATA_SENSE_DATA_PROVIDER_STATE_CHANGED:
+                case XrStructureType.XR_TYPE_EVENT_DATA_SENSE_DATA_UPDATED:
+                case XrStructureType.XR_TYPE_EVENT_DATA_AUTO_SCENE_CAPTURE_UPDATE_PICO:
+                {
+                    PXR_Manager.Instance.PollEvent(eventDB);
+                    break;
+                }
+                case XrStructureType.XR_TYPE_EVENT_DATA_REQUEST_MOTION_TRACKER_COMPLETE:
+                    if (PXR_MotionTracking.RequestMotionTrackerCompleteAction != null)
+                    {
+                        RequestMotionTrackerCompleteEventData requestMotionTrackerCompleteEventData = new RequestMotionTrackerCompleteEventData();
+                        requestMotionTrackerCompleteEventData.trackerCount = BitConverter.ToUInt32(eventDB.data, 0);
+                        requestMotionTrackerCompleteEventData.trackerIds = new long[requestMotionTrackerCompleteEventData.trackerCount];
+                        for (int i = 0; i < requestMotionTrackerCompleteEventData.trackerCount; i++)
+                        {
+                            requestMotionTrackerCompleteEventData.trackerIds[i] = BitConverter.ToInt16(eventDB.data, 8+ 8 * i);
+                        }
+
+                        requestMotionTrackerCompleteEventData.result =
+                            (PxrResult)BitConverter.ToInt32(eventDB.data, 4 + 8 * (int)requestMotionTrackerCompleteEventData.trackerCount);
+                        PXR_MotionTracking.RequestMotionTrackerCompleteAction(requestMotionTrackerCompleteEventData);
                     }
                     break;
-                case PxrStructureType.EXTDevConnectStateEvent:
-                    if (PXR_MotionTracking.ExtDevConnectAction != null)
+                case XrStructureType.XR_TYPE_EVENT_DATA_MOTION_TRACKER_CONNECTION_STATE_CHANGED:
+                    if (PXR_MotionTracking.MotionTrackerConnectionAction != null)
                     {
-                        ExtDevConnectEventData result = new ExtDevConnectEventData();
-                        result.trackerSN.value = System.Text.Encoding.ASCII.GetString(eventDB.data.Take(24).ToArray());
-                        result.state = BitConverter.ToInt32(eventDB.data, 24);
-                        PLog.i(TAG, $" state={result.state},trackerSN={result.trackerSN.value} ");
-                        PXR_MotionTracking.ExtDevConnectAction(result);
+                        Int64 trackerId = BitConverter.ToInt64(eventDB.data, 0);
+                        int state =  BitConverter.ToInt32(eventDB.data, 8);
+                        PXR_MotionTracking.MotionTrackerConnectionAction(trackerId, state);
                     }
                     break;
-                case PxrStructureType.EXTDevBatteryStateEvent:
-                    if (PXR_MotionTracking.ExtDevBatteryAction != null)
+                case XrStructureType.XR_TYPE_EVENT_DATA_MOTION_TRACKER_POWER_KEY_EVENT:
+                    if (PXR_MotionTracking.MotionTrackerPowerKeyAction != null)
                     {
-                        ExtDevBatteryEventData result = new ExtDevBatteryEventData();
-                        result.trackerSN.value = System.Text.Encoding.ASCII.GetString(eventDB.data.Take(24).ToArray());
-                        result.battery = BitConverter.ToInt32(eventDB.data, 24);
-                        result.charger = BitConverter.ToInt32(eventDB.data, 28);
-                        PLog.i(TAG, $" state={result.battery}, charger={result.charger}, trackerSN={result.trackerSN.value} ");
-                        PXR_MotionTracking.ExtDevBatteryAction(result);
+                        Int64 trackerId = BitConverter.ToInt64(eventDB.data, 0);
+                        bool state =  BitConverter.ToBoolean(eventDB.data, 8);
+                        PXR_MotionTracking.MotionTrackerPowerKeyAction(trackerId, state);
                     }
                     break;
-                case PxrStructureType.MotionTrackingModeChangedEvent:
-                    if (PXR_MotionTracking.MotionTrackingModeChangedAction != null)
+                case XrStructureType.XR_TYPE_EVENT_DATA_EXPAND_DEVICE_CONNECTION_STATE_CHANGED:
+                    if (PXR_MotionTracking.ExpandDeviceConnectionAction != null)
                     {
-                        status = BitConverter.ToInt32(eventDB.data, 0);
-                        PLog.i(TAG, $" status={status} ");
-                        PXR_MotionTracking.MotionTrackingModeChangedAction((MotionTrackerMode)status);
+                        UInt64 trackerId = BitConverter.ToUInt64(eventDB.data, 0);
+                        int state =  BitConverter.ToInt32(eventDB.data, 8);
+                        PXR_MotionTracking.ExpandDeviceConnectionAction((long)trackerId, state);
                     }
                     break;
-                case PxrStructureType.EXTDevPassDataEvent:
+                case XrStructureType.XR_TYPE_EVENT_DATA_EXPAND_DEVICE_BATTERY_STATE_CHANGED:
+                    if (PXR_MotionTracking.ExpandDeviceBatteryAction != null)
+                    {
+                        
+                        ExpandDeviceBatteryEventData expandDevice = new ExpandDeviceBatteryEventData();
+                        expandDevice.deviceId = BitConverter.ToUInt64(eventDB.data, 0);
+                        expandDevice.batteryLevel = BitConverter.ToSingle(eventDB.data, 8);
+                        expandDevice.chargingState = (XrBatteryChargingState)BitConverter.ToInt32(eventDB.data, 12);
+                      
+                        PXR_MotionTracking.ExpandDeviceBatteryAction(expandDevice);
+                    }
+                    break;
+                case XrStructureType.XR_TYPE_EVENT_DATA_EXPAND_DEVICE_CUSTOM_DATA_STATE_CHANGED:
                     if (PXR_MotionTracking.ExtDevPassDataAction != null)
                     {
                         status = BitConverter.ToInt32(eventDB.data, 0);
-                        PLog.i(TAG, $" state={status}");
                         PXR_MotionTracking.ExtDevPassDataAction(status);
                     }
-                    break;
 
-                default:
                     break;
-
             }
         }
 
@@ -621,9 +618,8 @@ namespace Unity.XR.PXR
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         static void RuntimeLoadPicoPlugin()
         {
-            PXR_Plugin.System.UPxr_LoadPICOPlugin();
             string version = "UnityXR_" + PXR_Plugin.System.UPxr_GetSDKVersion() + "_" + Application.unityVersion;
-            PXR_Plugin.System.UPxr_SetConfigString( ConfigType.EngineVersion, version );
+            // PXR_Plugin.System.UPxr_SetConfigString( ConfigType.EngineVersion, version );
         }
 #endif
     }

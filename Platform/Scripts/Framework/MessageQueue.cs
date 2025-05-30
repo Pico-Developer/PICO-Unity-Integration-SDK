@@ -370,7 +370,7 @@ namespace Pico.Platform
                     {
                         var obj = CLIB.ppf_Message_GetRtcUserPublishInfo(ptr);
                         if (obj == IntPtr.Zero) return null;
-                        return new RtcUserPublishInfo(ptr);
+                        return new RtcUserPublishInfo(obj);
                     });
                     break;
                 }

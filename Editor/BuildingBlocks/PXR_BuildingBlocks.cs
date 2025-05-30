@@ -46,10 +46,10 @@ namespace Unity.XR.PXR
     class PXR_BuildingBlocksControllerTracking : IBuildingBlock
     {
         const string k_Id = "PICO Controller Tracking";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Configure the controller model provided by PICO SDK in the scene and configure the controller interaction events. ";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 1;
 
         public string Id => k_Id;
         public string IconPath => k_IconPath;
@@ -66,6 +66,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_PICOControllerTracking);
             // Get XRI Interaction
             var xriPackage = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(XRInteractionManager).Assembly);
             if (xriPackage == null)
@@ -240,15 +241,18 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     class PXR_BuildingBlocksControllerTrackingCanvas : IBuildingBlock
     {
         const string k_Id = "Controller Canvas Interaction";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Add Controller Ray Interaction to Canvas.";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 2;
 
         public string Id => k_Id;
         public string IconPath => k_IconPath;
@@ -258,11 +262,15 @@ namespace Unity.XR.PXR
         static string xrOriginName = $"{PXR_Utils.BuildingBlock} {k_Id} XR Origin (XR Rig)";
         static string canvasName = $"{PXR_Utils.BuildingBlock} {k_Id} Canvas";
 
+
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_ControllerCanvasInteraction);
             // Get XROrigin
             GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
+            Undo.RegisterCreatedObjectUndo(cameraOrigin, "Create XROrigin");
             PXR_Utils.SetTrackingOriginMode();
+
             Canvas canvas;
             List<Canvas> canvasComponents = PXR_Utils.FindComponentsInScene<Canvas>().ToList();
             if (canvasComponents.Count == 0)
@@ -272,42 +280,55 @@ namespace Unity.XR.PXR
                     EditorApplication.ExecuteMenuItem("GameObject/UI/Canvas");
                 }
                 canvas = PXR_Utils.FindComponentsInScene<Canvas>()[0];
+                Undo.RegisterCreatedObjectUndo(canvas.gameObject, "Create Canvas");
             }
             else
             {
                 canvas = canvasComponents[0];
             }
+
             if (canvas)
             {
                 TrackedDeviceGraphicRaycaster trackedDeviceGraphicRaycaster = canvas.transform.GetComponent<TrackedDeviceGraphicRaycaster>();
                 if (trackedDeviceGraphicRaycaster == null)
                 {
-                    canvas.gameObject.AddComponent<TrackedDeviceGraphicRaycaster>();
+                    trackedDeviceGraphicRaycaster = Undo.AddComponent<TrackedDeviceGraphicRaycaster>(canvas.gameObject);
                 }
                 else
                 {
+                    Undo.RecordObject(trackedDeviceGraphicRaycaster, "Enable TrackedDeviceGraphicRaycaster");
                     trackedDeviceGraphicRaycaster.enabled = true;
                 }
 
                 Camera mainCam = PXR_Utils.GetMainCameraForXROrigin();
+                Undo.RecordObject(canvas, "Set Canvas World Camera");
                 canvas.worldCamera = mainCam;
+
                 if (canvas.renderMode != RenderMode.WorldSpace)
                 {
                     Vector2 canvasDimensionsScaled;
                     Vector2 canvasDimensionsInMeters = new Vector2(1.0f, 1.0f);
                     const float canvasWorldSpaceScale = 0.001f;
                     canvasDimensionsScaled = canvasDimensionsInMeters / canvasWorldSpaceScale;
-                    canvas.GetComponent<RectTransform>().sizeDelta = canvasDimensionsScaled;
+
+                    RectTransform rectTransform = canvas.GetComponent<RectTransform>();
+                    Undo.RecordObject(rectTransform, "Change Canvas Size Delta");
+                    rectTransform.sizeDelta = canvasDimensionsScaled;
+
                     canvas.renderMode = RenderMode.WorldSpace;
                     canvas.transform.localScale = Vector3.one * canvasWorldSpaceScale;
                     canvas.transform.position = mainCam.transform.position + new Vector3(0, 0, 1);
+                    Undo.RecordObject(canvas.transform, "Change Canvas Rotation");
                     canvas.transform.rotation = mainCam.transform.rotation;
                 }
+
+                Undo.RecordObject(canvas, "Change Canvas Name");
                 canvas.name = canvasName;
             }
 
             GameObject eventSystemGO;
             List<EventSystem> esComponents = PXR_Utils.FindComponentsInScene<EventSystem>().ToList();
+
 #if !XRI_TOOLKIT_3
             if (esComponents.Count == 0)
             {
@@ -349,16 +370,17 @@ namespace Unity.XR.PXR
             if (esComponents.Count > 0)
             {
                 eventSystemGO = PXR_Utils.FindComponentsInScene<EventSystem>()[0].gameObject;
+                Undo.RecordObject(eventSystemGO, "Disable Event System");
                 eventSystemGO.SetActive(false);
             }
 #endif
 
+            Undo.RecordObject(cameraOrigin, "Change XROrigin Name");
             cameraOrigin.name = xrOriginName;
 
             EditorSceneManager.MarkSceneDirty(cameraOrigin.scene);
             EditorSceneManager.SaveScene(cameraOrigin.scene);
         }
-
         public void ExecuteBuildingBlock() => DoInterestingStuff();
 
         public static void ExecuteBuildingBlockStatic()
@@ -369,6 +391,9 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     #endregion
@@ -402,10 +427,10 @@ namespace Unity.XR.PXR
     class PXR_BuildingBlocksPICOHandTracking : IBuildingBlock
     {
         const string k_Id = "PICO Hand Tracking";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Add the gesture model from PICO to the scene.";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 3;
 
         public string Id => k_Id;
         public string IconPath => k_IconPath;
@@ -419,6 +444,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_PICOHandTracking);
             // Get XROrigin
             GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
             PXR_ProjectSetting.GetProjectConfig().handTracking = true;
@@ -473,15 +499,18 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     class PXR_BuildingBlocksXRHandTracking : IBuildingBlock
     {
         const string k_Id = "XR Hand Tracking";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Add the gesture model from XRHands to the scene.";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 4;
 
         public string Id => k_Id;
         public string IconPath => k_IconPath;
@@ -495,6 +524,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_XRHandTracking);
 #if !XR_HAND
             if (isExecuting)
             {
@@ -579,17 +609,20 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     class PXR_BuildingBlocksXRIHandInteraction : IBuildingBlock
     {
         const string k_Id = "XRI Hand Interaction";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : This button allows one-click configuration of the gesture interaction method in XRInteraction Toolkit to enable interaction between the hand and 3D objects.";
         static string k_BuildingBlocksXROriginName = $"{PXR_Utils.BuildingBlock} XRI Hand Interaction";
         static string k_BuildingBlocksGrabName = $"{PXR_Utils.BuildingBlock} XRI Hand Grab Interactable";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 5;
 
         public string Id => k_Id;
         public string IconPath => k_IconPath;
@@ -614,6 +647,7 @@ namespace Unity.XR.PXR
         private static bool isExecuting = false;
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_XRIHandInteraction);
 #if !XR_HAND
             if (isExecuting)
             {
@@ -710,6 +744,11 @@ namespace Unity.XR.PXR
                     }
 
                     InputAction aimFlagsAction = actionMapLeftHand.FindAction("Aim Flags");
+                    if(aimFlagsAction == null)
+                    {
+                        aimFlagsAction = actionMapLeftHand.FindAction("Meta Aim Flags");
+                    }
+
                     if (aimFlagsAction != null)
                     {
                         bool aimFlagsAdded = false;
@@ -770,6 +809,11 @@ namespace Unity.XR.PXR
                     }
 
                     InputAction aimFlagsAction = actionMapRightHand.FindAction("Aim Flags");
+                    if (aimFlagsAction == null)
+                    {
+                        aimFlagsAction = actionMapRightHand.FindAction("Meta Aim Flags");
+                    }
+
                     if (aimFlagsAction != null)
                     {
                         bool aimFlagsAdded = false;
@@ -960,17 +1004,20 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     class PXR_BuildingBlocksXRIGrabInteraction : IBuildingBlock
     {
         const string k_Id = "XRI Grab Interaction";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Grab objects with hands or controllers.";
         static string k_BuildingBlocksXROriginName = $"{PXR_Utils.BuildingBlock} XRI Hand Interaction";
         static string k_BuildingBlocksGrabName = $"{PXR_Utils.BuildingBlock} XRI Hand Grab Interactable";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 6;
 
         public string Id => k_Id;
         public string IconPath => k_IconPath;
@@ -981,6 +1028,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_XRIGrabInteraction);
 #if !XR_HAND
             if (isExecuting)
             {
@@ -1144,17 +1192,20 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     class PXR_BuildingBlocksXRIPokeInteraction : IBuildingBlock
     {
         const string k_Id = "XRI Poke Interaction";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Poke objects with hands or controllers.";
         static string k_BuildingBlocksXROriginName = $"{PXR_Utils.BuildingBlock} XRI Hand Interaction";
         static string k_BuildingBlocksGrabName = $"{PXR_Utils.BuildingBlock} XRI Hand Poke Interactable";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 7;
 
         public string Id => k_Id;
         public string IconPath => k_IconPath;
@@ -1165,6 +1216,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_XRIPokeInteraction);
 #if !XR_HAND
             if (isExecuting)
             {
@@ -1308,6 +1360,9 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
 
@@ -1340,10 +1395,10 @@ namespace Unity.XR.PXR
     class PXR_BuildingBlocksVideoSeethrough : IBuildingBlock
     {
         const string k_Id = "PICO Video Seethrough";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Video seethrought can be set up and enabled with one click.";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 8;
         static string xrOriginName = $"{PXR_Utils.BuildingBlock} {k_Id} XR Origin (XR Rig)";
 
         public string Id => k_Id;
@@ -1353,6 +1408,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_PICOVideoSeethrough);
             // Get XROrigin
             GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
             if (!cameraOrigin.GetComponent<PXR_CameraEffectBlock>())
@@ -1376,15 +1432,18 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     class PXR_BuildingBlocksVideoSeethroughEffect : IBuildingBlock
     {
         const string k_Id = "PICO Video Seethrough Effect";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : The parameters of Video Seethrough Effect can be set and debugged. After recording the values, they can be used. ";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 9;
         static string cameraEffectPath = PXR_Utils.sdkPackageName + "Assets/BuildingBlocks/Prefabs/CameraEffect.prefab";
         static string cameraEffectName = $"{PXR_Utils.BuildingBlock} {k_Id}";
         static string xrOriginName = $"{PXR_Utils.BuildingBlock} {k_Id} XR Origin (XR Rig)";
@@ -1396,6 +1455,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_PICOVideoSeethroughEffect);
             PXR_BuildingBlocksControllerTracking pXR_BuildingBlocksControllerTracking = new PXR_BuildingBlocksControllerTracking();
             pXR_BuildingBlocksControllerTracking.ExecuteBuildingBlock();
 
@@ -1490,6 +1550,9 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     #endregion
@@ -1503,7 +1566,7 @@ namespace Unity.XR.PXR
 
         const string k_SectionIconPath = "Building/Block/Section/Icon/Path";
         public string SectionIconPath => k_SectionIconPath;
-        const int k_SectionPriority = 3;
+        const int k_SectionPriority = 4;
 
         readonly IBuildingBlock[] m_BBlocksElementIds = new IBuildingBlock[]
         {
@@ -1522,7 +1585,7 @@ namespace Unity.XR.PXR
     class PXR_BuildingBlocksBodyTracking : IBuildingBlock
     {
         const string k_Id = "PICO Body Tracking";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Body Tracking can be set with one click through this block, and 24 cubes will be used to display the tracking status of 24 human body joints in real time. ";
         const int k_SectionPriority = 10;
@@ -1536,6 +1599,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_PICOBodyTracking);
             // Get XROrigin
             GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
 
@@ -1576,15 +1640,18 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     class PXR_BuildingBlocksBodyTrackingDebug : IBuildingBlock
     {
         const string k_Id = "PICO Body Tracking Debug";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : If the Avatar model you are using does not match the 24-joint data direction of PICO, you can adapt it by rotating the X, Y, and Z axes of the specified joint data. ";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 11;
         static string bodyTrackingPath = PXR_Utils.sdkPackageName + "Assets/BuildingBlocks/Prefabs/BodyTrackingDebug.prefab";
         static string k_BuildingBlocksGOName = $"{PXR_Utils.BuildingBlock} {k_Id}";
 
@@ -1595,6 +1662,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_PICOBodyTrackingDebug);
             PXR_BuildingBlocksControllerTracking pXR_BuildingBlocksControllerTracking = new PXR_BuildingBlocksControllerTracking();
             pXR_BuildingBlocksControllerTracking.ExecuteBuildingBlock();
             // Get XROrigin
@@ -1637,15 +1705,18 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     class PXR_BuildingBlocksObjectTracking : IBuildingBlock
     {
         const string k_Id = "PICO Object Tracking";
-        const string k_BuildingBlockPath = "GameObject/PICO Building Blocks/" + k_Id;
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
         const string k_IconPath = "buildingblockIcon";
         const string k_Tooltip = k_Id + " : Object Tracking can be set with one click through this block. ";
-        const int k_SectionPriority = 10;
+        const int k_SectionPriority = 12;
         static string k_BuildingBlocksGOName = $"{PXR_Utils.BuildingBlock} {k_Id}";
 
         public string Id => k_Id;
@@ -1655,6 +1726,7 @@ namespace Unity.XR.PXR
 
         static void DoInterestingStuff()
         {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_PICOObjectTracking);
             // Get XROrigin
             GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
 
@@ -1692,7 +1764,192 @@ namespace Unity.XR.PXR
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.
         [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
         public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
     }
 
     #endregion
+
+#if PICO_SPATIALIZER
+    #region PICO Spatial Audio
+    [BuildingBlockItem(Priority = k_SectionPriority)]
+    class PXR_SpatialAudioSection : IBuildingBlockSection
+    {
+        const string k_SectionId = "PICO Spatial Audio";
+        public string SectionId => k_SectionId;
+
+        const string k_SectionIconPath = "Building/Block/Section/Icon/Path";
+        public string SectionIconPath => k_SectionIconPath;
+        const int k_SectionPriority = 5;
+
+        readonly IBuildingBlock[] m_BBlocksElementIds = new IBuildingBlock[]
+        {
+            new PXR_BuildingBlocksSpatialAudioFreeField(),
+            new PXR_BuildingBlocksSpatialAudioAmbisonics(),
+        };
+
+        public IEnumerable<IBuildingBlock> GetBuildingBlocks()
+        {
+            var elements = m_BBlocksElementIds.ToList();
+            return elements;
+        }
+    }
+
+    class PXR_BuildingBlocksSpatialAudioFreeField : IBuildingBlock
+    {
+        const string k_Id = "PICO Spatial Audio Free Field";
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
+        const string k_IconPath = "buildingblockIcon";
+        const string k_Tooltip = k_Id + " : A free field is a sound field that only simulates the location of the audio source while ignoring all environmental acoustic phenomena such as reflection sounds.";
+        const int k_SectionPriority = 13;
+        static string freeFieldPath = PXR_Utils.sdkPackageName + "Assets/BuildingBlocks/Prefabs/SpatialAudioFreeField.prefab";
+        static string k_BuildingBlocksGOName = $"{PXR_Utils.BuildingBlock} {k_Id}";
+
+        public string Id => k_Id;
+        public string IconPath => k_IconPath;
+        public bool IsEnabled => true;
+        public string Tooltip => k_Tooltip;
+
+        static void DoInterestingStuff()
+        {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_PICOSpatialAudioFreeField);
+            // Get XROrigin
+            GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
+            Camera mainCam = PXR_Utils.GetMainCameraForXROrigin();
+            if (!mainCam.GetComponent<PXR_Audio_Spatializer_AudioListener>())
+            {
+                mainCam.gameObject.AddComponent<PXR_Audio_Spatializer_AudioListener>();
+            }
+
+            if (PXR_Utils.FindComponentsInScene<Transform>().Where(component => component.name == k_BuildingBlocksGOName).ToList().Count == 0)
+            {
+                GameObject buildingBlockGO = new GameObject();
+                Selection.activeGameObject = buildingBlockGO;
+
+                Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
+                buildingBlockGO.transform.position = mainCamera.transform.position;
+                buildingBlockGO.transform.rotation = mainCamera.transform.rotation;
+
+                GameObject ob = PrefabUtility.LoadPrefabContents(freeFieldPath);
+                Undo.RegisterCreatedObjectUndo(ob, "Create freeFieldPath.");
+                var activeScene = SceneManager.GetActiveScene();
+                var rootObjects = activeScene.GetRootGameObjects();
+                Undo.SetTransformParent(ob.transform, buildingBlockGO.transform, true, "Parent to ob.");
+                ob.transform.localPosition = Vector3.forward;
+                ob.transform.localRotation = Quaternion.identity;
+                ob.transform.localScale = Vector3.one;
+                ob.SetActive(true);
+
+                buildingBlockGO.name = k_BuildingBlocksGOName;
+                Undo.RegisterCreatedObjectUndo(buildingBlockGO, k_Id);
+
+                PXR_Utils.SetTrackingOriginMode();
+                EditorSceneManager.MarkSceneDirty(buildingBlockGO.scene);
+                EditorSceneManager.SaveScene(buildingBlockGO.scene);
+            }
+            AssetDatabase.SaveAssets();
+        }
+
+        public void ExecuteBuildingBlock() => DoInterestingStuff();
+
+        // Each building block should have an accompanying MenuItem as a good practice, we add them here.
+        [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
+        public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
+    }
+
+    class PXR_BuildingBlocksSpatialAudioAmbisonics : IBuildingBlock
+    {
+        const string k_Id = "PICO Spatial Audio Ambisonics";
+        const string k_BuildingBlockPath = PXR_Utils.BuildingBlockPathO + k_Id;
+        const string k_IconPath = "buildingblockIcon";
+        const string k_Tooltip = k_Id + " : Ambisonics is a full-sphere surround sound effect that covers audio sources on the horizontal plane and below and above the listener, thereby giving the listener a highly immersive audio experience.";
+        const int k_SectionPriority = 14;
+        static string patialAudioAmbisonicsPath = PXR_Utils.sdkPackageName + "Assets/BuildingBlocks/Prefabs/SpatialAudioAmbisonics.prefab";
+        static string k_BuildingBlocksGOName = $"{PXR_Utils.BuildingBlock} {k_Id}";
+
+        public string Id => k_Id;
+        public string IconPath => k_IconPath;
+        public bool IsEnabled => true;
+        public string Tooltip => k_Tooltip;
+
+        static void DoInterestingStuff()
+        {
+            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strBuildingBlocks, PXR_AppLog.strBuildingBlocks_PICOSpatialAudioAmbisonics);
+            // Get XROrigin
+            GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
+            Camera mainCam = PXR_Utils.GetMainCameraForXROrigin();
+            if (!mainCam.GetComponent<PXR_Audio_Spatializer_AudioListener>())
+            {
+                mainCam.gameObject.AddComponent<PXR_Audio_Spatializer_AudioListener>();
+            }
+
+            if (PXR_Utils.FindComponentsInScene<Transform>().Where(component => component.name == k_BuildingBlocksGOName).ToList().Count == 0)
+            {
+                GameObject buildingBlockGO = new GameObject();
+                Selection.activeGameObject = buildingBlockGO;
+
+                Camera mainCamera = PXR_Utils.GetMainCameraForXROrigin();
+                buildingBlockGO.transform.position = mainCamera.transform.position;
+                buildingBlockGO.transform.rotation = mainCamera.transform.rotation;
+
+                GameObject ob = PrefabUtility.LoadPrefabContents(patialAudioAmbisonicsPath);
+                Undo.RegisterCreatedObjectUndo(ob, "Create patialAudioAmbisonicsPath.");
+                var activeScene = SceneManager.GetActiveScene();
+                var rootObjects = activeScene.GetRootGameObjects();
+                Undo.SetTransformParent(ob.transform, buildingBlockGO.transform, true, "Parent to ob.");
+                ob.transform.localPosition = Vector3.forward;
+                ob.transform.localRotation = Quaternion.identity;
+                ob.transform.localScale = Vector3.one;
+                ob.SetActive(true);
+
+                buildingBlockGO.name = k_BuildingBlocksGOName;
+                Undo.RegisterCreatedObjectUndo(buildingBlockGO, k_Id);
+
+                PXR_Utils.SetTrackingOriginMode();
+                EditorSceneManager.MarkSceneDirty(buildingBlockGO.scene);
+                EditorSceneManager.SaveScene(buildingBlockGO.scene);
+            }
+
+            const string audioSettingsPath = "ProjectSettings/AudioManager.asset";
+            var audioSettingsAsset = AssetDatabase.LoadAssetAtPath<Object>(audioSettingsPath);
+
+            if (audioSettingsAsset == null)
+            {
+                Debug.LogError("Could not load audio settings asset.");
+                return;
+            }
+
+            var serializedObject = new SerializedObject(audioSettingsAsset);
+            var decoderProperty = serializedObject.FindProperty("m_AmbisonicDecoderPlugin");
+
+            if (decoderProperty == null)
+            {
+                Debug.LogError("Could not find the Ambisonic Decoder Plugin property. Please manually set Project Settings => Audio => Ambisonic Decoder Plugin => Pico Ambisonic Decoder");
+                return;
+            }
+
+            decoderProperty.stringValue = "Pico Ambisonic Decoder";
+            serializedObject.ApplyModifiedProperties();
+
+            Debug.Log("Ambisonic Decoder Plugin has been set to Pico Ambisonic Decoder.");
+            AssetDatabase.SaveAssets();
+        }
+
+        public void ExecuteBuildingBlock() => DoInterestingStuff();
+
+        // Each building block should have an accompanying MenuItem as a good practice, we add them here.
+        [MenuItem(k_BuildingBlockPath, false, k_SectionPriority)]
+        public static void ExecuteMenuItem(MenuCommand command) => DoInterestingStuff();
+
+        [MenuItem(PXR_Utils.BuildingBlockPathP + k_Id, false, k_SectionPriority)]
+        public static void ExecuteMenuItemHierarchy(MenuCommand command) => DoInterestingStuff();
+    }
+
+    #endregion
+#endif
+
 }
