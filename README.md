@@ -5,22 +5,22 @@ Required PICO device's system version: 5.13.0 or later (PICO Neo3 and PICO 4 ser
 The newly added content is as follows:
 | **Module** | **Description** |
 | --- | --- |
-| General | Added the [PICO XR Portal](/document/unity/pico-xr-portal) - a developer portal consisting of four sections: Configs, Tools, Samples, and About. |
-|  | [Project Validation](/document/unity/project-validation/) supported checking the following settings: <br>  <br> * When using Unity6, check if the current project has the **Run In Background** option checked. If not, report an error. <br> * Check if the **MRC** checkbox is checked in the **PXR_Manager (Script)** panel. If not, report an error. <br> *  Verify if the **Display Refresh Rates** parameter is set to **Default**. If not, report an error. <br> *  When using Vulkan, check if the **Optimize Buffer Discards** option is checked. If not, report an error. |
-|  | [PICO Building Blocks](/document/unity/pico-building-blocks) supported setting up the following: <br>  <br> * Spatial Audio: free field <br> * Spatial Audio: ambisonics |
-| Rendering | Added the `UPxr_SetSuperResolutionOrSharpening` API for dynamically enabling and disabling the [Super Resolution](/document/unity/super-resolution) and [Sharpening](/document/unity/sharpening) functionalities. |
+| General | Added the [PICO XR Portal](https://developer.picoxr.com/document/unity/pico-xr-portal/) - a developer portal consisting of four sections: Configs, Tools, Samples, and About. |
+|  | [Project Validation](https://developer.picoxr.com/document/unity/project-validation/) supported checking the following settings: <br>  <br> * When using Unity6, check if the current project has the **Run In Background** option checked. If not, report an error. <br> * Check if the **MRC** checkbox is checked in the **PXR_Manager (Script)** panel. If not, report an error. <br> *  Verify if the **Display Refresh Rates** parameter is set to **Default**. If not, report an error. <br> *  When using Vulkan, check if the **Optimize Buffer Discards** option is checked. If not, report an error. |
+|  | [PICO Building Blocks](https://developer.picoxr.com/document/unity/pico-building-blocks) supported setting up the following: <br>  <br> * Spatial Audio: free field <br> * Spatial Audio: ambisonics |
+| Rendering | Added the `UPxr_SetSuperResolutionOrSharpening` API for dynamically enabling and disabling the [Super Resolution](https://developer.picoxr.com/document/unity/super-resolution) and [Sharpening](https://developer.picoxr.com/document/unity/sharpening) functionalities. |
 | Sense Pack | Added the following APIs for getting the progress of uploading and downloading shared spatial anchors: <br>  <br> * `UploadSpatialAnchorWithProgressAsync`: Upload spatial anchors and get the upload progress. <br> * `DownloadSharedSpatialAnchorWithProgressAsync`: Download shared spatial anchors and get the download progress. |
-| SecureMR | Added [SecureMR](/document/unity/securemr-overview) capabilities, which enables secure, AI-powered mixed reality use cases while maintaining rigorous protection of user data and privacy. |
+| SecureMR | Added [SecureMR](https://developer.picoxr.com/document/unity/securemr-overview) capabilities, which enables secure, AI-powered mixed reality use cases while maintaining rigorous protection of user data and privacy. |
 | Enterprise services | Added the following APIs: <br>  <br> * `SetDeviceOwner`: Sets an app as the device owner app. <br> * `GetDeviceOwner`: Gets the device owner app. <br> * `SetBrowserHomePage`: Sets a home page for the browser. <br> * `GetBrowserHomePage`: Gets the home page of the browser. <br> * `SetMotionTrackerAutoStart`: Sets the capability for the PICO Motion Tracker to automatically power on when plugged in. <br> * `AllowWifiAutoJoin`: Enables the device to automatically join WiFi. <br> * `GetLargeSpaceBoundsInfoWithType`: Gets the bound information of the large space. |
 Below are the changes to APIs:
 | **Class** | **API** | **What's changed** |
 | --- | --- | --- |
-| [PXR_Boundary](/reference/unity/client-api/PXR_Boundary) | GetDimensions | Currently, only supported to be called at the StageLevel. |
+| [PXR_Boundary](https://developer.picoxr.com/reference/unity/client-api/PXR_Boundary) | GetDimensions | Currently, only supported to be called at the StageLevel. |
 |  | GetSeeThroughTrackingState | Deprecated. |
 |  | UseGlobalPose | Deprecated. |
-| [PXR_FoveationRendering](/reference/unity/client-api/PXR_FoveationRendering/) | SetFoveationParameters | Deprecated. |
-| [PXR_HandTracking](/reference/unity/client-api/PXR_HandTracking/) | GetSettingState | Deprecated. |
-| [PXR_Input](/reference/unity/client-api/PXR_Input/) | GetDominantHand | Deprecated. |
+| [PXR_FoveationRendering](https://developer.picoxr.com/reference/unity/client-api/PXR_FoveationRendering/) | SetFoveationParameters | Deprecated. |
+| [PXR_HandTracking](https://developer.picoxr.com/reference/unity/client-api/PXR_HandTracking/) | GetSettingState | Deprecated. |
+| [PXR_Input](https://developer.picoxr.com/reference/unity/client-api/PXR_Input/) | GetDominantHand | Deprecated. |
 |  | SetDominantHand | Deprecated. |
 |  | SetControllerVibration | Deprecated. |
 |  | SetControllerVibrationEvent | Deprecated. |
@@ -52,7 +52,7 @@ Below are the changes to APIs:
 |  | StopHapticStream | Deprecated. |
 |  | RemoveHapticStream | Deprecated. |
 |  | AnalysisHapticStreamPHF | Deprecated. |
-| [PXR_MotionTracking](/reference/unity/client-api/PXR_MotionTracking/) | WantEyeTrackingService | Deprecated. |
+| [PXR_MotionTracking](https://developer.picoxr.com/reference/unity/client-api/PXR_MotionTracking/) | WantEyeTrackingService | Deprecated. |
 |  | WantFaceTrackingService | Deprecated. |
 |  | GetFaceTrackingSupported | Deprecated. |
 |  | StartFaceTracking | Deprecated. |
@@ -92,7 +92,7 @@ Below are the changes to APIs:
 |  | GetExtDevTrackerByPassData | Deprecated. Please use `GetExpandDeviceCustomData` instead. |
 |  | GetExtDevTrackerBattery | Deprecated. Please use `GetExpandDeviceBattery` instead. |
 |  | GetExtDevTrackerKeyData | Not supported. |
-| [PXR_System](/reference/unity/client-api/PXR_System/) | SetExtraLatencyMode | Not supported. |
+| [PXR_System](https://developer.picoxr.com/reference/unity/client-api/PXR_System/) | SetExtraLatencyMode | Not supported. |
 |  | EnableFaceTracking | Not supported. |
 |  | EnableLipSync | Not supported. |
 |  | GetFaceTrackingData | Not supported. |
