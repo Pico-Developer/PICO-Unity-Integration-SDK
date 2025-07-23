@@ -66,20 +66,48 @@ namespace Unity.XR.PXR.Editor
 
         Action applyPICOXRPluginAction = () =>
         {
-            var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
-            if (generalSettings)
+            SettingsService.OpenProjectSettings("Project/XR Plug-in Management");
+
+            var buildTargetSettings = AssetDatabase.FindAssets("t:XRGeneralSettingsPerBuildTarget")
+               .Select(guid => AssetDatabase.LoadAssetAtPath<XRGeneralSettingsPerBuildTarget>(AssetDatabase.GUIDToAssetPath(guid)))
+               .FirstOrDefault();
+
+            if (buildTargetSettings == null)
             {
-                IReadOnlyList<XRLoader> list = generalSettings.Manager.activeLoaders;
-                while (list.Count > 0)
+                buildTargetSettings = ScriptableObject.CreateInstance<XRGeneralSettingsPerBuildTarget>();
+                AssetDatabase.CreateAsset(buildTargetSettings, "Assets/XRGeneralSettingsPerBuildTarget.asset");
+                Debug.Log($"PXR_Loader XRGeneralSettingsPerBuildTarget");
+            }
+
+            var generalSettings = buildTargetSettings.SettingsForBuildTarget(BuildTargetGroup.Android);
+            if (generalSettings == null)
+            {
+                generalSettings = ScriptableObject.CreateInstance<XRGeneralSettings>();
+                AssetDatabase.AddObjectToAsset(generalSettings, buildTargetSettings);
+                buildTargetSettings.SetSettingsForBuildTarget(BuildTargetGroup.Android, generalSettings);
+
+                var managerSettings = ScriptableObject.CreateInstance<XRManagerSettings>();
+                AssetDatabase.AddObjectToAsset(managerSettings, buildTargetSettings);
+                generalSettings.Manager = managerSettings;
+
+                EditorUtility.SetDirty(buildTargetSettings);
+                AssetDatabase.SaveAssets();
+            }
+
+            if (generalSettings.Manager)
+            {
+                while (generalSettings.Manager.activeLoaders.Count > 0)
                 {
-                    string nameTemp = list[0].GetType().FullName;
-                    XRPackageMetadataStore.RemoveLoader(generalSettings.Manager, nameTemp, BuildTargetGroup.Android);
+                    var loaderName = generalSettings.Manager.activeLoaders[0].GetType().FullName;
+                    XRPackageMetadataStore.RemoveLoader(generalSettings.Manager, loaderName, BuildTargetGroup.Android);
                 }
-                XRPackageMetadataStore.AssignLoader(generalSettings.Manager, "PXR_Loader", BuildTargetGroup.Android);
+
+                bool success = XRPackageMetadataStore.AssignLoader(generalSettings.Manager, "PXR_Loader", BuildTargetGroup.Android);
             }
 
             PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_RequiredPICOXRPluginApplied);
         };
+
         Action applyBuildTargetAction = () =>
         {
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, recommendedBuildTarget);
@@ -135,6 +163,11 @@ namespace Unity.XR.PXR.Editor
             EditorApplication.delayCall += () => maxSize = new Vector2(4000, 4000);
 
             buttonClickedStates[Response.Configs] = true;
+        }
+
+        private void OnEnable()
+        {
+            _styles ??= new PXR_EditorStyles();
         }
 
         private void OnDestroy()
