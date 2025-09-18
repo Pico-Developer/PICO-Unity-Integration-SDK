@@ -1,4 +1,4 @@
-#if PICO_XR
+#if !PICO_OPENXR_SDK
 using System.Collections;
 using System.Collections.Generic;
 using Unity.XR.PXR;

@@ -10,12 +10,14 @@ material is strictly forbidden unless prior written permission is obtained from
 PICO Technology Co., Ltd. 
 *******************************************************************************/
 
+using System;
 using UnityEditor;
 using UnityEngine;
 
 
 namespace Unity.XR.PXR.Editor
 {
+    [Obsolete("PXR_OverLayEditor is obsolete and will be removed in the next version. Please use PXR_CompositionLayerEditor instead.", false)]
     [CanEditMultipleObjects]
     [CustomEditor(typeof(PXR_OverLay))]
     public class PXR_OverLayEditor : UnityEditor.Editor

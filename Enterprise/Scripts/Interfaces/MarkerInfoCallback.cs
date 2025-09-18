@@ -2,13 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using LitJson;
-using UnityEngine;
-using UnityEngine.XR;
-#if PICO_XR
-using Unity.XR.PXR;
-#else
+#if PICO_OPENXR_SDK
 using Unity.XR.OpenXR.Features.PICOSupport;
 #endif
+using Unity.XR.PXR;
+using UnityEngine;
+using UnityEngine.XR;
+
 
 namespace Unity.XR.PICO.TOBSupport
 {
@@ -26,8 +26,7 @@ namespace Unity.XR.PICO.TOBSupport
             YOffset = cameraYOffset;
             mCallback = callback;
             mlist.Clear();
-#if PICO_XR
-#else
+#if PICO_OPENXR_SDK
             OpenXRExtensions.SetMarkMode();
 #endif
         }
@@ -63,7 +62,7 @@ namespace Unity.XR.PICO.TOBSupport
                 if (TrackingMode == TrackingOriginModeFlags.Device || TrackingMode == TrackingOriginModeFlags.Floor)
                 {
               
-#if PICO_XR
+#if !PICO_OPENXR_SDK
                     OriginHeight = PXR_Plugin.System.UPxr_GetConfigFloat(ConfigType.ToDelaSensorY);
 #else
                     float trackingorigin_height = PXR_EnterprisePlugin.oxr_get_trackingorigin_height();

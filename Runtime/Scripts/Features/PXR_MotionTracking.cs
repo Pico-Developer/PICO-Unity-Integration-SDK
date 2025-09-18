@@ -337,6 +337,15 @@ namespace Unity.XR.PXR
             return StartBodyTracking(BodyJointSet.BODY_JOINT_SET_BODY_FULL_START,boneLength);
         }
         
+        /// <summary>
+        /// >Starts body tracking.
+        /// </summary>
+        /// <param name="JointSet">Specifies the set of body joints to be tracked.</param>
+        /// <param name="boneLength">Specifies lengths (unit: cm) for the bones of the avatar. Bones that are not set lengths for will use the default values.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int StartBodyTracking(BodyJointSet JointSet, BodyTrackingBoneLength boneLength)
         {
             return PXR_Plugin.MotionTracking.UPxr_StartBodyTracking(JointSet,boneLength);
@@ -371,10 +380,24 @@ namespace Unity.XR.PXR
             state.errorCode=(BodyTrackingErrorCode)bs2.message;
             return ret;
         }
+        
+        /// <summary>
+        /// >Gets the state of body tracking.
+        /// </summary>
+        /// <param name="isTracking">Indicates whether the PICO Motion Tracker is tracking the body normally:
+        /// - `true`: is tracking
+        /// - `false`: tracking lost
+        /// </param>
+        /// <param name="state">Returns the current status of body tracking.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int GetBodyTrackingState(ref bool isTracking, ref BodyTrackingStatus state)
         {
             return PXR_Plugin.MotionTracking.UPxr_GetBodyTrackingState(ref isTracking, ref state);
         }
+        
         /// <summary>Gets body tracking data.</summary>
         /// <param name="getInfo"> Specifies the display time and the data filtering flags.
         /// For the display time, for example, when it is set to 0.1 second, it means predicting the pose of the tracked node 0.1 seconds ahead.
@@ -426,9 +449,17 @@ namespace Unity.XR.PXR
         public static Action<MotionTrackerMode> MotionTrackingModeChangedAction;
         
         
+        /// <summary>
+        /// You can use the callback function to whether if PICO Motion Trackers are successfully connected to your PICO headset.
+        /// </summary>
         public static Action<RequestMotionTrackerCompleteEventData> RequestMotionTrackerCompleteAction;
-        //trackerId state
+        /// <summary>
+        /// You can use this callback function to be notified when the connection state of PICO Motion Tracker changes.
+        /// </summary>
         public static Action<long, int> MotionTrackerConnectionAction;
+        /// <summary>
+        /// You can use this callback function to receive events for the Power key of PICO Motion Trackers.
+        /// </summary>
         public static Action<long, bool> MotionTrackerPowerKeyAction;
         
 
@@ -466,10 +497,22 @@ namespace Unity.XR.PXR
         {
             return CheckMotionTrackerNumber(number);
         }
+        
+        /// <summary>
+        /// Checks whether the current tracking mode and the number of motion trackers connected are as expected.
+        /// If not, a panel will appear to let the user switch the tracking mode and perform calibration accordingly.
+        /// </summary>
+        /// <param name="number">Specifies the expected number of motion trackers. Value range: [0,3]. You can get the result from callback `RequestMotionTrackerCompleteAction`.
+        /// </param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int CheckMotionTrackerNumber(MotionTrackerNum number)
         {
             return PXR_Plugin.MotionTracking.UPxr_CheckMotionTrackerNumber((int)number);
         }
+        
         /// <summary>Gets the current tracking mode of the PICO Motion Tracker connected.</summary>
         /// <returns>The current tracking mode.</summary>
         [Obsolete("Deprecated")]
@@ -491,11 +534,35 @@ namespace Unity.XR.PXR
         {
             return -1;
         }
+        
+        /// <summary>
+        /// Gets the location of a PICO Motion Tracker which is set to the "motion tracking" mode.
+        /// </summary>
+        /// <param name="trackerid">Specifies the serial number of the motion tracker to get position for. You can pass only one serial number in one request.</param>
+        /// <param name="location">Returns the location of the specified motion tracker.</param>
+        /// <param name="isValidPose">Whether the returned pose data is valid:
+        /// - `true`: valid
+        /// - `false`: invalid
+        /// </param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int GetMotionTrackerLocation(long trackerid,ref MotionTrackerLocation location,ref bool isValidPose)
         {
             return PXR_Plugin.MotionTracking.UPxr_GetMotionTrackerLocation(trackerid, ref location, ref isValidPose);
         }
         
+        /// <summary>
+        /// Gets the battery of a PICO Motion Tracker.
+        /// </summary>
+        /// <param name="trackerid">Specifies the serial number of the motion tracker to get battery for.</param>
+        /// <param name="battery">Returns the battery of the motion tracker. Value range: [0,1]. The higher the value, the higher the current battery.</param>
+        /// <param name="charger">Returns the charging status of the motion tracker.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int GetMotionTrackerBattery(long trackerid,ref float battery, ref XrBatteryChargingState charger)
         {
             return PXR_Plugin.MotionTracking.UPxr_GetMotionTrackerBatteryState(trackerid, ref battery, ref charger);
@@ -522,10 +589,12 @@ namespace Unity.XR.PXR
         /// </summary>
         public static Action<int> ExtDevPassDataAction;
         
-        //第一个参数是trackerid
-        //第二个参数是连接状态0是断开，1是连接 
+        /// <summary>You can use this callback function to get notified when the state of the connection between the PICO Motion Tracker and an external device changes.</summary>
+        /// <returns>The series number of the motion tracker connected to the external device and the connection state (`0`: disconnected;  `1`: connected).</returns>
         public static Action<long, int> ExpandDeviceConnectionAction;
         
+        /// <summary>You can use this callback function to get notified when the battery level and charging status of the external device changes.</summary>
+        /// <returns>The current better level and charging status of the external device.</returns>
         public static Action<ExpandDeviceBatteryEventData> ExpandDeviceBatteryAction;
 
         /// <summary>Gets the connection state of the external device.</summary>
@@ -564,6 +633,7 @@ namespace Unity.XR.PXR
         {
             return PXR_Plugin.MotionTracking.UPxr_SetExpandDeviceCustomDataCapability(state);
         }
+        
         /// <summary>Sets data passthrough for the external device. The protocol is defined by yourself according to your own hardware. 
         /// There is no correspondence between the `set` and `get`-related methods themselves.</summary>
         /// <param name="passData">When PICO SDK's APIs are unable to meet your needs, you can define custom protocols and place them in the `passData` parameter.</param>
@@ -619,22 +689,70 @@ namespace Unity.XR.PXR
         {
             return -1;
         }
+        
+        /// <summary>
+        /// Sets vibration for the external device. The vibration command is passed to the external device via the PICO Motion Tracker connected to it.
+        /// </summary>
+        /// <param name="deviceid">Specifies the serial number of the external device.</param>
+        /// <param name="motorVibrate">Specifies vibration settings.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int SetExpandDeviceVibrate(long deviceid, ExpandDeviceVibrate motorVibrate)
         {
             return PXR_Plugin.MotionTracking.UPxr_SetExpandDeviceVibrate(deviceid, motorVibrate);
         }
+        
+        /// <summary>
+        /// Gets the array of serial numbers of the external devices connected to PICO Motion Trackers.
+        /// </summary>
+        /// <param name="deviceArray">Returns the array of serial numbers.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int GetExpandDevice(out long[] deviceArray)
         {
             return PXR_Plugin.MotionTracking.UPxr_GetExpandDevice(out deviceArray);
         }
+        
+        /// <summary>
+        /// Gets the battery level of the external device.
+        /// </summary>
+        /// <param name="deviceid">Specifies the serial number of the external device to get battery level for.</param>
+        /// <param name="battery">Returns the current battery level of the external device. Value range: [0,1]. The higher the value, the higher the battery.</param>
+        /// <param name="charger">Returns the charging status of the external device.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int GetExpandDeviceBattery(long  deviceid, ref float battery, ref XrBatteryChargingState charger)
         {
             return PXR_Plugin.MotionTracking.UPxr_GetExpandDeviceBattery(deviceid, ref battery, ref charger);
         }
+        
+        /// <summary>
+        /// Gets the data passed from external devices.
+        /// </summary>
+        /// <param name="dataArray">Returns the array of data passed from external devices.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int GetExpandDeviceCustomData(out List<ExpandDevicesCustomData>  dataArray)
         {
             return PXR_Plugin.MotionTracking.UPxr_GetExpandDeviceCustomData(out dataArray);
         }
+        
+        /// <summary>
+        /// Sets the data to be passed to external devices. The protocol is defined by yourself according to your own hardware.
+        /// </summary>
+        /// <param name="dataArray">Specifies the array of data to be passed to external devices.</param>
+        /// <returns>
+        /// - `0`: success
+        /// - `1`: failure
+        /// </returns>
         public static int SetExpandDeviceCustomData(ref ExpandDevicesCustomData[]  dataArray)
         {
             return PXR_Plugin.MotionTracking.UPxr_SetExpandDeviceCustomData(ref dataArray);

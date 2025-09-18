@@ -22,12 +22,12 @@ using UnityEngine.XR;
 
 namespace Unity.XR.PXR
 {
+    [Obsolete("PXR_OverLay is obsolete and will be removed in the next version. Please use PXR_CompositionLayer instead.", false)]
     public class PXR_OverLay : MonoBehaviour, IComparable<PXR_OverLay>
     {
         private const string TAG = "[PXR_CompositeLayers]";
         public static List<PXR_OverLay> Instances = new List<PXR_OverLay>();
 
-        private static int overlayID = 0;
         [NonSerialized]
         public int overlayIndex;
         public int layerDepth;
@@ -250,11 +250,11 @@ namespace Unity.XR.PXR
                 overlayParam.height = 1024;
             }
 
-            overlayID++;
-            overlayIndex = overlayID;
+            PXR_CompositionLayer.overlayID++;
+            overlayIndex = PXR_CompositionLayer.overlayID;
             overlayParam.layerId = overlayIndex;
-            overlayParam.layerShape = overlayShape == 0 ? OverlayShape.Quad : overlayShape;
-            overlayParam.layerType = overlayType;
+            overlayParam.layerShape = (PXR_CompositionLayer.OverlayShape)(overlayShape == 0 ? OverlayShape.Quad : overlayShape);
+            overlayParam.layerType = (PXR_CompositionLayer.OverlayType)overlayType;
             overlayParam.arraySize = 1;
             overlayParam.mipmapCount = 1;
             overlayParam.sampleCount = 1;
@@ -303,11 +303,10 @@ namespace Unity.XR.PXR
                 if (null != originalOverLay)
                 {
                     overlayParam.layerFlags |= (UInt32)PxrLayerCreateFlags.PxrLayerFlagSharedImagesBetweenLayers;
-                    leftPtr = Marshal.AllocHGlobal(IntPtr.Size);
-                    rightPtr = Marshal.AllocHGlobal(IntPtr.Size);
-                    IntPtr srcPtr = new IntPtr(originalOverLay.overlayIndex);
-                    Marshal.WriteIntPtr(leftPtr, srcPtr);
-                    Marshal.WriteIntPtr(rightPtr, srcPtr);
+                    leftPtr = Marshal.AllocHGlobal(Marshal.SizeOf(originalOverLay.overlayIndex));
+                    rightPtr = Marshal.AllocHGlobal(Marshal.SizeOf(originalOverLay.overlayIndex));
+                    Marshal.WriteInt64(leftPtr, originalOverLay.overlayIndex);
+                    Marshal.WriteInt64(rightPtr, originalOverLay.overlayIndex);
                     overlayParam.leftExternalImages = leftPtr;
                     overlayParam.rightExternalImages = rightPtr;
                     isExternalAndroidSurface = originalOverLay.isExternalAndroidSurface;
@@ -341,7 +340,7 @@ namespace Unity.XR.PXR
                     overlayParam.layerFlags |= (UInt32)PxrLayerCreateFlags.PxrLayerFlag3DTopBottomSurface;
                 }
 
-                overlayParam.layerLayout = LayerLayout.Mono;
+                overlayParam.layerLayout = (PXR_CompositionLayer.LayerLayout)LayerLayout.Mono;
             }
             else
             {
@@ -353,12 +352,12 @@ namespace Unity.XR.PXR
                 if ((layerTextures[0] != null && layerTextures[1] != null && layerTextures[0] == layerTextures[1]) || null == layerTextures[1])
                 {
                     eyeCount = 1;
-                    overlayParam.layerLayout = LayerLayout.Mono;
+                    overlayParam.layerLayout = (PXR_CompositionLayer.LayerLayout)LayerLayout.Mono;
                 }
                 else
                 {
                     eyeCount = 2;
-                    overlayParam.layerLayout = LayerLayout.Stereo;
+                    overlayParam.layerLayout = (PXR_CompositionLayer.LayerLayout)LayerLayout.Stereo;
                 }
 
                 toCreateSwapChain = true;
@@ -499,12 +498,10 @@ namespace Unity.XR.PXR
             {
                 return false;
             }
-            if (GraphicsDeviceType.Vulkan != SystemInfo.graphicsDeviceType)
+
+            if (enableSubmitLayer)
             {
-                if (enableSubmitLayer)
-                {
-                    PXR_Plugin.Render.UPxr_GetLayerNextImageIndexByRender(overlayIndex, ref imageIndex);
-                }
+                PXR_Plugin.Render.UPxr_GetLayerNextImageIndexByRender(overlayIndex, ref imageIndex);
             }
             for (int i = 0; i < eyeCount; i++)
             {

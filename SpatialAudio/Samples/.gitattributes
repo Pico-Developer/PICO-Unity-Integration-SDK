@@ -1,0 +1,16 @@
+audio/speech_48k.wav.meta filter=lfs diff=lfs merge=lfs -text
+audio/techno_loop_48k.wav filter=lfs diff=lfs merge=lfs -text
+audio/techno_loop_48k.wav.meta filter=lfs diff=lfs merge=lfs -text
+audio/techno_loop_FOA_48k.wav filter=lfs diff=lfs merge=lfs -text
+audio/techno_loop_FOA_48k.wav.meta filter=lfs diff=lfs merge=lfs -text
+audio/speech_48k.wav filter=lfs diff=lfs merge=lfs -text
+material/unity_logo.mat filter=lfs diff=lfs merge=lfs -text
+material/unity_logo.mat.meta filter=lfs diff=lfs merge=lfs -text
+material/sami_logo.mat filter=lfs diff=lfs merge=lfs -text
+material/sami_logo.mat.meta filter=lfs diff=lfs merge=lfs -text
+material/sami_logo.png filter=lfs diff=lfs merge=lfs -text
+material/sami_logo.png.meta filter=lfs diff=lfs merge=lfs -text
+material/unity_logo.jpg filter=lfs diff=lfs merge=lfs -text
+material/unity_logo.jpg.meta filter=lfs diff=lfs merge=lfs -text
+model/Sibenik filter=lfs diff=lfs merge=lfs -text
+model/Sibenik.meta filter=lfs diff=lfs merge=lfs -text

@@ -35,9 +35,14 @@ public class PXR_ObjectTrackingBlock : MonoBehaviour
                 }
             }
         }
-        PXR_MotionTracking.RequestMotionTrackerCompleteAction += RequestMotionTrackerComplete;
         int res = -1;
-        res = PXR_MotionTracking.CheckMotionTrackerNumber(MotionTrackerNum.TWO);
+#if PICO_OPENXR_SDK
+#else
+             PXR_MotionTracking.RequestMotionTrackerCompleteAction += RequestMotionTrackerComplete;
+             res = PXR_MotionTracking.CheckMotionTrackerNumber(MotionTrackerNum.TWO);
+#endif
+        
+        
         if (res == 0)
         {
             objectTrackers.gameObject.SetActive(true);
@@ -75,8 +80,11 @@ public class PXR_ObjectTrackingBlock : MonoBehaviour
             for (int i = 0; i < trackerIds.Count; i++)
             {
                 bool isValidPose = false;
-                int result = PXR_MotionTracking.GetMotionTrackerLocation(trackerIds[i], ref location, ref isValidPose);
-
+                int result = -1;
+#if PICO_OPENXR_SDK
+#else
+                result = PXR_MotionTracking.GetMotionTrackerLocation(trackerIds[i], ref location, ref isValidPose);
+#endif
                 // if the return is successful
                 if (result == 0)
                 {

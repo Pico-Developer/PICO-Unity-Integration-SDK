@@ -19,6 +19,7 @@ using System;
 using UnityEditor.XR.Management;
 using UnityEngine.XR.Management;
 using UnityEditor.XR.Management.Metadata;
+using UnityEditor.Build;
 
 namespace Unity.XR.PXR.Editor
 {
@@ -57,6 +58,12 @@ namespace Unity.XR.PXR.Editor
 
             PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Tools_ProjectValidation_Open);
         };
+
+        Action applyARM64Action = () => {
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
+        };
+
         Action applyMinAndroidAPIAction = () =>
         {
             PlayerSettings.Android.minSdkVersion = PXR_Utils.minSdkVersionInEditor;
@@ -69,31 +76,31 @@ namespace Unity.XR.PXR.Editor
             SettingsService.OpenProjectSettings("Project/XR Plug-in Management");
 
             var buildTargetSettings = AssetDatabase.FindAssets("t:XRGeneralSettingsPerBuildTarget")
-               .Select(guid => AssetDatabase.LoadAssetAtPath<XRGeneralSettingsPerBuildTarget>(AssetDatabase.GUIDToAssetPath(guid)))
-               .FirstOrDefault();
-
+                .Select(guid => AssetDatabase.LoadAssetAtPath<XRGeneralSettingsPerBuildTarget>(AssetDatabase.GUIDToAssetPath(guid)))
+                .FirstOrDefault();
+        
             if (buildTargetSettings == null)
             {
                 buildTargetSettings = ScriptableObject.CreateInstance<XRGeneralSettingsPerBuildTarget>();
                 AssetDatabase.CreateAsset(buildTargetSettings, "Assets/XRGeneralSettingsPerBuildTarget.asset");
                 Debug.Log($"PXR_Loader XRGeneralSettingsPerBuildTarget");
             }
-
+        
             var generalSettings = buildTargetSettings.SettingsForBuildTarget(BuildTargetGroup.Android);
             if (generalSettings == null)
             {
                 generalSettings = ScriptableObject.CreateInstance<XRGeneralSettings>();
                 AssetDatabase.AddObjectToAsset(generalSettings, buildTargetSettings);
                 buildTargetSettings.SetSettingsForBuildTarget(BuildTargetGroup.Android, generalSettings);
-
+        
                 var managerSettings = ScriptableObject.CreateInstance<XRManagerSettings>();
                 AssetDatabase.AddObjectToAsset(managerSettings, buildTargetSettings);
                 generalSettings.Manager = managerSettings;
-
+        
                 EditorUtility.SetDirty(buildTargetSettings);
                 AssetDatabase.SaveAssets();
             }
-
+        
             if (generalSettings.Manager)
             {
                 while (generalSettings.Manager.activeLoaders.Count > 0)
@@ -101,13 +108,13 @@ namespace Unity.XR.PXR.Editor
                     var loaderName = generalSettings.Manager.activeLoaders[0].GetType().FullName;
                     XRPackageMetadataStore.RemoveLoader(generalSettings.Manager, loaderName, BuildTargetGroup.Android);
                 }
-
+        
                 bool success = XRPackageMetadataStore.AssignLoader(generalSettings.Manager, "PXR_Loader", BuildTargetGroup.Android);
             }
-
+        
+            PXR_Utils.UpdateSDKSymbols();
             PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_RequiredPICOXRPluginApplied);
         };
-
         Action applyBuildTargetAction = () =>
         {
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, recommendedBuildTarget);
@@ -164,10 +171,10 @@ namespace Unity.XR.PXR.Editor
 
             buttonClickedStates[Response.Configs] = true;
         }
-
         private void OnEnable()
         {
             _styles ??= new PXR_EditorStyles();
+            buttonClickedStates[(Response)PXR_ProjectSetting.GetProjectConfig().portalFirstSelected] = true;
         }
 
         private void OnDestroy()
@@ -225,10 +232,8 @@ namespace Unity.XR.PXR.Editor
                                 title = "Configuration";
                                 GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(true));
 
-                                string strinfo = "Required: PICO XR plugin needs to be enabled and unique.";
-                                EditorConfigurations(strinfo, PXR_Utils.IsPXRPluginEnabled(), applyPICOXRPluginAction);
 
-                                strinfo = $"Required: Build Target = {recommendedBuildTarget}";
+                                string strinfo = $"Required: Build Target = {recommendedBuildTarget}";
                                 bool appliedBuildTarget = EditorUserBuildSettings.activeBuildTarget == recommendedBuildTarget;
                                 EditorConfigurations(strinfo, appliedBuildTarget, applyBuildTargetAction);
 
@@ -236,84 +241,80 @@ namespace Unity.XR.PXR.Editor
                                 bool appliedAdroidSdkVersions = PlayerSettings.Android.minSdkVersion == PXR_Utils.minSdkVersionInEditor;
                                 EditorConfigurations(strinfo, appliedAdroidSdkVersions, applyMinAndroidAPIAction);
 
-                                bool applied = PXR_Utils.IsPXRPluginEnabled() && appliedBuildTarget && appliedAdroidSdkVersions;
+                                strinfo = $"Required: ARM64 and IL2CPP scripting must be enabled";
+                                bool appliedARM64 = PlayerSettings.Android.targetArchitectures == AndroidArchitecture.ARM64 &&
+                                    PlayerSettings.GetScriptingBackend(BuildTargetGroup.Android) == ScriptingImplementation.IL2CPP;
+                                EditorConfigurations(strinfo, appliedARM64, applyARM64Action);
+
+                                strinfo = "Required: PICO XR plugin must be enabled";
+                                EditorConfigurations(strinfo, PXR_Utils.IsPXRPluginEnabled(), applyPICOXRPluginAction);
+
+                                bool applied = appliedBuildTarget && appliedAdroidSdkVersions && appliedARM64 && PXR_Utils.IsPXRPluginEnabled();
                                 if (!applied)
                                 {
-                                    using (new EditorGUILayout.VerticalScope())
+                                    EditorGUILayout.BeginHorizontal();
                                     {
-                                        GUILayout.Space(10);
-                                        bodyContent = "For one-click configuration, you can click 'To Apply' one by one or use 'To Apply All'.";
-                                        EditorGUILayout.LabelField(bodyContent, _styles.ContentText);
+                                        bodyContent = "For one-click configuration, you can click 'Apply' one by one or use 'Apply All'.";
+                                        EditorGUILayout.LabelField(bodyContent, _styles.ContentText, GUILayout.Width(673), GUILayout.ExpandHeight(true));
 
-                                        GUILayout.Space(10);
-
-                                        using (new EditorGUILayout.HorizontalScope())
+                                        if (GUILayout.Button("Apply All", GUILayout.ExpandWidth(false), GUILayout.Width(80), GUILayout.Height(30)))
                                         {
-                                            GUILayout.Space(8);
-                                            bodyContent = "To Apply All";
-                                            if (GUILayout.Button(bodyContent, _styles.ButtonToOpen, GUILayout.ExpandWidth(false)))
-                                            {
-                                                applyPICOXRPluginAction.Invoke();
-                                                applyBuildTargetAction.Invoke();
-                                                applyMinAndroidAPIAction.Invoke();
+                                            applyBuildTargetAction.Invoke();
+                                            applyMinAndroidAPIAction.Invoke();
+                                            applyARM64Action.Invoke();
+                                            applyPICOXRPluginAction.Invoke();
 
-                                                PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_ToApplyAllApplied);
-                                            }
-
-                                            var buttonRectToApplyAll = GUILayoutUtility.GetLastRect();
-                                            if (Event.current.type == EventType.Repaint)
-                                            {
-                                                EditorGUIUtility.AddCursorRect(buttonRectToApplyAll, MouseCursor.Link);
-                                            }
+                                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_ToApplyAllApplied);
                                         }
+
+                                        var buttonRectToApplyAll = GUILayoutUtility.GetLastRect();
+                                        if (Event.current.type == EventType.Repaint)
+                                        {
+                                            EditorGUIUtility.AddCursorRect(buttonRectToApplyAll, MouseCursor.Link);
+                                        }
+                                        GUILayout.FlexibleSpace();
                                     }
+                                    EditorGUILayout.EndHorizontal();
                                 }
 
                                 GUILayout.Space(20);
 
-                                using (new EditorGUILayout.VerticalScope())
+                                using (new EditorGUILayout.HorizontalScope())
                                 {
                                     bodyContent = "For more configuration items, open Project Validation.";
-                                    EditorGUILayout.LabelField(bodyContent, _styles.ContentText);
-                                    GUILayout.Space(10);
-
-                                    using (new EditorGUILayout.HorizontalScope())
+                                    EditorGUILayout.LabelField(bodyContent, _styles.ContentText, GUILayout.Width(673), GUILayout.ExpandHeight(true));
+                                    if (GUILayout.Button("Open", GUILayout.Width(80), GUILayout.Height(30)))
                                     {
-                                        GUILayout.Space(8);
-                                        bodyContent = "Project Validation";
-                                        if (GUILayout.Button(bodyContent, _styles.ButtonToOpen, GUILayout.ExpandWidth(false)))
-                                        {
-                                            SettingsService.OpenProjectSettings("Project/XR Plug-in Management/Project Validation");
-                                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_ProjectValidation);
-                                        }
-                                        var buttonRectProjectValidation = GUILayoutUtility.GetLastRect();
-                                        if (Event.current.type == EventType.Repaint)
-                                        {
-                                            EditorGUIUtility.AddCursorRect(buttonRectProjectValidation, MouseCursor.Link);
-                                        }
+                                        SettingsService.OpenProjectSettings("Project/XR Plug-in Management/Project Validation");
+                                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strPortal, PXR_AppLog.strPortal_Configs_ProjectValidation);
                                     }
+                                    var buttonRectProjectValidation = GUILayoutUtility.GetLastRect();
+                                    if (Event.current.type == EventType.Repaint)
+                                    {
+                                        EditorGUIUtility.AddCursorRect(buttonRectProjectValidation, MouseCursor.Link);
+                                    }
+                                    GUILayout.FlexibleSpace();
                                 }
 
                                 GUILayout.Space(30);
                                 title = "PICO XR Project Setting";
                                 GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(true));
-                                bodyContent = $"SDK Settings for turning on and off features. You can locate it at this filepath: {assetPath}PXR_ProjectSetting.asset."; ;
-                                EditorGUILayout.LabelField(bodyContent, _styles.ContentText);
 
                                 GUILayout.Space(10);
 
                                 using (new EditorGUILayout.HorizontalScope())
                                 {
-                                    GUILayout.Space(8);
-                                    bodyContent = "Open " + title;
-                                    if (GUILayout.Button(bodyContent, _styles.ButtonToOpen, GUILayout.ExpandWidth(false)))
+                                    bodyContent = $"SDK Settings for turning on and off features. You can locate it at this filepath: {assetPath}PXR_ProjectSetting.asset.";
+                                    EditorGUILayout.LabelField(bodyContent, _styles.ContentText, GUILayout.Width(673), GUILayout.ExpandHeight(true));
+
+                                    if (GUILayout.Button("Open", GUILayout.ExpandWidth(false), GUILayout.Width(80), GUILayout.Height(30)))
                                     {
                                         PXR_ProjectSetting asset;
                                         string path = assetPath + "PXR_ProjectSetting.asset";
                                         if (!File.Exists(path))
                                         {
                                             asset = new PXR_ProjectSetting();
-                                            ScriptableObjectUtility.CreateAsset<PXR_ProjectSetting>(asset, PXR_SDKSettingEditor.assetPath);
+                                            ScriptableObjectUtility.CreateAsset<PXR_ProjectSetting>(asset, assetPath);
                                         }
 
                                         asset = AssetDatabase.LoadAssetAtPath<PXR_ProjectSetting>(path);
@@ -333,6 +334,7 @@ namespace Unity.XR.PXR.Editor
                                     {
                                         EditorGUIUtility.AddCursorRect(buttonRectProjectSetting, MouseCursor.Link);
                                     }
+                                    GUILayout.FlexibleSpace();
                                 }
                             }
                             GUILayout.EndScrollView();
@@ -642,6 +644,23 @@ namespace Unity.XR.PXR.Editor
                     EditorGUILayout.Space(30);
                 }
             }
+
+            float windowHeight = position.height;
+            float toggleY = windowHeight - EditorGUIUtility.singleLineHeight - 20;
+            float toggleX = 20;
+            float toggleWidth = position.width - 30;
+
+            Rect toggleRect = new Rect(toggleX, toggleY, toggleWidth, EditorGUIUtility.singleLineHeight);
+
+            var guiContent = new GUIContent();
+            guiContent.text = "Allow usage data collection";
+            guiContent.tooltip = "To improve service quality, we will collect non-identifiable behavioral data (such as engine or sdk version, the status of sdk and engine capabilities being enabled, etc.). You can disable this at any time.";
+            PXR_ProjectSetting.GetProjectConfig().isDataCollectionDisabled = !EditorGUI.ToggleLeft(toggleRect, guiContent, !PXR_ProjectSetting.GetProjectConfig().isDataCollectionDisabled);
+
+            if (toggleRect.Contains(Event.current.mousePosition))
+            {
+                EditorGUIUtility.AddCursorRect(toggleRect, MouseCursor.Link);
+            }
         }
 
         private void ClickedButton(Response responseT)
@@ -677,6 +696,7 @@ namespace Unity.XR.PXR.Editor
             GUILayout.Space(20);
             using (new EditorGUILayout.HorizontalScope())
             {
+
                 _styles.BigWhiteTitleStyle.fontStyle = FontStyle.Bold;
                 GUILayout.Label(title, _styles.BigWhiteTitleStyle, GUILayout.ExpandWidth(false));
 
@@ -811,20 +831,21 @@ namespace Unity.XR.PXR.Editor
             if (enable)
             {
                 GUI.color = Color.green;
-                GUILayout.Label(EditorGUIUtility.IconContent("FilterSelectedOnly"), iconStyle);
+                EditorGUILayout.LabelField(EditorGUIUtility.IconContent("FilterSelectedOnly"), iconStyle, GUILayout.Width(30), GUILayout.ExpandHeight(true));
             }
             else
             {
                 GUI.color = Color.yellow;
-                GUILayout.Label(EditorGUIUtility.IconContent("console.warnicon"), iconStyle);
+                EditorGUILayout.LabelField(EditorGUIUtility.IconContent("console.warnicon"), iconStyle, GUILayout.Width(30), GUILayout.ExpandHeight(true));
             }
             GUI.color = Color.white;
-            GUILayout.Label(strConfiguration, _styles.ContentText, GUILayout.Width(480));
+            EditorGUILayout.LabelField(strConfiguration, _styles.ContentText, GUILayout.Width(640), GUILayout.ExpandHeight(true));
             _styles.ContentText.normal.textColor = Color.white;
 
             GUIStyle styleApplied = new GUIStyle();
-            styleApplied.fontSize = 16;
-            styleApplied.fixedWidth = 100;
+            styleApplied.fontSize = 14;
+            styleApplied.fixedWidth = 80;
+            styleApplied.fixedHeight = 30;
             styleApplied.padding = new RectOffset(4, 4, 4, 4);
             styleApplied.alignment = TextAnchor.MiddleCenter;
             if (enable)
@@ -834,9 +855,7 @@ namespace Unity.XR.PXR.Editor
             }
             else
             {
-                styleApplied.normal.textColor = Color.white;
-                styleApplied.normal.background = _styles.MakeTexture(2, 2, _styles.colorSelected);
-                if (GUILayout.Button("To Apply", styleApplied))
+                if (GUILayout.Button("Apply", GUILayout.ExpandWidth(false), GUILayout.Width(80), GUILayout.Height(30)))
                 {
                     buttonAction?.Invoke();
                 }
@@ -848,6 +867,7 @@ namespace Unity.XR.PXR.Editor
                 }
             }
 
+            GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
         }
 

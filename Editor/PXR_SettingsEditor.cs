@@ -38,6 +38,7 @@ namespace Unity.XR.PXR.Editor
         private SerializedProperty stereoRenderingModeAndroid;
         private SerializedProperty systemDisplayFrequency;
         private SerializedProperty optimizeBufferDiscards;
+        private SerializedProperty appLog;
         private SerializedProperty systemSplashScreen;
 
         void OnEnable()

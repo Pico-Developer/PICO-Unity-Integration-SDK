@@ -1,3 +1,4 @@
+#if !PICO_OPENXR_SDK
 using UnityEditor;
 
 namespace Unity.XR.PXR.SecureMR
@@ -124,3 +125,4 @@ namespace Unity.XR.PXR.SecureMR
         }
     }
 }
+#endif

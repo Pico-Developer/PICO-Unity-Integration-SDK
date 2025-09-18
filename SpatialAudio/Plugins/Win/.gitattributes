@@ -1,0 +1,4 @@
+x64/libPicoSpatializer.dll.meta filter=lfs diff=lfs merge=lfs -text
+x64/libPicoAmbisonicDecoder.dll filter=lfs diff=lfs merge=lfs -text
+x64/libPicoAmbisonicDecoder.dll.meta filter=lfs diff=lfs merge=lfs -text
+x64/libPicoSpatializer.dll filter=lfs diff=lfs merge=lfs -text

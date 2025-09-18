@@ -19,11 +19,6 @@
     "defineConstraints": [],
     "versionDefines": [
         {
-            "name": "com.unity.xr.picoxr",
-            "expression": "",
-            "define": "PICO_XR"
-        },
-        {
             "name": "com.unity.xr.interaction.toolkit",
             "expression": "[2.4.0,3.0.0]",
             "define": "XRI_240"

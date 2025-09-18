@@ -119,6 +119,16 @@
         /// <summary>
         /// Head-mounted display (HMD) position and orientation.
         /// </summary>
-        HMD_POSITION_AND_ORIENTATION = 22
+        HMD_POSITION_AND_ORIENTATION = 22,
+
+        /// <summary>
+        /// the status of PSensor
+        /// </summary>
+        PSENSOR_STATUS = 23,
+        
+        /// <summary>
+        /// the scale of the large-space map
+        /// </summary>
+        LARGE_SPACE_MAP_SCALE = 24
     }
 }

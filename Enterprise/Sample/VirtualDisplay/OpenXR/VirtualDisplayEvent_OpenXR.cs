@@ -1,4 +1,4 @@
-#if !PICO_XR
+#if PICO_OPENXR_SDK
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;

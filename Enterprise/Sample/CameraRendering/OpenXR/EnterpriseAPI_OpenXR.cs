@@ -1,6 +1,7 @@
-#if !PICO_XR
+#if PICO_OPENXR_SDK
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Unity.XR.OpenXR.Features.PICOSupport;
@@ -32,6 +33,7 @@ public class EnterpriseAPI_OpenXR : MonoBehaviour
     // 将视频帧转换为 Unity 纹理
     Texture2D texture;
     public Text fpsText;
+    bool camera_raw_data=true;
     private void Awake()
     {
         Debug.Log($"{tag}  Awake ");
@@ -46,12 +48,27 @@ public class EnterpriseAPI_OpenXR : MonoBehaviour
         imgByte = new byte[width*height*4];
         texture = new Texture2D((int)width, (int)height, TextureFormat.RGBA32, false);
         videoMaterial.SetTexture("_MainTex", texture);
-        PXR_Enterprise.Configurefor4U();
+        
+        
+        Dictionary<string, string> cameraParams1 = new Dictionary<string, string>();
+        cameraParams1.Add(PXRCapture.KEY_ENABLE_MVHEVC, PXRCapture.VALUE_FALSE);
+        cameraParams1.Add(PXRCapture.KEY_VIDEO_FPS, "30");
+        cameraParams1.Add(PXRCapture.KEY_OUTPUT_CAMERA_RAW_DATA, camera_raw_data?PXRCapture.VALUE_TRUE:PXRCapture.VALUE_FALSE);
+        
+        PXR_Enterprise.Configurefor4U(cameraParams1);
 
+        Dictionary<string, string> cameraParams = new Dictionary<string, string>();
+        cameraParams.Add(PXRCapture.KEY_MCTF, PXRCapture.VALUE_TRUE);
+        cameraParams.Add(PXRCapture.KEY_EIS, PXRCapture.VALUE_FALSE);
+        cameraParams.Add(PXRCapture.KEY_MFNR, PXRCapture.VALUE_TRUE);
+        
         PXR_Enterprise.OpenCameraAsyncfor4U(ret =>
         {
             Debug.Log($"{tag}  OpenCameraAsync ret=  {ret}");
-        });
+        },cameraParams);
+        
+        Invoke(nameof(getCameraParameters), 1f);
+        
     }
     public void SetTrackingMode(int listChoice)
     {
@@ -91,7 +108,7 @@ public class EnterpriseAPI_OpenXR : MonoBehaviour
         // Debug.Log($"getCamera GetCameraIntrinsics:[{param.cx},{param.cy},{param.fx},{param.fy}]");
         // Debug.Log($"getCamera GetCameraExtrinsics leftExtrinsics::[{param.l_pos} ------ {param.l_rot}]");
         // Debug.Log($"getCamera GetCameraExtrinsics rightExtrinsics::[{param.r_pos} ------ {param.r_rot}]");
-        CanshuText.text = $"外参::[{param.l_pos} ------ {param.l_rot}]\n"+$" [{param.r_pos} ------ {param.r_rot}]";
+        CanshuText.text =$"内参::[fx,fy,cx,cy]=[{param.fx},{param.fy},{param.cx},{param.cy}]\n"+ $"外参::L=[{param.l_pos},{param.l_rot}]\n"+$" R=[{param.r_pos},{param.r_rot}]";
     }
     public void StartPreview()
     {
@@ -194,7 +211,7 @@ public class EnterpriseAPI_OpenXR : MonoBehaviour
 
        
         time= PXR_Enterprise.GetPredictedDisplayTime();
-        a=PXR_Enterprise.GetPredictedMainSensorState(time,false);
+        a=PXR_Enterprise.GetPredictedMainSensorState(time);
         RenderTarget.position = a.pose.position;
         RenderTarget.rotation = a.pose.rotation; 
         // RenderTarget.position = new Vector3(a.pose.position.x, a.pose.position.y, -a.pose.position.z);

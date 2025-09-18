@@ -23,6 +23,11 @@ using UnityEngine.InputSystem.Layouts;
 using UnityEngine.InputSystem.XR;
 using Unity.XR.PXR.Input;
 using System.Linq;
+
+#if XR_COMPOSITION_LAYERS
+using Unity.XR.CompositionLayers.Services;
+#endif
+
 #endif
 
 #if UNITY_EDITOR
@@ -358,7 +363,10 @@ namespace Unity.XR.PXR
         public override bool Deinitialize()
         {
             Debug.Log($"{TAG} Deinitialize() currentLoaderState={currentLoaderState}");
-
+            if (PXR_Plugin.System.IsOpenXRLoaderActive())
+            {
+                return false;
+            }
             if (currentLoaderState == LoaderState.Uninitialized)
                 return true;
 
@@ -440,12 +448,16 @@ namespace Unity.XR.PXR
                 case XrStructureType.XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED:
                     
                     int sessionstate = BitConverter.ToInt32(eventDB.data, 8);
+                    Debug.Log($"XrEventDataBufferFunction sessionstate={sessionstate}");
                     if (PXR_Plugin.System.SessionStateChanged != null)
-                    {
+                    {                        
                         PXR_Plugin.System.SessionStateChanged((XrSessionState)sessionstate);
                     }
 #if AR_FOUNDATION_5 || AR_FOUNDATION_6
                     PXR_SessionSubsystem.instance?.OnSessionStateChange((XrSessionState)sessionstate);
+#endif
+#if XR_COMPOSITION_LAYERS
+                    OnSessionStateChanged((XrSessionState)sessionstate);
 #endif
                     break;
                 case XrStructureType.XR_TYPE_EVENT_CONTROLLER_STATE_CHANGED_PICO:
@@ -517,13 +529,11 @@ namespace Unity.XR.PXR
                     break;
                 
                 case XrStructureType.XR_TYPE_EVENT_DATA_ENVIRONMENT_BLEND_MODE_CHANGED_EXT:
-                {
                     if (PXR_Manager.VstDisplayStatusChanged != null)
                     {
                         int status_ = BitConverter.ToInt32(eventDB.data, 8);
                         PXR_Manager.VstDisplayStatusChanged(status_==1?PxrVstStatus.Disabled:PxrVstStatus.Enabled);
                     }
-                }
                     break;
                 case XrStructureType.XR_TYPE_EVENT_DATA_SENSE_DATA_PROVIDER_STATE_CHANGED:
                 case XrStructureType.XR_TYPE_EVENT_DATA_SENSE_DATA_UPDATED:
@@ -533,6 +543,8 @@ namespace Unity.XR.PXR
                     break;
                 }
                 case XrStructureType.XR_TYPE_EVENT_DATA_REQUEST_MOTION_TRACKER_COMPLETE:
+#if PICO_OPENXR_SDK
+#else
                     if (PXR_MotionTracking.RequestMotionTrackerCompleteAction != null)
                     {
                         RequestMotionTrackerCompleteEventData requestMotionTrackerCompleteEventData = new RequestMotionTrackerCompleteEventData();
@@ -547,32 +559,44 @@ namespace Unity.XR.PXR
                             (PxrResult)BitConverter.ToInt32(eventDB.data, 4 + 8 * (int)requestMotionTrackerCompleteEventData.trackerCount);
                         PXR_MotionTracking.RequestMotionTrackerCompleteAction(requestMotionTrackerCompleteEventData);
                     }
+#endif
                     break;
                 case XrStructureType.XR_TYPE_EVENT_DATA_MOTION_TRACKER_CONNECTION_STATE_CHANGED:
+#if PICO_OPENXR_SDK
+#else
                     if (PXR_MotionTracking.MotionTrackerConnectionAction != null)
                     {
                         Int64 trackerId = BitConverter.ToInt64(eventDB.data, 0);
                         int state =  BitConverter.ToInt32(eventDB.data, 8);
                         PXR_MotionTracking.MotionTrackerConnectionAction(trackerId, state);
                     }
+#endif
                     break;
                 case XrStructureType.XR_TYPE_EVENT_DATA_MOTION_TRACKER_POWER_KEY_EVENT:
+#if PICO_OPENXR_SDK
+#else
                     if (PXR_MotionTracking.MotionTrackerPowerKeyAction != null)
                     {
                         Int64 trackerId = BitConverter.ToInt64(eventDB.data, 0);
                         bool state =  BitConverter.ToBoolean(eventDB.data, 8);
                         PXR_MotionTracking.MotionTrackerPowerKeyAction(trackerId, state);
                     }
+#endif
                     break;
                 case XrStructureType.XR_TYPE_EVENT_DATA_EXPAND_DEVICE_CONNECTION_STATE_CHANGED:
+#if PICO_OPENXR_SDK
+#else
                     if (PXR_MotionTracking.ExpandDeviceConnectionAction != null)
                     {
                         UInt64 trackerId = BitConverter.ToUInt64(eventDB.data, 0);
                         int state =  BitConverter.ToInt32(eventDB.data, 8);
                         PXR_MotionTracking.ExpandDeviceConnectionAction((long)trackerId, state);
                     }
+#endif
                     break;
                 case XrStructureType.XR_TYPE_EVENT_DATA_EXPAND_DEVICE_BATTERY_STATE_CHANGED:
+#if PICO_OPENXR_SDK
+#else
                     if (PXR_MotionTracking.ExpandDeviceBatteryAction != null)
                     {
                         
@@ -583,14 +607,17 @@ namespace Unity.XR.PXR
                       
                         PXR_MotionTracking.ExpandDeviceBatteryAction(expandDevice);
                     }
+#endif
                     break;
                 case XrStructureType.XR_TYPE_EVENT_DATA_EXPAND_DEVICE_CUSTOM_DATA_STATE_CHANGED:
+#if PICO_OPENXR_SDK
+#else
                     if (PXR_MotionTracking.ExtDevPassDataAction != null)
                     {
                         status = BitConverter.ToInt32(eventDB.data, 0);
                         PXR_MotionTracking.ExtDevPassDataAction(status);
                     }
-
+#endif
                     break;
             }
         }
@@ -619,8 +646,35 @@ namespace Unity.XR.PXR
         static void RuntimeLoadPicoPlugin()
         {
             string version = "UnityXR_" + PXR_Plugin.System.UPxr_GetSDKVersion() + "_" + Application.unityVersion;
-            // PXR_Plugin.System.UPxr_SetConfigString( ConfigType.EngineVersion, version );
+            PXR_Plugin.System.UPxr_SetConfigString( ConfigType.EngineVersion, version );
         }
 #endif
+
+        private static bool _isSessionActive = false;
+        public static void OnSessionStateChanged(XrSessionState state)
+        {
+            PLog.i(TAG, $"OnSessionStateChanged Session state changed to: {state}");
+#if XR_COMPOSITION_LAYERS
+            if (state == XrSessionState.Focused && !_isSessionActive)
+            {
+                if (CompositionLayerManager.Instance != null)
+                {
+                    PLog.i(TAG, $"OnSessionBegin OpenXRLayerProvider");
+                    CompositionLayerManager.Instance.LayerProvider ??= new PXR_LayerProvider();
+                    _isSessionActive = true;
+                }
+            }
+            else if (state == XrSessionState.Stopping && _isSessionActive)
+            {
+                if (CompositionLayerManager.Instance?.LayerProvider is PXR_LayerProvider)
+                {
+                    PLog.i(TAG, $"OnSessionEnd OpenXRLayerProvider");
+                    ((PXR_LayerProvider)CompositionLayerManager.Instance.LayerProvider).Dispose();
+                    CompositionLayerManager.Instance.LayerProvider = null;
+                    _isSessionActive = false;
+                }
+            }
+#endif
+        }        
     }
 }

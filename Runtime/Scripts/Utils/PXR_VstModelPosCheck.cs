@@ -1,3 +1,4 @@
+#if !PICO_OPENXR_SDK
 using System.Collections;
 using System.Collections.Generic;
 using Unity.XR.PXR;
@@ -81,3 +82,4 @@ public class PXR_VstModelPosCheck : MonoBehaviour
         return mOffsetPos;
     }
 }
+#endif

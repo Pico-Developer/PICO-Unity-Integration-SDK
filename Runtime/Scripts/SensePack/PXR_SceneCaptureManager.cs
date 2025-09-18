@@ -21,11 +21,9 @@ namespace Unity.XR.PXR
     public class PXR_SceneCaptureManager : MonoBehaviour
     {
         private const string TAG = "[PXR_SceneCaptureManager]";
-        
-        [SerializeField]
-        private GameObject box2DPrefab;
-        [SerializeField]
-        private GameObject box3DPrefab;
+
+        public GameObject box2DPrefab;
+        public GameObject box3DPrefab;
         [SerializeField]
         private TextAsset sceneCaptureData;
         private List<Guid> sceneAnchorList;

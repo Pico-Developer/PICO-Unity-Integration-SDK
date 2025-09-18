@@ -488,6 +488,56 @@ namespace Unity.XR.PICO.TOBSupport
         /// <summary>
         /// Quick relocation.
         /// </summary>
-        SFS_QUICK_RELOCATION = 95
+        SFS_QUICK_RELOCATION = 95,
+        
+        /// <summary>
+        ///toggle for mixed tracking mode
+        /// </summary>
+        SFS_MIXED_INTERACTION_MODE = 96,
+        
+        /// <summary>
+        ///  reminder for abnormal locating
+        /// </summary>
+        SFS_REMINDER_FOR_ABNORMAL_LOCATING = 97,
+
+        /// <summary>
+        /// HOME gesture toggle: in system desktop
+        /// </summary>
+        SFS_GESTURE_RECOGNITION_HOME_ENABLE_ON_DESKTOP=98,
+    
+        /// <summary>
+        /// RESET gesture toggle: in system desktop
+        /// </summary>
+        SFS_GESTURE_RECOGNITION_RESET_ENABLE_ON_DESKTOP=99,
+    
+        /// <summary>
+        ///  disable window memory optimization strategy
+        /// </summary>
+        SFS_DISABLE_WINDOW_MEMORY_OPTIMIZATION=100,
+    
+        /// <summary>
+        /// global VST.
+        /// </summary>
+        SFS_GLOBAL_VST=102,
+    
+        /// <summary>
+        /// toggle for hand tracking injection
+        /// </summary>
+        SFS_HAND_TRACKING_HOOK=103,
+    
+        /// <summary>
+        /// toggle for USB tethering with static IP
+        /// </summary>
+        SFS_USB_TETHERING_STATIC_IP_ENABLED=104,
+    
+        /// <summary>
+        /// tracking mode (`0`- body tracking; `1` - object tracking)
+        /// </summary>
+        SFS_TRACKER_MODE=105,
+    
+        /// <summary>
+        /// Guardian persistent immersive mode: do not auto-enter VST when leaving the play area (`0` — system default, no special handling; `1` — do not trigger VST)
+        /// </summary>
+        SFS_GUARDIAN_PERSISTENT_IMMERSION_MODE=106
     }
 }

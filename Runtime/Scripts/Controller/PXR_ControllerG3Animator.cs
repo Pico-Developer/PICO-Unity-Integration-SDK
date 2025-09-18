@@ -37,7 +37,7 @@ namespace Unity.XR.PXR
 
         void Start()
         {
-            PXR_Input.GetControllerHandness(ref handness);
+            PXR_Plugin.Controller.UPxr_GetControllerHandness(ref handness);
             XRNode hand = handness == 0? XRNode.RightHand : XRNode.LeftHand;
             if (controllerPower != null)
             {

@@ -1,3 +1,4 @@
+#if !PICO_OPENXR_SDK
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using UnityEngine.UI;
 public class EnterpriseAPI : MonoBehaviour
 {  
     private string tag = "CaptureLib ----";
-    private PXR_OverLay overlay = null;
+    private PXR_CompositionLayer overlay = null;
     private PXRCaptureRenderMode Mode = PXRCaptureRenderMode.PXRCapture_RenderMode_LEFT;
     byte[] imgByte ;
     private int width=2048;        
@@ -27,31 +28,51 @@ public class EnterpriseAPI : MonoBehaviour
     public Text fpsText;
     public Toggle showtime;
     public Text showtimeText;
+    bool camera_raw_data=false;
+    
     private void Awake()
     {
-        // ModeDropdown.onValueChanged.AddListener(SetTrackingMode);
         PXR_Manager.EnableVideoSeeThrough = true;
-        // PXR_Boundary.UseGlobalPose(true);
+        PXR_Enterprise.UseGlobalPose(true);
         Debug.Log($"{tag}  Awake ");
-        overlay = GetComponent<PXR_OverLay>();
+        PXR_Plugin.System.UPxr_GetConfigFloat(ConfigType.ToDelaSensorY);
+        overlay = GetComponent<PXR_CompositionLayer>();
         if (overlay == null)
         {
             Debug.LogError("PXRLog Overlay is null!");
-            overlay = gameObject.AddComponent<PXR_OverLay>();
+            overlay = gameObject.AddComponent<PXR_CompositionLayer>();
         }
         
         imgByte = new byte[width*height*4];
         texture = new Texture2D((int)width, (int)height, TextureFormat.RGBA32, false);
         videoMaterial.SetTexture("_MainTex", texture);
-        PXR_Enterprise.Configurefor4U();
+        
+    }
+    public void OpenCamera()
+    {
+        Dictionary<string, string> cameraParams1 = new Dictionary<string, string>();
+        cameraParams1.Add(PXRCapture.KEY_OUTPUT_CAMERA_RAW_DATA, camera_raw_data?PXRCapture.VALUE_TRUE:PXRCapture.VALUE_FALSE);
+        PXR_Enterprise.Configurefor4U(cameraParams1);
 
+        Dictionary<string, string> cameraParams = new Dictionary<string, string>();
+        cameraParams.Add(PXRCapture.KEY_MCTF, PXRCapture.VALUE_TRUE);
+        cameraParams.Add(PXRCapture.KEY_EIS, PXRCapture.VALUE_FALSE);
+        cameraParams.Add(PXRCapture.KEY_MFNR, PXRCapture.VALUE_TRUE);
+        
         PXR_Enterprise.OpenCameraAsyncfor4U(ret =>
         {
             Debug.Log($"{tag}  OpenCameraAsync ret=  {ret}");
-            // StartPreview();
-        });
+        },cameraParams);
+        
+        Invoke(nameof(getCameraParameters), 1f);
     }
-    public void SetTrackingMode(int listChoice)
+    
+    public void SetRawData(int listChoice)
+    {
+        Debug.Log($"{tag}  SetMode ret=  {listChoice}");
+        camera_raw_data=listChoice==1;
+    }
+    public void SetMode(int listChoice)
     {
         Debug.Log($"{tag}  SetMode ret=  {listChoice}");
         // if (listChoice > 0)
@@ -81,20 +102,29 @@ public class EnterpriseAPI : MonoBehaviour
         Debug.Log($"{tag} getCamera ");
         double[] CameraIntrinsics=PXR_Enterprise.GetCameraIntrinsicsfor4U(width, height, outputFovHorizontal, outputFovVertical);
         PXR_Enterprise.GetCameraExtrinsicsfor4U(out Matrix4x4 leftExtrinsics, out Matrix4x4 rightExtrinsics);
-        Debug.Log($"getCamera-- GetCameraIntrinsics:[{CameraIntrinsics[0]},{CameraIntrinsics[1]},{CameraIntrinsics[2]},{CameraIntrinsics[3]}]");
-        Debug.Log(tag+"getCamera-- GetCameraExtrinsics leftExtrinsics :\n"+leftExtrinsics);
-        Debug.Log(tag+"getCamera-- GetCameraExtrinsics rightExtrinsics :\n"+rightExtrinsics);
+        if (CameraIntrinsics!=null)
+        {
+            Debug.Log($"getCamera-- GetCameraIntrinsics:[{CameraIntrinsics[0]},{CameraIntrinsics[1]},{CameraIntrinsics[2]},{CameraIntrinsics[3]}]");
+        }
+        if (leftExtrinsics!=null)
+        {
+            Debug.Log(tag+"getCamera-- GetCameraExtrinsics leftExtrinsics :\n"+leftExtrinsics);
+        }
+        if (rightExtrinsics!=null)
+        {
+            Debug.Log(tag+"getCamera-- GetCameraExtrinsics rightExtrinsics :\n"+rightExtrinsics);
+        }
        
         RGBCameraParamsNew param = PXR_Enterprise.GetCameraParametersNewfor4U(width, height);
         // Debug.Log($"getCamera GetCameraIntrinsics:[{param.cx},{param.cy},{param.fx},{param.fy}]");
         // Debug.Log($"getCamera GetCameraExtrinsics leftExtrinsics::[{param.l_pos} ------ {param.l_rot}]");
         // Debug.Log($"getCamera GetCameraExtrinsics rightExtrinsics::[{param.r_pos} ------ {param.r_rot}]");
-        CanshuText.text = $"外参::[{param.l_pos} ------ {param.l_rot}]\n"+$" [{param.r_pos} ------ {param.r_rot}]";
+        CanshuText.text =$"内参::[fx,fy,cx,cy]=[{param.fx},{param.fy},{param.cx},{param.cy}]\n"+ $"外参::L=[{param.l_pos},{param.l_rot}]\n"+$" R=[{param.r_pos},{param.r_rot}]";
     }
     public void StartPreview()
     {
         Debug.Log($"{tag} StartPreview ");
-        overlay.isExternalAndroidSurface = true;   
+        overlay.enabled = true;   
         Debug.Log($"{tag} externalAndroidSurfaceObject "+overlay.externalAndroidSurfaceObject);
         PXR_Enterprise.StartPreviewfor4U(overlay.externalAndroidSurfaceObject,Mode);
         FrameTarget.position = new Vector3(0,0,0);
@@ -109,7 +139,7 @@ public class EnterpriseAPI : MonoBehaviour
     public void StartGetImageData()
     {
         Debug.Log($"{tag} StartGetImageData ");
-        overlay.isExternalAndroidSurface = false;
+        overlay.enabled = false;
       
         IntPtr data=Marshal.UnsafeAddrOfPinnedArrayElement(imgByte,0);
         PXR_Enterprise.SetCameraFrameBufferfor4U(width,height,ref data, (Frame frame) =>
@@ -174,7 +204,7 @@ public class EnterpriseAPI : MonoBehaviour
             PXR_Enterprise.StartGetImageDatafor4U(Mode, width, height);  
         }
         time= PXR_Enterprise.GetPredictedDisplayTime();
-        a=PXR_Enterprise.GetPredictedMainSensorState(time,false);
+        a=PXR_Enterprise.GetPredictedMainSensorState(time);
         RenderTarget.position = a.pose.position;
         RenderTarget.rotation = a.pose.rotation; 
         // RenderTarget.position = new Vector3(a.pose.position.x, a.pose.position.y, -a.pose.position.z);
@@ -203,3 +233,4 @@ public class EnterpriseAPI : MonoBehaviour
     }
     
 }
+#endif

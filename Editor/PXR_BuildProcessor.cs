@@ -13,6 +13,7 @@ PICO Technology Co., Ltd.
 using System;
 using System.Collections.Generic;
 using System.Xml;
+
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor.Android;
@@ -21,27 +22,99 @@ using UnityEditor.Build.Reporting;
 using UnityEditor;
 using UnityEditor.XR.Management;
 using UnityEngine.XR.Management;
+#if UNITY_OPENXR
+#if XR_HAND
+using UnityEngine.XR.Hands.OpenXR;
+#endif
+#if PICO_OPENXR_SDK
+//using UnityEngine.XR.Hands.OpenXR;
+using Unity.XR.OpenXR.Features.PICOSupport;
+using UnityEngine.XR.OpenXR;
+using UnityEngine.XR.OpenXR.Features;
+#endif
+#endif
 
 namespace Unity.XR.PXR.Editor
 {
     public class PXR_BuildProcessor : XRBuildHelper<PXR_Settings>
     {
         public override string BuildSettingsKey { get { return "Unity.XR.PXR.Settings"; } }
-        public static bool IsLoaderExists()
+       
+        public static bool IsLoaderExists(bool isPlatform = false)
         {
             XRGeneralSettings generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
             if (generalSettings == null) return false;
             var assignedSettings = generalSettings.AssignedSettings;
             if (assignedSettings == null) return false;
+            
+             bool isPxrOpenXRFeatureEnabled = false;
+             bool isPxrOpenXRExtensionsEnabled = false;
 #if UNITY_2021_1_OR_NEWER
             foreach (XRLoader loader in assignedSettings.activeLoaders)
             {
                 if (loader is PXR_Loader) return true;
+#if PICO_OPENXR_SDK
+                if (loader is OpenXRLoader)
+                {
+                    var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
+                    foreach (var feature in settings.GetFeatures<OpenXRFeature>())
+                    {
+                        if (feature is PICOFeature)
+                        {
+                            isPxrOpenXRFeatureEnabled = feature.enabled;
+                            if (!isPlatform)
+                            {
+                                return isPxrOpenXRFeatureEnabled;
+                            }
+                        }
+
+                        if (feature is OpenXRExtensions)
+                        {
+                            isPxrOpenXRExtensionsEnabled = feature.enabled;
+                            if (isPlatform)
+                            {
+                                return isPxrOpenXRExtensionsEnabled;
+                            }
+                        }
+                    }
+                }
+#endif
             }
 #else
             foreach (XRLoader loader in assignedSettings.loaders)
             {
                 if (loader is PXR_Loader) return true;
+#if PICO_OPENXR_SDK
+                if (loader is OpenXRLoader)
+                {
+                    Debug.Log("PXRLog [Build Check]OpenXR is enabled");
+                    var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
+                    foreach (var feature in settings.GetFeatures<OpenXRFeature>())
+                    {
+                        if (feature is PXR_OpenXRFeature)
+                        {
+                            return true;
+                        }
+                        if (feature is PXR_OpenXRFeature)
+                        {
+                            isPxrOpenXRFeatureEnabled = feature.enabled;
+                            if (!isPlatform)
+                            {
+                                return isPxrOpenXRFeatureEnabled;
+                            }
+                        }
+
+                        if (feature is PXR_OpenXRExtensions)
+                        {
+                            isPxrOpenXRExtensionsEnabled = feature.enabled;
+                            if (isPlatform)
+                            {
+                                return isPxrOpenXRExtensionsEnabled;
+                            }
+                        }
+                    }
+                }
+#endif
             }
 #endif
 
@@ -63,7 +136,28 @@ namespace Unity.XR.PXR.Editor
                 {
                     plugin.SetIncludeInBuildDelegate((path) =>
                     {
-                        return IsLoaderExists();
+                        return IsLoaderExists(true);
+                    });
+                }
+                if (plugin.assetPath.Contains(".ForUnitySDK.aar"))
+                {
+                    Debug.Log("PXRLog [Build Check]OpenXR is enabled");
+                    plugin.SetIncludeInBuildDelegate((path) =>
+                    {
+#if PICO_OPENXR_SDK
+                        var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
+                        foreach (var feature in settings.GetFeatures<OpenXRFeature>())
+                        {
+                            if (feature is PICOFeature)
+                            {
+                                return feature.enabled;
+                            }
+                        }
+
+                        return false;
+#else
+                        return  IsLoaderExists(true);
+#endif
                     });
                 }
             }
@@ -126,7 +220,6 @@ namespace Unity.XR.PXR.Editor
                     }
                 }
             }
-
         }
 
         public void OnPostprocessBuild(BuildReport report)
@@ -230,11 +323,162 @@ namespace Unity.XR.PXR.Editor
             string applicationTagPath = manifestTagPath + "/application";
             string metaDataTagPath = applicationTagPath + "/meta-data";
             string usesPermissionTagName = "uses-permission";
-            var settings = PXR_XmlTools.GetSettings();
-            doc.InsertAttributeInTargetTag(applicationTagPath,null, new Dictionary<string, string>() {{"requestLegacyExternalStorage", "true"}});
+
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.app.type"}},new Dictionary<string, string>{{"value","vr"}});
-            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pxr.sdk.version_code"}},new Dictionary<string, string>{{"value", "5130"}});
-            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.sdk.version"}},new Dictionary<string, string>{{"value","XR Platform_3.2.4"}});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pxr.sdk.version_code"}},new Dictionary<string, string>{{"value", "5140"}});
+            doc.InsertAttributeInTargetTag(applicationTagPath,null, new Dictionary<string, string>() {{"requestLegacyExternalStorage", "true"}});
+#if PICO_OPENXR_SDK
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","use.pxr.sdk"}},new Dictionary<string, string>{{"value", "2"}});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.sdk.version"}},new Dictionary<string, string>{{"value","Unity OpenXR "+PXR_Constants.SDKVersion}});
+            var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
+            bool mrPermission = false;
+
+            foreach (var feature in settings.GetFeatures<OpenXRFeature>())
+            {
+                if (feature is PICOSceneCapture)
+                {
+                    if (feature.enabled)
+                    {
+                        doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_scene_anchor" } },
+                            new Dictionary<string, string> { { "value", "1" } });
+                        mrPermission = true;
+                    }
+                    else
+                    {
+                        doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_scene_anchor" } });
+                    }
+                }
+
+                if (feature is PICOSpatialAnchor)
+                {
+                    if (feature.enabled)
+                    {
+                        doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_spatial_anchor" } },
+                            new Dictionary<string, string> { { "value", "1" } });
+                        mrPermission = true;
+                    }
+                    else
+                    {
+                        doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_spatial_anchor" } });
+                    }
+                }
+
+                if (feature is PICOSpatialMesh)
+                {
+                    if (feature.enabled)
+                    {
+                        doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_mesh_anchor" } },
+                            new Dictionary<string, string> { { "value", "1" } });
+                        mrPermission = true;
+                    }
+                    else
+                    {
+                        doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_mesh_anchor" } });
+                    }
+                }
+#if XR_HAND
+                if (feature is HandTracking)
+                {
+                    if (feature.enabled)
+                    {
+                        if (PXR_OpenXRProjectSetting.GetProjectConfig().isHandTracking)
+                        {
+                            doc.CreateElementInTag(manifestTagPath, usesPermissionTagName,
+                                new Dictionary<string, string> { { "name", "com.picovr.permission.HAND_TRACKING" } });
+                            
+                            if (PXR_OpenXRProjectSetting.GetProjectConfig().handTrackingSupportType == HandTrackingSupport.HandsOnly)
+                            {
+                                doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "handtracking" } },
+                                    new Dictionary<string, string> { { "value", "1" } });
+                                doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "controller" } });
+                            }
+                            else
+                            {
+                                doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "handtracking" } },
+                                    new Dictionary<string, string> { { "value", "1" } });
+                                doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "controller" } },
+                                    new Dictionary<string, string> { { "value", "1" } });
+                            }
+                            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "Hand_Tracking_HighFrequency" } },
+                                new Dictionary<string, string> { { "value", PXR_OpenXRProjectSetting.GetProjectConfig().highFrequencyHand ? "1" : "0" } });
+                        }
+                        else
+                        {
+                            doc.RemoveNameValueElementInTag(manifestTagPath, usesPermissionTagName,
+                                "android:name", "com.picovr.permission.HAND_TRACKING");
+                            doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "handtracking" } });
+                            doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "Hand_Tracking_HighFrequency" } });
+                            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "controller" } },
+                                new Dictionary<string, string> { { "value", "1" } });
+                        }
+                    }
+                    else
+                    {
+                        doc.RemoveNameValueElementInTag(manifestTagPath, usesPermissionTagName,
+                            "android:name", "com.picovr.permission.HAND_TRACKING");
+                        doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "handtracking" } });
+                        doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "Hand_Tracking_HighFrequency" } });
+                        doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "controller" } },
+                            new Dictionary<string, string> { { "value", "1" } });
+                    }
+                }
+            }
+#else
+            }
+
+            doc.RemoveNameValueElementInTag(manifestTagPath, usesPermissionTagName,
+                "android:name", "com.picovr.permission.HAND_TRACKING");
+            doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "handtracking" } });
+            doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "Hand_Tracking_HighFrequency" } });
+            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "controller" } },
+                new Dictionary<string, string> { { "value", "1" } });
+            
+#endif
+            if (PXR_OpenXRProjectSetting.GetProjectConfig().isEyeTracking)
+            {
+                doc.CreateElementInTag(manifestTagPath, usesPermissionTagName,
+                    new Dictionary<string, string> { { "name", "com.picovr.permission.EYE_TRACKING" } });
+                doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "picovr.software.eye_tracking" } },
+                    new Dictionary<string, string> { { "value", "1" } });
+                doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "eyetracking_calibration" } },
+                    new Dictionary<string, string> { { "value", PXR_OpenXRProjectSetting.GetProjectConfig().isEyeTrackingCalibration ? "true" : "false" } });
+            }
+            else
+            {
+                doc.RemoveNameValueElementInTag(manifestTagPath, usesPermissionTagName,
+                    "android:name", "com.picovr.permission.EYE_TRACKING");
+                doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "picovr.software.eye_tracking" } });
+                doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "eyetracking_calibration" } });
+            }
+
+            if (PXR_OpenXRProjectSetting.GetProjectConfig().MRSafeguard)
+            {
+                doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_mr_safeguard" } },
+                    new Dictionary<string, string> { { "value", PXR_OpenXRProjectSetting.GetProjectConfig().MRSafeguard ? "1" : "0" } });
+            }
+            else
+            {
+                doc.RemoveAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_mr_safeguard" } });
+            }
+
+            if (mrPermission)
+            {
+                doc.CreateElementInTag(manifestTagPath, usesPermissionTagName,
+                    new Dictionary<string, string> { { "name", "com.picovr.permission.SPATIAL_DATA" } });
+            }
+            else
+            {
+                doc.RemoveNameValueElementInTag(manifestTagPath, usesPermissionTagName,
+                    "android:name", "com.picovr.permission.SPATIAL_DATA");
+            }
+
+            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.app.splash" } },
+                new Dictionary<string, string> { { "value", PXR_OpenXRProjectSetting.GetProjectConfig().GetSystemSplashScreen(path) } });
+                
+#else
+            var settings = PXR_XmlTools.GetSettings();
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","use.pxr.sdk"}},new Dictionary<string, string>{{"value", "1"}});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.sdk.version"}},new Dictionary<string, string>{{"value","XR Platform_"+PXR_Constants.SDKVersion}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","enable_cpt"}},new Dictionary<string, string>{{"value",PXR_ProjectSetting.GetProjectConfig().useContentProtect ? "1" : "0"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","Enable_AdaptiveHandModel"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().adaptiveHand ? "1" : "0" }});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","Hand_Tracking_HighFrequency"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().highFrequencyHand ? "1" : "0" }});
@@ -260,7 +504,6 @@ namespace Unity.XR.PXR.Editor
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.QualitySharpening" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().qualitySharpening ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.FixedFoveatedSharpening" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().fixedFoveatedSharpening ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.SelfAdaptiveSharpening" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().selfAdaptiveSharpening ? "1" : "0" } });
-            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.app.secure_mr" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().secureMR ? "1" : "0" } });
             doc.CreateElementInTag(manifestTagPath,usesPermissionTagName,new Dictionary<string, string>{{"name","android.permission.WRITE_SETTINGS"}});
 
             if (PXR_ProjectSetting.GetProjectConfig().eyeTracking || PXR_ProjectSetting.GetProjectConfig().enableETFR)
@@ -309,6 +552,11 @@ namespace Unity.XR.PXR.Editor
             if (PXR_ProjectSetting.GetProjectConfig().faceTracking) { doc.CreateElementInTag(manifestTagPath, usesPermissionTagName, new Dictionary<string, string> { { "name", "com.picovr.permission.FACE_TRACKING" } }); }
             if (PXR_ProjectSetting.GetProjectConfig().lipsyncTracking) { doc.CreateElementInTag(manifestTagPath, usesPermissionTagName, new Dictionary<string, string> { { "name", "android.permission.RECORD_AUDIO" } }); }
             if (PXR_ProjectSetting.GetProjectConfig().faceTracking) { doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "picovr.software.face_tracking" } }, new Dictionary<string, string> { { "value", "false/true" } }); }
+            
+#endif
+           
+            
+            
             doc.Save(originManifestPath);
         }
         public int callbackOrder { get { return 10000; } }
@@ -435,5 +683,6 @@ namespace Unity.XR.PXR.Editor
 #endif
             return settings;
         }
+
     }
 }

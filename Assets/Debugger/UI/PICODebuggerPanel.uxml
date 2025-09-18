@@ -1,0 +1,24 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 0; height: auto; background-image: none; width: auto; -unity-background-scale-mode: scale-to-fit; -unity-slice-bottom: initial; -unity-slice-top: initial; -unity-slice-right: initial; flex-direction: column; -unity-slice-left: initial; -unity-slice-scale: initial; flex-wrap: nowrap; flex-shrink: 0; padding-left: 10px; padding-right: 10px; padding-top: 10px;">
+        <ui:Label tabindex="-1" text="Default Panel" parse-escape-sequences="true" display-tooltip-when-elided="true" name="DefaultTitle" />
+        <ui:VisualElement name="DefaultSettings" style="flex-grow: 1; padding-left: 25px;">
+            <ui:Toggle label="Enable/Disable" name="IsOpen" style="top: auto; margin-top: 0; margin-left: 2px;" />
+            <ui:DropdownField label="launcher button" name="DebuggerLaucherButton" style="margin-left: 2px; height: 32px; align-self: stretch; -unity-text-align: middle-left;" />
+            <ui:Label tabindex="-1" text="Movement " parse-escape-sequences="true" display-tooltip-when-elided="true" style="padding-left: 0;" />
+            <ui:VisualElement name="TranslateMode" style="flex-grow: 1; padding-left: 25px;">
+                <ui:DropdownField label="Initial Position" name="StartPosition" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:Label tabindex="-1" text="Console Panel" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ConsoleTitle" />
+        <ui:VisualElement name="ConsoleSettings" style="flex-grow: 1; padding-left: 25px;">
+            <ui:Slider label="Maximum Count" high-value="1000" low-value="500" picking-mode="Ignore" show-input-field="true" name="MaxInfoCount" />
+        </ui:VisualElement>
+        <ui:Label tabindex="-1" text="Tool Panel" parse-escape-sequences="true" display-tooltip-when-elided="true" name="ToolsTitle" />
+        <ui:VisualElement name="ToolsSettings" style="flex-grow: 1; padding-left: 25px;">
+            <ui:Label tabindex="-1" text=" Ruler Tools" parse-escape-sequences="true" display-tooltip-when-elided="true" name="RulerToolsTitle" />
+            <ui:VisualElement name="RulerToolsSettings" style="flex-grow: 1; padding-left: 20px;">
+                <ui:DropdownField label="launcher button" name="RulerClearButton" style="margin-left: 2px; height: 32px; align-self: stretch; -unity-text-align: middle-left;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

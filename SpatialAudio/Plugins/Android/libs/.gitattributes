@@ -1,0 +1,8 @@
+arm64-v8a/libPicoSpatializer.so.meta filter=lfs diff=lfs merge=lfs -text
+arm64-v8a/libPicoAmbisonicDecoder.so filter=lfs diff=lfs merge=lfs -text
+arm64-v8a/libPicoAmbisonicDecoder.so.meta filter=lfs diff=lfs merge=lfs -text
+arm64-v8a/libPicoSpatializer.so filter=lfs diff=lfs merge=lfs -text
+armeabi-v7a/libPicoAmbisonicDecoder.so filter=lfs diff=lfs merge=lfs -text
+armeabi-v7a/libPicoAmbisonicDecoder.so.meta filter=lfs diff=lfs merge=lfs -text
+armeabi-v7a/libPicoSpatializer.so filter=lfs diff=lfs merge=lfs -text
+armeabi-v7a/libPicoSpatializer.so.meta filter=lfs diff=lfs merge=lfs -text

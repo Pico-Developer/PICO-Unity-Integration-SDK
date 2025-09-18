@@ -1,8 +1,8 @@
 {
   "name": "com.unity.xr.picoxr",
   "displayName": "PICO Integration",
-  "version": "3.2.4",
-  "unity": "2020.3",
+  "version": "3.3.1",
+  "unity": "2021.3",
   "description": "Provides display and input support for PICO devices.",
   "keywords": [
     "picoxr",
@@ -16,8 +16,7 @@
     "com.unity.xr.interaction.toolkit": "2.0.0",
     "com.unity.xr.core-utils": "2.3.0"
   },
-  "unityRelease": "21f1",
-  
+  "unityRelease": "26f1",
   "documentationUrl": "https://developer.picoxr.com/document/unity/",
   "changelogUrl": "https://developer.picoxr.com/document/updates-unity/"
 }

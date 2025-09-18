@@ -34,23 +34,23 @@ public class PXR_PermissionRequest : MonoBehaviour
         callbacks.PermissionDenied += PermissionCallbacks_PermissionDenied;
         callbacks.PermissionGranted += PermissionCallbacks_PermissionGranted;
         callbacks.PermissionDeniedAndDontAskAgain += PermissionCallbacks_PermissionDeniedAndDontAskAgain;
-        Debug.Log("HHHH Permission.Camera Request");
+        Debug.Log("Permission.Camera Request");
         Permission.RequestUserPermissions(_permissions.ToArray(), callbacks);
     }
 
     internal void PermissionCallbacks_PermissionDeniedAndDontAskAgain(string permissionName)
     {
-        Debug.Log($"HHHH {permissionName} PermissionDeniedAndDontAskAgain");
+        Debug.Log($"{permissionName} PermissionDeniedAndDontAskAgain");
     }
 
     internal void PermissionCallbacks_PermissionGranted(string permissionName)
     {
-        Debug.Log($"HHHH {permissionName} PermissionCallbacks_PermissionGranted");
+        Debug.Log($"{permissionName} PermissionCallbacks_PermissionGranted");
     }
 
     internal void PermissionCallbacks_PermissionDenied(string permissionName)
     {
-        Debug.Log($"HHHH {permissionName} PermissionCallbacks_PermissionDenied");
+        Debug.Log($"{permissionName} PermissionCallbacks_PermissionDenied");
     }
 
 

@@ -19,12 +19,19 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using Unity.XR.PXR.SecureMR;
+
 using UnityEngine;
 using UnityEngine.XR;
+using UnityEngine.XR.Management;
+#if PICO_OPENXR_SDK
+using UnityEngine.XR.OpenXR.Features;
+using UnityEngine.XR.OpenXR;
+#else
+using Unity.XR.PXR.SecureMR;
 using Point = Unity.XR.PXR.SecureMR.Point;
-using Random = System.Random;
+#endif
 
+using Random = System.Random;
 namespace Unity.XR.PXR
 {
     //MR
@@ -1130,7 +1137,7 @@ namespace Unity.XR.PXR
     }
 
     #endregion
-
+    public delegate void XrEventDataBufferCallBack(ref XrEventDataBuffer dataBuffer);
     public enum PxrSpatialTrackingState
     {
         Invalid = 0,
@@ -1811,7 +1818,6 @@ namespace Unity.XR.PXR
         MAX_ROLE = 23,                // max value
         ROLE_NUM = 24,
     }
-
     public enum BodyActionList:ulong
     {
         PxrNoneAction  = 0,
@@ -2183,9 +2189,9 @@ namespace Unity.XR.PXR
     public struct PxrLayerParam
     {
         public int layerId;
-        public PXR_OverLay.OverlayShape layerShape;
-        public PXR_OverLay.OverlayType layerType;
-        public PXR_OverLay.LayerLayout layerLayout;
+        public PXR_CompositionLayer.OverlayShape layerShape;
+        public PXR_CompositionLayer.OverlayType layerType;
+        public PXR_CompositionLayer.LayerLayout layerLayout;
         public UInt64 format;
         public UInt32 width;
         public UInt32 height;
@@ -2313,7 +2319,7 @@ namespace Unity.XR.PXR
         public int sensorFrameIndex;
         public int imageIndex;
         public PxrPosef headPose;
-        public PXR_OverLay.OverlayShape layerShape;
+        public PXR_CompositionLayer.OverlayShape layerShape;
         public UInt32 useLayerBlend;
         public PxrLayerBlend layerBlend;
         public UInt32 useImageRect;
@@ -2517,7 +2523,6 @@ namespace Unity.XR.PXR
 
     public static class PXR_Plugin
     {
-        private const string PXR_SDK_Version = "3.2.4";
         public const string PXR_PLATFORM_DLL = "PxrPlatform";
         private static int PXR_API_Version = 0;
 
@@ -2831,7 +2836,7 @@ namespace Unity.XR.PXR
 
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Pxr_SetUserDefinedSettings(UserDefinedSettings settings);
-        
+
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern bool Pxr_GetFocusState();
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
@@ -2860,11 +2865,10 @@ namespace Unity.XR.PXR
 		
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Pxr_SetEventDataBufferCallBack(XrEventDataBufferCallBack callback);
-      
 		
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Pxr_EnablePremultipliedAlpha(bool enable);
-
+		
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Pxr_SetSuperResolutionOrSharpening(SuperResolutionOrSharpeningType type);
 
@@ -3175,9 +3179,6 @@ namespace Unity.XR.PXR
         public static extern int Pxr_SetBodyTrackingMode(int mode);
 
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int Pxr_GetFitnessBandConnectState(ref PxrMotionTracker1ConnectState state);
-
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Pxr_GetFitnessBandBattery(int trackerId, ref int battery);
 
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
@@ -3354,15 +3355,20 @@ namespace Unity.XR.PXR
 
             public static string UPxr_GetSDKVersion()
             {
-                return PXR_SDK_Version;
+                return PXR_Constants.SDKVersion;
             }
 
             public static int UPxr_LogSdkApi(string sdkInfo)
             {
+                PLog.d(TAG, "UPxr_LogSdkApi() sdkInfo:" + sdkInfo);
                 int result = 0;
-
+#if UNITY_ANDROID && !UNITY_EDITOR
+                result = Pxr_LogSdkApi(sdkInfo);
+#endif
+                PLog.d(TAG, "UPxr_LogSdkApi() result:" + result);
                 return result;
             }
+
             public static float[] UPxr_GetDisplayFrequenciesAvailable()
             {
 
@@ -3830,7 +3836,16 @@ namespace Unity.XR.PXR
                 PLog.d(TAG, "UPxr_SetPerformanceLevels() result:" + result);
                 return result;
             }
-            
+            public static bool IsOpenXRLoaderActive()
+            {
+#if PICO_OPENXR_SDK
+                XRLoader loader = XRGeneralSettings.Instance.Manager.activeLoader;
+                OpenXRLoader openXRLoader = loader as OpenXRLoader;
+                return openXRLoader != null;
+#else
+                return false;
+#endif
+            }
             public static PxrSettingsLevel UPxr_GetPerformanceLevels(PxrPerfSettings which)
             {
                 PLog.d(TAG, "UPxr_GetPerformanceLevels() which:" + which);
@@ -4141,7 +4156,6 @@ namespace Unity.XR.PXR
             [Obsolete("Deprecated", true)]
             public static void UPxr_ResetSeeThroughSensor() { }
 
-
             public static PxrTrackingState UPxr_GetSeeThroughTrackingState()
             {
                 int state = 0;
@@ -4440,6 +4454,15 @@ namespace Unity.XR.PXR
                 Pxr_SetAppSpaceRotation(x, y, z, w);
 #endif
             }
+            
+            public static void UPxr_EnablePremultipliedAlpha(bool enable)
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                Pxr_EnablePremultipliedAlpha(enable);
+#endif
+                PLog.i(TAG, "Pxr_EnablePremultipliedAlpha " + enable);
+            }
+            
             public static bool UPxr_SubmitLayerQuadByRender(IntPtr ptr)
             {
                 int result = 0;
@@ -4892,6 +4915,31 @@ namespace Unity.XR.PXR
 #endif
             }
 
+            public static bool UPxr_IsControllerConnected(PXR_Input.Controller controller)
+            {
+                var state = false;
+                switch (controller)
+                {
+                    case PXR_Input.Controller.LeftController:
+#if PICO_OPENXR_SDK
+                        InputDevices.GetDeviceAtXRNode(XRNode.LeftHand).TryGetFeatureValue(CommonUsages.isTracked, out state);
+#else
+                    InputDevices.GetDeviceAtXRNode(XRNode.LeftHand).TryGetFeatureValue(PXR_Usages.controllerStatus, out state);
+#endif
+
+                        return state;
+                    case PXR_Input.Controller.RightController:
+#if PICO_OPENXR_SDK
+                        InputDevices.GetDeviceAtXRNode(XRNode.RightHand).TryGetFeatureValue(CommonUsages.isTracked, out state);
+#else
+                     InputDevices.GetDeviceAtXRNode(XRNode.RightHand).TryGetFeatureValue(PXR_Usages.controllerStatus, out state);
+#endif
+
+                        return state;
+                }
+
+                return state;
+            }
             public static PXR_Input.Controller UPxr_GetControllerMainInputHandle()
             {
                 var hand = 0;
@@ -4987,14 +5035,18 @@ namespace Unity.XR.PXR
             public static bool UPxr_GetHandTrackerAimState(HandType hand, ref HandAimState aimState)
             {
                 bool val = false;
+#if !UNITY_EDITOR && UNITY_ANDROID
                 val = Pxr_GetHandTrackerAimState(hand,ref aimState) == 0;
+#endif
                 return val;
             }
 
             public static bool UPxr_GetHandTrackerJointLocations(HandType hand, ref HandJointLocations jointLocations)
             {
                 bool val = false;
+#if !UNITY_EDITOR && UNITY_ANDROID
                 val = Pxr_GetHandTrackerJointLocations(hand, ref jointLocations) == 0;
+#endif
                 return val;
             }
             public static bool UPxr_GetHandScale(int hand,ref float scale)
@@ -5347,6 +5399,8 @@ namespace Unity.XR.PXR
 
             [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
             public static extern int Pxr_SetExpandDeviceCustomDatabyID(int num, long deviceId, int dataSize, byte[] data);
+
+
             public static int UPxr_CheckMotionTrackerNumber(int number)
             {
                 int val = -1;
@@ -5400,8 +5454,8 @@ namespace Unity.XR.PXR
                 PLog.d(TAG, $"UPxr_SetExpandDeviceCustomDataCapability() state={state}, val={val}");
                 return val;
             }
-
-            public static int UPxr_SetExpandDeviceCustomData(ref ExpandDevicesCustomData[] deviceArray)
+             
+            public static int UPxr_SetExpandDeviceCustomData( ref ExpandDevicesCustomData[] deviceArray)
             {
                 int val = -1;
 #if !UNITY_EDITOR && UNITY_ANDROID
@@ -6741,7 +6795,7 @@ namespace Unity.XR.PXR
             }
 
         }
-
+#if !PICO_OPENXR_SDK
         public static class SecureMR
         {
             public const string TAG = "SecureMR";
@@ -7541,5 +7595,6 @@ namespace Unity.XR.PXR
 #endif
             }
         }
+#endif
     }
 }

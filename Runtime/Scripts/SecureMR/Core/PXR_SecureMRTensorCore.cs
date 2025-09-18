@@ -1,3 +1,4 @@
+#if !PICO_OPENXR_SDK
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,11 +22,6 @@ namespace Unity.XR.PXR.SecureMR
             this.IsGlobalTensor = isGlobalTensor;
         }
 
-        /// <summary>
-        /// Resets a tensor. You can use this method to reset both global and local tensor data.
-        /// </summary>
-        /// <param name="tensorData">Specifies the data array for resetting the tensor.</param>
-        /// <typeparam name="T">Specifies the data type of the tensor, which must be value type (struct).</typeparam>
         public void Reset<T>(T[] tensorData)
         {
             if (IsGlobalTensor)
@@ -40,9 +36,6 @@ namespace Unity.XR.PXR.SecureMR
             }
         }
 
-        /// <summary>
-        /// Destroys a global tensor.
-        /// </summary>
         public void Destroy()
         {
             if (IsGlobalTensor)
@@ -87,16 +80,11 @@ namespace Unity.XR.PXR.SecureMR
             TensorMappings = new Dictionary<ulong, ulong>();
         }
 
-        /// <summary>
-        /// Creates the mapping between local tensor references and global tensors. The mapping is saved to the TensorMapping dictionary.
-        /// </summary>
-        /// <param name="localTensorReference">Specifies the local tensor reference object.</param>
-        /// <param name="globalTensor">Specifies the global tensor object.</param>
         public void Set(Tensor localTensorReference, Tensor globalTensor)
         {
             TensorMappings.TryAdd(localTensorReference.TensorHandle, globalTensor.TensorHandle);
         }
     }
 }
-
+#endif
 

@@ -1,4 +1,5 @@
-﻿/*******************************************************************************
+﻿#if !PICO_OPENXR_SDK
+/*******************************************************************************
 Copyright © 2015-2022 PICO Technology Co., Ltd.All rights reserved.  
 
 NOTICE：All information contained herein is, and remains the property of 
@@ -307,10 +308,6 @@ namespace Unity.XR.PXR.Editor
                 "MR safety, if you choose this option, your application will adopt MR safety policies during runtime. If not selected, it will continue to use VR safety policies by default.";
             projectConfig.mrSafeguard = EditorGUILayout.Toggle(mrSafeguardContent, projectConfig.mrSafeguard);
 
-            var secureMRContent = new GUIContent();
-            secureMRContent.text = "SecureMR";
-            projectConfig.secureMR = EditorGUILayout.Toggle(secureMRContent, projectConfig.secureMR);
-
             //Super Resolution
             var superresolutionContent = new GUIContent();
             superresolutionContent.text = "Super Resolution";
@@ -390,6 +387,42 @@ namespace Unity.XR.PXR.Editor
                 projectConfig.selfAdaptiveSharpening = false;
             }
 
+            var usePremultipliedAlphaContent = new GUIContent();
+            usePremultipliedAlphaContent.text = "Use Premultiplied Alpha";
+            usePremultipliedAlphaContent.tooltip = @"Enable premultiplied alpha for this content.
+
+When enabled:
+• RGB color channels are multiplied by Alpha (R*A, G*A, B*A)
+• Improves performance for transparent elements (e.g., UI, particles)
+• Fixes edge artifacts in semitransparent objects
+• Matches OpenXR and GPU blending requirements
+
+Recommended for:
+• UI panels with transparency
+• Particle effects
+• Materials using alpha blending
+• Any content requiring frequent transparency mixing
+
+Note: Ensure textures are imported with 'Alpha Is Transparency' 
+or manually pre-multiply colors if needed.";
+            manager.usePremultipliedAlpha = EditorGUILayout.Toggle(usePremultipliedAlphaContent, manager.usePremultipliedAlpha);
+
+            guiContent.text = "Layer Blend";
+            manager.useLayerBlend = EditorGUILayout.Toggle(guiContent, manager.useLayerBlend);
+            if (manager.useLayerBlend)
+            {
+                EditorGUILayout.BeginVertical("frameBox");
+                guiContent.text = "Src Color";
+                manager.srcColor = (PxrBlendFactor)EditorGUILayout.EnumPopup(guiContent, manager.srcColor);
+                guiContent.text = "Dst Color";
+                manager.dstColor = (PxrBlendFactor)EditorGUILayout.EnumPopup(guiContent, manager.dstColor);
+                guiContent.text = "Src Alpha";
+                manager.srcAlpha = (PxrBlendFactor)EditorGUILayout.EnumPopup(guiContent, manager.srcAlpha);
+                guiContent.text = "Dst Alpha";
+                manager.dstAlpha = (PxrBlendFactor)EditorGUILayout.EnumPopup(guiContent, manager.dstAlpha);
+
+                EditorGUILayout.EndVertical();
+            }
             if (GUI.changed)
             {
                 EditorUtility.SetDirty(projectConfig);
@@ -405,3 +438,4 @@ namespace Unity.XR.PXR.Editor
         }
     }
 }
+#endif

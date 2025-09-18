@@ -18,6 +18,7 @@ using UnityEngine.Rendering;
 
 namespace Unity.XR.PXR
 {
+    [Obsolete("PXR_OverlayManager is obsolete and will be removed in the next version. Please use PXR_CompositionLayerManager instead.", false)]
     public class PXR_OverlayManager : MonoBehaviour
     {
         bool isURP = false;
@@ -118,13 +119,6 @@ namespace Unity.XR.PXR
                     if (!overlay.isClones && overlay.layerTextures[0] == null && overlay.layerTextures[1] == null && !overlay.isExternalAndroidSurface) continue;
                     if (overlay.overlayTransform != null && !overlay.overlayTransform.gameObject.activeSelf) continue;
                     overlay.CreateTexture();
-                    if (GraphicsDeviceType.Vulkan == SystemInfo.graphicsDeviceType)
-                    {
-                        if (overlay.enableSubmitLayer)
-                        {
-                            PXR_Plugin.Render.UPxr_GetLayerNextImageIndex(overlay.overlayIndex, ref overlay.imageIndex);
-                        }
-                    }
                 }
             }
 
@@ -180,7 +174,7 @@ namespace Unity.XR.PXR
                     header.headPose.position.x = (compositeLayer.cameraTranslations[0].x + compositeLayer.cameraTranslations[1].x) / 2;
                     header.headPose.position.y = (compositeLayer.cameraTranslations[0].y + compositeLayer.cameraTranslations[1].y) / 2;
                     header.headPose.position.z = -(compositeLayer.cameraTranslations[0].z + compositeLayer.cameraTranslations[1].z) / 2;
-                    header.layerShape = compositeLayer.overlayShape;
+                    header.layerShape = (PXR_CompositionLayer.OverlayShape)compositeLayer.overlayShape;
                     header.useLayerBlend = (UInt32)(compositeLayer.useLayerBlend ? 1 : 0);
                     header.layerBlend.srcColor = compositeLayer.srcColor;
                     header.layerBlend.dstColor = compositeLayer.dstColor;
@@ -370,7 +364,7 @@ namespace Unity.XR.PXR
                         layerSubmit2.header = header;
                         layerSubmit2.poseLeft = poseLeft;
                         layerSubmit2.poseRight = poseRight;
-                        layerSubmit2.header.layerShape = PXR_OverLay.OverlayShape.Equirect;
+                        layerSubmit2.header.layerShape = (PXR_CompositionLayer.OverlayShape)PXR_OverLay.OverlayShape.Equirect;
 
                         layerSubmit2.radiusLeft = compositeLayer.radius;
                         layerSubmit2.radiusRight = compositeLayer.radius;
@@ -446,7 +440,7 @@ namespace Unity.XR.PXR
                         layerSubmit.header = header;
                         layerSubmit.poseLeft = poseLeft;
                         layerSubmit.poseRight = poseRight;
-                        layerSubmit.header.layerShape = PXR_OverLay.OverlayShape.Fisheye;
+                        layerSubmit.header.layerShape = (PXR_CompositionLayer.OverlayShape)PXR_OverLay.OverlayShape.Fisheye;
 
                         layerSubmit.radiusLeft = compositeLayer.radius;
                         layerSubmit.radiusRight = compositeLayer.radius;

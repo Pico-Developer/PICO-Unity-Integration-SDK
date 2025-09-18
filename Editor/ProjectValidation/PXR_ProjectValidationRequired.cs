@@ -13,17 +13,24 @@ using UnityEngine.SceneManagement;
 using UnityEngine.XR.Management;
 using Unity.XR.CoreUtils;
 using UnityEditor.PackageManager.UI;
+
+#if PICO_OPENXR_SDK
+using Unity.XR.OpenXR.Features.PICOSupport;
+#endif
+
 #if URP
 using UnityEngine.Rendering.Universal;
 #endif
+
 #if AR_FOUNDATION_5 || AR_FOUNDATION_6
 using UnityEngine.XR.ARFoundation;
 #endif
+
 namespace Unity.XR.PXR
 {
     static class PXR_ProjectValidationRequired
     {
-        const string k_Catergory = "PICO XR Required";
+        const string k_Catergory = "PICO Required";
 
         [InitializeOnLoadMethod]
         static void AddRequiredRules()
@@ -38,11 +45,15 @@ namespace Unity.XR.PXR
 
             var androidGlobalRules = new[]
             {
+#region Cross-Platform Validation (PXR & OpenXR)
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = $"PICO XR SDK targeting minimum Android 10.0 is required or {minSdkNameInEditor} API Level.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return PlayerSettings.Android.minSdkVersion >= PXR_Utils.minSdkVersionInEditor;
@@ -59,7 +70,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = $"When setting 'Write Permission' to 'External(SDCard)', the Android API level needs to be <= 32.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         if (PlayerSettings.Android.forceSDCardPermission)
@@ -98,34 +112,11 @@ namespace Unity.XR.PXR
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
-                    Message = "'Target Architectures' and 'Scripting Backend' must be matched!  Recommended use ARM64 architecture and IL2CPP scripting.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        if ((PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARM64) != AndroidArchitecture.None)
-                        {
-                            return PlayerSettings.GetScriptingBackend(recommendedBuildTarget) == ScriptingImplementation.IL2CPP;
-                        }else if((PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARMv7) != AndroidArchitecture.None)
-                        {
-                            return PlayerSettings.GetScriptingBackend(recommendedBuildTarget) == ScriptingImplementation.Mono2x;
-                        }
-                        return false;
-                    },
-                    FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > Android tab and ensure 'Scripting Backend'" +
-                        " is set to 'IL2CPP'. Then under 'Target Architectures' enable 'ARM64'.",
-                    FixIt = () =>
-                    {
-                        PlayerSettings.SetScriptingBackend(recommendedBuildTarget, ScriptingImplementation.IL2CPP);
-                        PlayerSettings.Android.targetArchitectures |= AndroidArchitecture.ARM64;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_ARM64);
-                    },
-                    Error = true
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
                     Message = "Using 'UIOrientation.LandscapeLeft'.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return PlayerSettings.defaultInterfaceOrientation == UIOrientation.LandscapeLeft;
@@ -138,36 +129,15 @@ namespace Unity.XR.PXR
                     },
                     Error = true
                 },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = $"When using FaceTracking, it is necessary to allow unsafe codes!",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        if (PXR_ProjectSetting.GetProjectConfig().faceTracking)
-                        {
-                            return PlayerSettings.allowUnsafeCode;
-                        }
-                        return true;
-                    },
-                    FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > Allow 'unsafe' Code",
-                    FixIt = () =>
-                    {
-                        if (PXR_ProjectSetting.GetProjectConfig().faceTracking)
-                        {
-                            PlayerSettings.allowUnsafeCode = true;
-                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_FTUnsafeCode);
-                        }
-                    },
-                    Error = true
-                },
 #if UNITY_2022
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = $"On Unity2022, it is not allowed to check 'Development Build' when using Vulkan!",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return !(GraphicsDeviceType.Vulkan == PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget)[0] &&  EditorUserBuildSettings.development);
@@ -186,7 +156,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = $"Please use Activity instead of GameActivity!",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return PlayerSettings.Android.applicationEntry == AndroidApplicationEntry.Activity;
@@ -200,11 +173,14 @@ namespace Unity.XR.PXR
                     Error = true
                 },
 #endif
-            new BuildValidationRule
+                new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = $"Build target platform needs to be modified to Android!",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android;
@@ -218,11 +194,14 @@ namespace Unity.XR.PXR
                     Error = true
                 },
 
-            new BuildValidationRule
+                new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = $"'PXR_Manager' needs to be added in the scene!",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {   
 #if AR_FOUNDATION_5 || AR_FOUNDATION_6
@@ -263,11 +242,14 @@ namespace Unity.XR.PXR
                     },
                     Error = true
                 },
-        new BuildValidationRule
+                new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = "Only one 'XROrigin' is allowed in the scene!",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return FindComponentsInScene<XROrigin>().Where(component => component.isActiveAndEnabled).ToList().Count ==1;
@@ -292,40 +274,29 @@ namespace Unity.XR.PXR
                     },
                     Error = true
                 },
-                 new BuildValidationRule
+                new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = $"Only one 'MainCamera' is allowed in the scene!",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
-                        List<Camera> components = FindComponentsInScene<Camera>().Where(component => (component.isActiveAndEnabled && component.gameObject.CompareTag("MainCamera"))).ToList();
+                        List<Camera> components = FindComponentsInScene<Camera>().Where(component => (component.isActiveAndEnabled && component.gameObject.activeSelf)).ToList();
                         if (components.Count == 1)
                         {
                             GameObject gameObject = components[0].transform.gameObject;
-                            return gameObject.GetComponentsInParent<XROrigin>().Length == 1;
+                            XROrigin[] xROrigins = gameObject.GetComponentsInParent<XROrigin>();
+                            return gameObject.GetComponentsInParent<XROrigin>().Length >= 1 && components[0].gameObject.CompareTag("MainCamera");
                         }
                         return false;
                     },
                     FixItMessage = "Scene > MainCamera > Disable.",
                     FixIt = () =>
                     {
-                        List<Camera> components = FindComponentsInScene<Camera>().Where(component => (component.enabled && component.gameObject.CompareTag("MainCamera"))).ToList();
-                        for(int i=0; i < components.Count; i++)
-                        {
-                            GameObject gameObject = components[i].transform.gameObject;
-                            if(gameObject.GetComponentsInParent<XROrigin>().Length == 1)
-                            {
-                                gameObject.SetActive(true);
-                            }
-                            else
-                            {
-                                string newTag = $"Camera{i}";
-                                PXR_Utils.AddNewTag(newTag);
-                                gameObject.tag = newTag;
-                                gameObject.SetActive(false);
-                            }
-                        }
+                        PXR_Utils.SetOneMainCameraInScene();
                         PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_OneMainCamera);
                     },
                     Error = true
@@ -334,7 +305,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = $"Only one 'AudioListener' is allowed in the scene!",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return FindComponentsInScene<AudioListener>().Where(component => component.isActiveAndEnabled).ToList().Count <= 1;
@@ -356,7 +330,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "Set the Graphics API order (Vulkan or OpenGLES3) for Android.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         var buildTarget = BuildTarget.Android;
@@ -380,7 +357,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "When using ETFR, need to set Graphics API: 'OpenGLES3'.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         if (PXR_ProjectSetting.GetProjectConfig().enableETFR)
@@ -403,121 +383,16 @@ namespace Unity.XR.PXR
                     },
                     Error = true
                 },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = "When using Sharpening, Subsampling needs to be disabled.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        if (PXR_ProjectSetting.GetProjectConfig().normalSharpening||PXR_ProjectSetting.GetProjectConfig().qualitySharpening)
-                        {
-                            return !PXR_ProjectSetting.GetProjectConfig().enableSubsampled;
-                        }
-                        return true;
-                    },
-                    FixItMessage = "Open PXR_Manager > Subsampling: disabled.",
-                    FixIt = () =>
-                    {
-                        PXR_ProjectSetting.GetProjectConfig().enableSubsampled = false;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_SharpeningOrSubsampling);
-                    },
-                    Error = true
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = "When using Super Resolution, Subsampling needs to be disabled.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        if (PXR_ProjectSetting.GetProjectConfig().superResolution)
-                        {
-                            return !PXR_ProjectSetting.GetProjectConfig().enableSubsampled;
-                        }
-                        return true;
-                    },
-                    FixItMessage = "Open PXR_Manager > Subsampling: disabled.",
-                    FixIt = () =>
-                    {
-                        PXR_ProjectSetting.GetProjectConfig().enableSubsampled = false;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_SuperResolutionOrSubsampling);
-                    },
-                    Error = true
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = "When using MR features, need to set ARM64 architecture and IL2CPP scripting.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        if (PXR_ProjectSetting.GetProjectConfig().spatialAnchor || PXR_ProjectSetting.GetProjectConfig().sceneCapture || PXR_ProjectSetting.GetProjectConfig().spatialMesh || PXR_ProjectSetting.GetProjectConfig().sharedAnchor)
-                        {
-                            return (PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARM64) != AndroidArchitecture.None && PlayerSettings.GetScriptingBackend(recommendedBuildTarget) == ScriptingImplementation.IL2CPP;
-                        }
-                        return true;
-                    },
-                    FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > Android tab and ensure 'Scripting Backend'" +
-                        " is set to 'IL2CPP'. Then under 'Target Architectures' enable 'ARM64'.",
-                    FixIt = () =>
-                    {
-                        PlayerSettings.SetScriptingBackend(recommendedBuildTarget, ScriptingImplementation.IL2CPP);
-                        PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_MRARM64);
-                    },
-                    Error = true
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = "PICO XR plugin needs to be enabled and unique.",
-                    CheckPredicate = () =>
-                    {
-                        var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
-                        if (!generalSettings)
-                        {
-                            return false;
-                        }
-                        IReadOnlyList<XRLoader> list = generalSettings.Manager.activeLoaders;
-
-                        if (list.Count == 0)
-                        {
-                            return false;
-                        }else if (list.Count > 1)
-                        {
-                            return false;
-                        }
-                        else
-                        {
-                            return PXR_Utils.IsPXRPluginEnabled();
-                        }
-                    },
-                    FixItMessage = "Open Project Settings > Player Settings > XR Plug-in Management>  enable 'PICO'.",
-                    FixIt = () =>
-                    {
-                        var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
-                        if (generalSettings)
-                        {
-                            IReadOnlyList<XRLoader> list = generalSettings.Manager.activeLoaders;
-                            while (list.Count > 0)
-                            {
-                                  string nameTemp = list[0].GetType().FullName;
-                                  XRPackageMetadataStore.RemoveLoader(generalSettings.Manager, nameTemp, BuildTargetGroup.Android);
-                            }
-                            XRPackageMetadataStore.AssignLoader(generalSettings.Manager, "PXR_Loader", BuildTargetGroup.Android);
-                        }
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_PICOXRPlugin);
-                    },
-                    Error = true
-                },
 #if URP
 #if UNITY_2021_3_OR_NEWER || UNITY_2022_3_OR_NEWER
             new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = "When using URP, it is necessary to set Quality > Render Pipeline Asset.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         if (GraphicsSettings.currentRenderPipeline!= null)
@@ -545,7 +420,7 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "When using URP, it is necessary to set Graphics> Default Render Pipeline.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
                     CheckPredicate = () =>
                     {
                         if (QualitySettings.renderPipeline != null)
@@ -572,7 +447,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = $"On Unity2022, it is not recommended msaa4 when using URP+Linear+OpenGLES3.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         if (QualitySettings.renderPipeline != null && GraphicsSettings.currentRenderPipeline!= null && PlayerSettings.colorSpace == ColorSpace.Linear
@@ -597,7 +475,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "When using URP, HDR needs to be disabled.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         bool isHDR = false;
@@ -630,7 +511,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "When using URP and VST, Post Processing needs to be disabled.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         if (QualitySettings.renderPipeline != null && GraphicsSettings.currentRenderPipeline!= null)
@@ -673,7 +557,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "When using URP, The ETFR/FFR function will fail.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return !PXR_ProjectSetting.GetProjectConfig().validationFFREnabled && !PXR_ProjectSetting.GetProjectConfig().validationETFREnabled;
@@ -692,7 +579,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "When using URP+OpenGLES+MultiPass, The MSAA needs to be disabled.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         var buildTarget = BuildTarget.Android;
@@ -748,7 +638,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "Project Keystore needs to be set up.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         string keystorePath = PlayerSettings.Android.keystoreName;
@@ -777,7 +670,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "Project Key needs to be set up.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         string keyaliasName = PlayerSettings.Android.keyaliasName;
@@ -806,7 +702,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "The range of official Unity versions supported by PICO SDK is from 2020.3.21 to Unity 6. ",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
 #if UNITY_2020_3_OR_NEWER
@@ -829,7 +728,7 @@ namespace Unity.XR.PXR
 #else
                         return false;
 #endif
-        },
+                    },
                     FixItMessage = "You can Use Unity 2020.3.21 - Unity 6. ",
                     FixIt = () =>
                     {
@@ -843,7 +742,10 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = "Use ARM64 architecture and IL2CPP scripting.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         if ((PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARM64) != AndroidArchitecture.None)
@@ -865,8 +767,98 @@ namespace Unity.XR.PXR
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
+                    Message = $"A single scene supports up to 7 compositor layers!",
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
+                    CheckPredicate = () =>
+                    {
+                        return FindComponentsInScene<PXR_CompositionLayer>().Where(component => component.isActiveAndEnabled).ToList().Count <= 7;
+                    },
+                    FixItMessage = "You can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it. ",
+                    FixIt = () =>
+                    {
+                        string url = "https://developer.picoxr.com/en/document/unity/vr-compositor-layers/";
+                        Application.OpenURL(url);
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_Overlay7);
+                    },
+                    Error = true
+                },
+#endregion
+
+#region PXR Platform Validation
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = $"When using FaceTracking, it is necessary to allow unsafe codes!",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().faceTracking)
+                        {
+                            return PlayerSettings.allowUnsafeCode;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > Allow 'unsafe' Code",
+                    FixIt = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().faceTracking)
+                        {
+                            PlayerSettings.allowUnsafeCode = true;
+                            PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_FTUnsafeCode);
+                        }
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When using Sharpening, Subsampling needs to be disabled.",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().normalSharpening||PXR_ProjectSetting.GetProjectConfig().qualitySharpening)
+                        {
+                            return !PXR_ProjectSetting.GetProjectConfig().enableSubsampled;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "Open PXR_Manager > Subsampling: disabled.",
+                    FixIt = () =>
+                    {
+                        PXR_ProjectSetting.GetProjectConfig().enableSubsampled = false;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_SharpeningOrSubsampling);
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When using Super Resolution, Subsampling needs to be disabled.",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().superResolution)
+                        {
+                            return !PXR_ProjectSetting.GetProjectConfig().enableSubsampled;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "Open PXR_Manager > Subsampling: disabled.",
+                    FixIt = () =>
+                    {
+                        PXR_ProjectSetting.GetProjectConfig().enableSubsampled = false;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_SuperResolutionOrSubsampling);
+                    },
+                    Error = true
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
                     Message = "Use ' Late Latching' need Unity 2021.3.19f1+ LTS.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
                     CheckPredicate = () =>
                     {
                         if (PXR_ProjectSetting.GetProjectConfig().latelatching)
@@ -902,12 +894,12 @@ namespace Unity.XR.PXR
                 {
                     Category = k_Catergory,
                     Message = $"Late latching and composite layers cannot be used simultaneously as they can cause jitter in the composite layer! ",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
                     CheckPredicate = () =>
                     {
                         if (PXR_ProjectSetting.GetProjectConfig().latelatching)
                         {
-                            return FindComponentsInScene<PXR_OverLay>().Where(component => component.isActiveAndEnabled).ToList().Count == 0;
+                            return FindComponentsInScene<PXR_CompositionLayer>().Where(component => component.isActiveAndEnabled).ToList().Count == 0;
                         }
                         return true;
                     },
@@ -919,25 +911,80 @@ namespace Unity.XR.PXR
                     },
                     Error = true
                 },
+#endregion
+
+#region PICO OpenXR Validation
+#if PICO_OPENXR_SDK
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
-                    Message = $"A single scene supports up to 7 compositor layers!",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    Message = "Subsampling works ONLY with OpenXR 1.8.2 or earlier.",
+                    IsRuleEnabled = PXR_Utils.IsOpenXRValidationEnabled,
                     CheckPredicate = () =>
                     {
-                        return FindComponentsInScene<PXR_OverLay>().Where(component => component.isActiveAndEnabled).ToList().Count <= 7;
+                        if (PXR_OpenXRProjectSetting.GetProjectConfig().foveationEnable && PXR_OpenXRProjectSetting.GetProjectConfig().isSubsampledEnabled)
+                        {
+                            string version = PXR_Utils.GetPackageVersionSync(PXR_Utils.openXRPackageName);
+                            PackageVersion currentVersion = new PackageVersion(version);
+                            return currentVersion <= PXR_Utils.openXRPackageVersion182;
+                        }
+                        return true;
                     },
-                    FixItMessage = "You can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it. ",
+                    FixItMessage = "Open Project Settings > Player Settings > OpenXR > PICO XR Support > Settings > Subsampling: disabled.",
                     FixIt = () =>
                     {
-                        string url = "https://developer.picoxr.com/en/document/unity/vr-compositor-layers/";
-                        Application.OpenURL(url);
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_Overlay7);
+                        // TODO: Open URL
+                        PXR_OpenXRProjectSetting.GetProjectConfig().isSubsampledEnabled = false;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_SubsamplingOpenXR182Earlier);
                     },
                     Error = true
                 },
-        };
+#endif
+#endregion
+                //new BuildValidationRule
+                //{
+                //    Category = k_Catergory,
+                //    Message = "PICO XR plugin needs to be enabled and unique.",
+                //    CheckPredicate = () =>
+                //    {
+                //        var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
+                //        if (!generalSettings)
+                //        {
+                //            return false;
+                //        }
+                //        IReadOnlyList<XRLoader> list = generalSettings.Manager.activeLoaders;
+
+                //        if (list.Count == 0)
+                //        {
+                //            return false;
+                //        }else if (list.Count > 1)
+                //        {
+                //            return false;
+                //        }
+                //        else
+                //        {
+                //            return PXR_Utils.IsPXRValidationEnabled();
+                //        }
+                //    },
+                //    FixItMessage = "Open Project Settings > Player Settings > XR Plug-in Management>  enable 'PICO'.",
+                //    FixIt = () =>
+                //    {
+                //        var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
+                //        if (generalSettings)
+                //        {
+                //            IReadOnlyList<XRLoader> list = generalSettings.Manager.activeLoaders;
+                //            while (list.Count > 0)
+                //            {
+                //                  string nameTemp = list[0].GetType().FullName;
+                //                  XRPackageMetadataStore.RemoveLoader(generalSettings.Manager, nameTemp, BuildTargetGroup.Android);
+                //            }
+                //            XRPackageMetadataStore.AssignLoader(generalSettings.Manager, "PXR_Loader", BuildTargetGroup.Android);
+                //        }
+                //        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_PICOXRPlugin);
+                //    },
+                //    Error = true
+                //},
+            };
             BuildValidator.AddRules(BuildTargetGroup.Android, androidGlobalRules);
         }
 

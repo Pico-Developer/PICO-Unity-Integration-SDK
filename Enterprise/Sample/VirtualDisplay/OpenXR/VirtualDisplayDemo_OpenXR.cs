@@ -1,4 +1,4 @@
-#if !PICO_XR
+#if PICO_OPENXR_SDK
 using System;
 using System.Collections;
 #if UNITY_XR_COMPOSITIONLAYERS

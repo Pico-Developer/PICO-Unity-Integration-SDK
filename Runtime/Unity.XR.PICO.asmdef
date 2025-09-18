@@ -8,7 +8,11 @@
         "Unity.XR.PICO.LivePreview",
         "Unity.XR.Interaction.Toolkit",
         "Unity.XR.Hands",
-        "Unity.XR.ARSubsystems"
+        "Unity.XR.ARSubsystems",
+        "Unity.XR.OpenXR",
+        "Unity.XR.OpenXR.Editor",
+        "Unity.XR.CompositionLayers",
+        "Unity.XR.CoreUtils"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
@@ -52,6 +56,11 @@
             "name": "com.unity.render-pipelines.universal",
             "expression": "12.1.12",
             "define": "URP"
+        },
+        {
+            "name": "com.unity.xr.compositionlayers",
+            "expression": "1.0.0",
+            "define": "XR_COMPOSITION_LAYERS"
         }
     ],
     "noEngineReferences": false

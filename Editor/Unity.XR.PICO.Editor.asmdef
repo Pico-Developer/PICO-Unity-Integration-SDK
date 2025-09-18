@@ -13,6 +13,8 @@
         "Unity.InputSystem",
         "Unity.XR.Hands.Samples.VisualizerSample",
         "Unity.XR.Hands",
+        "Unity.XR.OpenXR",
+        "Unity.XR.OpenXR.Editor",
         "Pico.Spatializer"
     ],
     "includePlatforms": [
@@ -41,9 +43,9 @@
             "define": "URP"
         },
         {
-            "name": "com.unity.render-pipelines.universal",
-            "expression": "12.1.12",
-            "define": "URP"
+            "name": "com.unity.xr.openxr",
+            "expression": "",
+            "define": "UNITY_OPENXR"
         },
         {
             "name": "com.unity.xr.arfoundation",

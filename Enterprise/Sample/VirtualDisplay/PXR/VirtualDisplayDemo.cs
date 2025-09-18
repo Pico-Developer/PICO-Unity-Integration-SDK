@@ -1,4 +1,4 @@
-#if PICO_XR
+#if !PICO_OPENXR_SDK
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,7 +10,7 @@ using UnityEngine.UI;
 public class VirtualDisplayDemo : MonoBehaviour
 {
     private string tag = "VirtualDisplayDemo ----";
-    private PXR_OverLay overlay = null;
+    private PXR_CompositionLayer overlay = null;
     public Text mylog;
     private bool isBind = false;
     private int displayId = -1;
@@ -28,11 +28,11 @@ public class VirtualDisplayDemo : MonoBehaviour
 
     private void Awake()
     {
-        overlay = GetComponent<PXR_OverLay>();
+        overlay = GetComponent<PXR_CompositionLayer>();
         if (overlay == null)
         {
             Debug.LogError("PXRLog Overlay is null!");
-            overlay = gameObject.AddComponent<PXR_OverLay>();
+            overlay = gameObject.AddComponent<PXR_CompositionLayer>();
         }
 
         overlay.isExternalAndroidSurface = true;

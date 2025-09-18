@@ -15,6 +15,7 @@ namespace Unity.XR.PXR
 
 
         public static string strXRSDK = "unity_xr_sdk";
+        public static string strOpenXRSDK = "unity_openxr_sdk";
         #region Portal
         public static string strPortal = "portal"; // param
         public static string strPortal_Enter = "enter";
@@ -140,6 +141,9 @@ namespace Unity.XR.PXR
         public static string strProjectValidation_MRC = "mrc";
         public static string strProjectValidation_DisplayRefreshRatesDefault = "display_refresh_rates_default";
         public static string strProjectValidation_VKOptimizeBufferDiscards = "vk_optimize_buffer_discards";
+
+        // 3.3.0 new add
+        public static string strProjectValidation_SubsamplingOpenXR182Earlier = "subsampling_openxr_182_earlier";
         #endregion
 
         #region BuildingBlocks
@@ -158,9 +162,26 @@ namespace Unity.XR.PXR
         public static string strBuildingBlocks_PICOObjectTracking = "pico_object_tracking";
         public static string strBuildingBlocks_PICOSpatialAudioFreeField = "pico_spatial_audio_free_field";
         public static string strBuildingBlocks_PICOSpatialAudioAmbisonics = "pico_spatial_audio_ambisonics";
+        // 3.3.0 new add
+        public static string strBuildingBlocks_PICOSpatialAnchorSample = "pico_spatial_anchor_sample";
+        public static string strBuildingBlocks_PICOSpatialMesh = "pico_spatial_mesh";
+        public static string strBuildingBlocks_PICOSceneCapture = "pico_scene_capture";
+        public static string strBuildingBlocks_PICOCompositionLayerOverlay = "pico_composition_layer_overlay";
+        public static string strBuildingBlocks_PICOCompositionLayerUnderlay = "pico_composition_layer_underlay";
         #endregion
 
- 
+        #region PICO Debugger
+        public static string strPICODebugger = "XRSDK_PICO_debugger";
+
+        public static string strPICODebugger_Enable = strPICODebugger + "_enable";
+        public static string strPICODebugger_LauncherButton = strPICODebugger + "_launcher_button";
+        public static string strPICODebugger_InitialPosition = strPICODebugger + "_initial_position";
+        public static string strPICODebugger_MaxLogCount = strPICODebugger + "_max_log_count";
+        public static string strPICODebugger_RulerResetButton = strPICODebugger + "_ruler_reset_button";
+
+        #endregion
+
+
         private static bool isInited = false;
         private static void TryInitAppLog()
         {
@@ -184,17 +205,27 @@ namespace Unity.XR.PXR
         public static void PXR_OnEvent(string param, string value)
         {
 #if UNITY_EDITOR_WIN
-            // Debug.Log($"PXR_OnEvent eventName:{strXRSDK}, param:{param}, value:{value}");
-            var contentData = new JsonData()
+            if (PXR_ProjectSetting.GetProjectConfig().isDataCollectionDisabled)
             {
-                [param] = value,
+                return;
+            }
+            // Debug.Log($"PXR_OnEvent eventName:{strXRSDK}, param:{param}, value:{value}");
+            try
+            {
+                var contentData = new JsonData()
+                {
+                    [param] = value,
 
-            };
-            TryInitAppLog();
-            AppLog_onEvent(strXRSDK, contentData.ToJson());
+                };
+                TryInitAppLog();
+                AppLog_onEvent(strXRSDK, contentData.ToJson());
+            }
+            catch (Exception e)
+            {
+                //Debug.LogError($"PXR_OnEvent param:{param}, value={value}, e={e}.");
+            }
 #endif
         }
-
 
         /// <summary>
         /// Call the buried point collection wherever it is required, and pass in the name and parameters of the buried point (in a dictionary structure). 
@@ -204,14 +235,25 @@ namespace Unity.XR.PXR
         public static void PXR_OnEvent(string eventName, string param, string value = "1")
         {
 #if UNITY_EDITOR_WIN
-            //Debug.Log($"PXR_OnEvent eventName:{eventName}, param:{param}, value:{value}");
-            var contentData = new JsonData()
+            if (PXR_ProjectSetting.GetProjectConfig().isDataCollectionDisabled)
             {
-                [param] = value,
+                return;
+            }
+            //Debug.Log($"PXR_OnEvent eventName:{eventName}, param:{param}, value:{value}");
+            try
+            {
+                var contentData = new JsonData()
+                {
+                    [param] = value,
 
-            };
-            TryInitAppLog();
-            AppLog_onEvent(eventName, contentData.ToJson());
+                };
+                TryInitAppLog();
+                AppLog_onEvent(eventName, contentData.ToJson());
+            }
+            catch (Exception e)
+            {
+                //Debug.LogError($"PXR_OnEvent param:{param}, value={value}, e={e}.");
+            }
 #endif
         }
 
@@ -243,7 +285,13 @@ namespace Unity.XR.PXR
         public static extern void AppLog_init(string appid, string channel);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern void AppLog_setEventVerifyEnabled(uint enabled);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void AppLog_setLogEnabled(uint enabled);
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        public static extern UInt64 AppLog_getDeviceId();
+
         public delegate void LoggerCallback(string message);
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void AppLog_setLogger(LoggerCallback observer);

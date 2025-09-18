@@ -15,6 +15,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+#if PICO_OPENXR_SDK
+using Unity.XR.OpenXR.Features.PICOSupport;
+#endif
+
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -54,7 +58,7 @@ namespace Unity.XR.PXR
         /// </summary>
         public static Action<Guid> MeshRemoved;
         public UnityEvent<Guid> OnSpatialMeshRemoved;
-
+        static List<XRMeshSubsystem> s_SubsystemsReuse = new List<XRMeshSubsystem>();
         void Awake()
         {
             InitMeshColor();
@@ -69,29 +73,46 @@ namespace Unity.XR.PXR
             PXR_Manager.EnableVideoSeeThrough = true;
             InitializePool();
         }
-
+        void GetXRMeshSubsystem()
+        {
+            if (subsystem != null)
+                return;
+            SubsystemManager.GetSubsystems(s_SubsystemsReuse);
+            
+            if (s_SubsystemsReuse.Count == 0)
+                return;
+            subsystem = s_SubsystemsReuse[0];
+            subsystem.Start();
+          
+        }
+        void Update()
+        {
+            GetXRMeshSubsystem();
+        }
         void OnEnable()
         {
-            if (XRGeneralSettings.Instance != null && XRGeneralSettings.Instance.Manager != null)
+            GetXRMeshSubsystem();
+            if (subsystem != null)
             {
-                var pxrLoader = XRGeneralSettings.Instance.Manager.ActiveLoaderAs<PXR_Loader>();
-                if (pxrLoader != null)
+                if (!subsystem.running)
                 {
-                    subsystem = pxrLoader.meshSubsystem;
-                    if (subsystem != null)
-                    {
-                        subsystem.Start();
-
-                        if (subsystem.running)
-                        {
-                            PXR_Manager.SpatialMeshDataUpdated += SpatialMeshDataUpdated;
-                        }
-                    }
-                    else
-                    {
-                        enabled = false;
-                    }
+                    subsystem.Start();
                 }
+                
+
+                if (subsystem.running)
+                {
+#if PICO_OPENXR_SDK
+                    OpenXRExtensions.SpatialMeshDataUpdated += SpatialMeshDataUpdated;
+#else
+                    PXR_Manager.SpatialMeshDataUpdated += SpatialMeshDataUpdated;
+#endif
+                    
+                }
+            }
+            else
+            {
+                enabled = false;
             }
         }
 
@@ -100,7 +121,11 @@ namespace Unity.XR.PXR
             if (subsystem != null && subsystem.running)
             {
                 subsystem.Stop();
-                PXR_Manager.SpatialMeshDataUpdated -= SpatialMeshDataUpdated;
+#if PICO_OPENXR_SDK
+                    OpenXRExtensions.SpatialMeshDataUpdated -= SpatialMeshDataUpdated;
+#else
+                    PXR_Manager.SpatialMeshDataUpdated -= SpatialMeshDataUpdated;
+#endif
             }
         }
 

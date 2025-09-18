@@ -1,4 +1,5 @@
-﻿/*******************************************************************************
+﻿#if !PICO_OPENXR_SDK
+/*******************************************************************************
 Copyright © 2015-2022 PICO Technology Co., Ltd.All rights reserved.  
 
 NOTICE：All information contained herein is, and remains the property of 
@@ -445,8 +446,19 @@ namespace Unity.XR.PXR
                 else if ((deviceDescriptor.characteristics & InputDeviceCharacteristics.Right) != 0)
                     InputSystem.SetDeviceUsage(this, UnityEngine.InputSystem.CommonUsages.RightHand);
             }
+            PXR_Plugin.System.FocusStateAcquired += OnFocusStateAcquired;
         }
 
+        private void OnFocusStateAcquired()
+        {
+            m_WasTracked = false;
+        }
+
+        protected override void OnRemoved()
+        {
+            PXR_Plugin.System.FocusStateAcquired -= OnFocusStateAcquired;
+            base.OnRemoved();
+        }
         /// <summary>
         /// Creates a <see cref="PicoAimHand"/> and adds it to the Input System.
         /// </summary>
@@ -607,3 +619,4 @@ namespace Unity.XR.PXR
 }
 
 #endif //XR_HANDS
+#endif

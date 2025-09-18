@@ -1,3 +1,4 @@
+#if !PICO_OPENXR_SDK
 namespace Unity.XR.PXR.SecureMR
 {
     public class PXR_SecureMRUShortTensorData : PXR_SecureMRTensorData
@@ -10,3 +11,4 @@ namespace Unity.XR.PXR.SecureMR
         }
     }
 }
+#endif

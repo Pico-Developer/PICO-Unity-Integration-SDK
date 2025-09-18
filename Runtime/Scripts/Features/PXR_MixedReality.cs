@@ -1166,13 +1166,6 @@ namespace Unity.XR.PXR
             }, token);
         }
 
-        /// <summary>
-        /// Uploads a spatial anchor to the cloud with progress reporting. The spatial anchor then becomes a shared spatial anchor, which can be downloaded and used by others.
-        /// </summary>
-        /// <param name="anchorHandle">Specifies the handle of the local spatial anchor to upload.</param>
-        /// <param name="progressUpdated">Callback for progress updates (0-100). Pass an action to receive the progress updates.</param>
-        /// <param name="token">Propagates notification that operations should be canceled.</param>
-        /// <returns>Refer to the `PxrResult` enumeration for details. In addition, the handle and UUID of the shared spatial anchor are returned.</returns>
         public static async Task<(PxrResult result, Guid uuid)> UploadSpatialAnchorWithProgressAsync(ulong anchorHandle, Action<int> progressUpdated, CancellationToken token = default)
         {
             return await Task.Run(async () =>
@@ -1274,13 +1267,6 @@ namespace Unity.XR.PXR
             }, token);
         }
 
-        /// <summary>
-        /// Downloads a shared spatial anchor with progress reporting.
-        /// </summary>
-        /// <param name="uuid">Specifies the unique identifier of the shared spatial anchor to download.</param>
-        /// <param name="progressUpdated">Callback for progress updates (0-100). Pass an action to receive the progress updates.</param>
-        /// <param name="token">Propagates notification that operations should be canceled.</param>
-        /// <returns>Refer to the `PxrResult` enumeration for details. In addition, the handle and UUID of the downloaded shared spatial anchor are returned.</returns>
         public static async Task<PxrResult> DownloadSharedSpatialAnchorWithProgressAsync(Guid uuid, Action<int> progressUpdated, CancellationToken token = default)
         {
             return await Task.Run(async () =>

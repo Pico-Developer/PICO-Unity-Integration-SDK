@@ -1,8 +1,8 @@
+#if !PICO_OPENXR_SDK
 using System.Collections;
 using System.Collections.Generic;
 using Unity.XR.PXR.SecureMR;
 using UnityEngine;
-
 public class PXR_SecureMRTextureTensorData : PXR_SecureMRTensorData
 {
     //The texture that will be converted to color and float array
@@ -72,3 +72,4 @@ public class PXR_SecureMRTextureTensorData : PXR_SecureMRTensorData
         
     }
 }
+#endif

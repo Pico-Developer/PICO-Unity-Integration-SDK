@@ -4,6 +4,9 @@ using UnityEngine;
 using Unity.XR.PXR;
 using UnityEngine.UI;
 using System;
+#if PICO_OPENXR_SDK
+using Unity.XR.OpenXR.Features.PICOSupport;
+#endif
 
 public class PXR_BodyTrackingBlock : MonoBehaviour
 {
@@ -18,7 +21,9 @@ public class PXR_BodyTrackingBlock : MonoBehaviour
     private BodyTrackingData bd = new BodyTrackingData();
     private Transform[] boneMapping = new Transform[(int)BodyTrackerRole.ROLE_NUM];
     BodyTrackingStatus bs = new BodyTrackingStatus();
+
     bool istracking = false;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -30,21 +35,29 @@ public class PXR_BodyTrackingBlock : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-      
-
 #if UNITY_ANDROID
         // Update bodytracking pose.
-        if (updateBT )
+        if (updateBT)
         {
-            PXR_MotionTracking.GetBodyTrackingState(ref istracking, ref bs);
 
+#if PICO_OPENXR_SDK
+            BodyTrackingFeature.GetBodyTrackingState(ref istracking, ref bs);
+#else
+            PXR_MotionTracking.GetBodyTrackingState(ref istracking, ref bs);
+#endif
             // If not calibrated, invoked system motion tracker app for calibration.
-            if (bs.stateCode!=BodyTrackingStatusCode.BT_VALID)
+            if (bs.stateCode != BodyTrackingStatusCode.BT_VALID)
             {
                 return;
             }
             // Get the position and orientation data of each body node.
-            int ret = PXR_MotionTracking.GetBodyTrackingData(ref bdi, ref bd);
+            int ret = -1;
+
+#if PICO_OPENXR_SDK
+             ret = BodyTrackingFeature.GetBodyTrackingData(ref bdi, ref bd);
+#else
+             ret = PXR_MotionTracking.GetBodyTrackingData(ref bdi, ref bd);
+#endif
 
             // if the return is successful
             if (ret == 0)
@@ -54,8 +67,10 @@ public class PXR_BodyTrackingBlock : MonoBehaviour
                     var bone = boneMapping[i];
                     if (bone != null)
                     {
-                        bone.transform.localPosition = new Vector3((float)bd.roleDatas[i].localPose.PosX, (float)bd.roleDatas[i].localPose.PosY, (float)bd.roleDatas[i].localPose.PosZ);
-                        bone.transform.localRotation = new Quaternion((float)bd.roleDatas[i].localPose.RotQx, (float)bd.roleDatas[i].localPose.RotQy, (float)bd.roleDatas[i].localPose.RotQz, (float)bd.roleDatas[i].localPose.RotQw);
+                        bone.transform.localPosition = new Vector3((float)bd.roleDatas[i].localPose.PosX, (float)bd.roleDatas[i].localPose.PosY,
+                            (float)bd.roleDatas[i].localPose.PosZ);
+                        bone.transform.localRotation = new Quaternion((float)bd.roleDatas[i].localPose.RotQx, (float)bd.roleDatas[i].localPose.RotQy,
+                            (float)bd.roleDatas[i].localPose.RotQz, (float)bd.roleDatas[i].localPose.RotQw);
                     }
                 }
             }
@@ -67,34 +82,57 @@ public class PXR_BodyTrackingBlock : MonoBehaviour
     public void StartBodyTracking()
     {
         // Query whether the current device supports human body tracking.
+
+#if PICO_OPENXR_SDK
+        supportedBT = BodyTrackingFeature.IsBodyTrackingSupported();
+#else
         PXR_MotionTracking.GetBodyTrackingSupported(ref supportedBT);
+#endif
+
         if (!supportedBT)
         {
             return;
         }
+
         BodyTrackingBoneLength bones = new BodyTrackingBoneLength();
 
         // Start BodyTracking
+
+#if PICO_OPENXR_SDK
+        BodyTrackingFeature.StartBodyTracking(BodyJointSet.BODY_JOINT_SET_BODY_FULL_START, bones);
+        BodyTrackingFeature.GetBodyTrackingState(ref istracking, ref bs);
+#else
         PXR_MotionTracking.StartBodyTracking(BodyJointSet.BODY_JOINT_SET_BODY_FULL_START, bones);
-        
         PXR_MotionTracking.GetBodyTrackingState(ref istracking, ref bs);
+#endif
+
 
         // If not calibrated, invoked system motion tracker app for calibration.
-        if (bs.stateCode!=BodyTrackingStatusCode.BT_VALID)
+        if (bs.stateCode != BodyTrackingStatusCode.BT_VALID)
         {
-            if (bs.message==BodyTrackingMessage.BT_MESSAGE_TRACKER_NOT_CALIBRATED||bs.message==BodyTrackingMessage.BT_MESSAGE_UNKNOWN)
+            if (bs.message == BodyTrackingMessage.BT_MESSAGE_TRACKER_NOT_CALIBRATED || bs.message == BodyTrackingMessage.BT_MESSAGE_UNKNOWN)
             {
+
+#if PICO_OPENXR_SDK
+                BodyTrackingFeature.StartMotionTrackerCalibApp();
+#else
                 PXR_MotionTracking.StartMotionTrackerCalibApp();
+#endif
             }
         }
-        
+
         skeletonJoints.gameObject.SetActive(true);
         updateBT = true;
     }
 
     private void OnDestroy()
     {
+
+#if PICO_OPENXR_SDK
+        int ret = BodyTrackingFeature.StopBodyTracking();
+#else
         int ret = PXR_MotionTracking.StopBodyTracking();
+#endif
         updateBT = false;
     }
 
@@ -141,6 +179,7 @@ public class PXR_BodyTrackingBlock : MonoBehaviour
         {
             return (int)val;
         }
+
         return -1;
     }
 }

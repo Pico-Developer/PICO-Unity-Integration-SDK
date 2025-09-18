@@ -19,13 +19,10 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using LitJson;
-#if PICO_XR
 using Unity.XR.PXR;
-#else
-using Unity.XR.OpenXR.Features.PICOSupport;
-#endif
 using UnityEngine;
 using UnityEngine.XR;
+using KeyValuePair = Unity.XR.PICO.TOBSupport.KeyValuePair;
 
 namespace Unity.XR.PICO.TOBSupport
 {
@@ -63,21 +60,7 @@ namespace Unity.XR.PICO.TOBSupport
         [DllImport("libpxr_xrsdk_native", CallingConvention = CallingConvention.Cdecl)]
         public static extern int getCameraParameters(string token, out RGBCameraParams rgb_Camera_Params);
 
-#if PICO_XR
-        [DllImport(PXR_Plugin.PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-#else
-        [DllImport("openxr_pico", EntryPoint = "PICO_GetPredictedDisplayTime",
-            CallingConvention = CallingConvention.Cdecl)]
-#endif
-        public static extern int Pxr_GetPredictedDisplayTime(ref double predictedDisplayTime);
         
-#if PICO_XR
-         [DllImport(PXR_Plugin.PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-#else
-        [DllImport("openxr_pico", EntryPoint = "PICO_GetPredictedMainSensorState2",
-            CallingConvention = CallingConvention.Cdecl)]
-#endif
-        public static extern int Pxr_GetPredictedMainSensorState2(double predictTimeMs, ref PxrSensorState2 sensorState, ref int sensorFrameIndex);
 
 #if PICO_PLATFORM
             private static AndroidJavaClass unityPlayer;
@@ -1396,7 +1379,12 @@ namespace Unity.XR.PICO.TOBSupport
         private static bool UPxr_GetToken()
         {
             PLog.i(TAG, "GetToken Start");
+            
 #if PICO_PLATFORM
+            if (BAuthLib==null)
+            {
+                UPxr_InitEnterpriseService();
+            }
             token = BAuthLib.CallStatic<string>("featureAuthByToken", currentActivity, "getCameraInfo");
 #endif
             if (string.IsNullOrEmpty(token))
@@ -1636,11 +1624,8 @@ namespace Unity.XR.PICO.TOBSupport
 
         public static double UPxr_GetPredictedDisplayTime()
         {
-            PLog.d(TAG, "UPxr_GetPredictedDisplayTime()");
-            double predictedDisplayTime = 0;
-#if PICO_PLATFORM
-            Pxr_GetPredictedDisplayTime(ref predictedDisplayTime);
-#endif
+            double predictedDisplayTime = PXR_Plugin.System.UPxr_GetPredictedDisplayTime();
+            
             PLog.d(TAG, "UPxr_GetPredictedDisplayTime() predictedDisplayTime：" + predictedDisplayTime);
             return predictedDisplayTime;
         }
@@ -1651,8 +1636,9 @@ namespace Unity.XR.PICO.TOBSupport
             PxrSensorState2 sensorState2 = new PxrSensorState2();
             int sensorFrameIndex = 0;
 #if PICO_PLATFORM
-            Pxr_GetPredictedMainSensorState2(predictTime, ref sensorState2, ref sensorFrameIndex);
+            PXR_Plugin.Pxr_GetPredictedMainSensorState2(predictTime, ref sensorState2, ref sensorFrameIndex);
 #endif
+           
             sensorState.status = sensorState2.status == 3 ? 1 : 0;
             if (isGlobal)
             {
@@ -2874,7 +2860,7 @@ namespace Unity.XR.PICO.TOBSupport
         }
         public delegate void CapturelibCallBack(int type);
         [DllImport("CameraRenderingPlugin")]
-        public static extern void setCameraFrameBuffer(ref CameraFrame t);
+        public static extern void setCameraFrameBuffer(ref Frame t);
         [DllImport("CameraRenderingPlugin")]
         public static extern void setCapturelibCallBack(CapturelibCallBack callback);
         [DllImport("CameraRenderingPlugin")]
@@ -2884,11 +2870,11 @@ namespace Unity.XR.PICO.TOBSupport
         [DllImport("CameraRenderingPlugin")]
         public static extern bool getCameraParametersNew(int width, int height, ref RGBCameraParamsNew paramsNew);
         [DllImport("CameraRenderingPlugin")]
-        public static extern void setCconfigure(bool enableMvHevc,int videoFps);
+        public static extern void setConfigure(bool enableMvHevc,int videoFps);
         [DllImport("CameraRenderingPlugin")]
         public static extern void setConfigureDefault();
         [DllImport("CameraRenderingPlugin")]
-        public static extern bool openCameraAsync();
+        public static extern bool openCameraAsync([In] KeyValuePair[] pairs, int count);
         [DllImport("CameraRenderingPlugin")]
         public static extern bool closeCamera();
         [DllImport("CameraRenderingPlugin")]
@@ -2896,13 +2882,33 @@ namespace Unity.XR.PICO.TOBSupport
 
         [DllImport("CameraRenderingPlugin")]
         public static extern bool startPreview(IntPtr androidSurface,int mode,int width, int height);
+        [DllImport("CameraRenderingPlugin")]
+        public static extern void setConfigureMap([In] KeyValuePair[] pairs, int count);
         // 0: success, -1: error
-        public static bool OpenCameraAsync()
+        public static bool OpenCameraAsync(Dictionary<string, string>setting=null)
         {
             bool value = false;
             if (Application.platform == RuntimePlatform.Android)
             {
-                value = openCameraAsync();
+                if (setting != null)
+                {
+                    // 转换为结构体数组
+                    var pairs = new KeyValuePair[setting.Count];
+                    int index = 0;
+                    foreach (var pair in setting)
+                    {
+                        pairs[index++] = new KeyValuePair 
+                        { 
+                            Key = pair.Key, 
+                            Value = pair.Value 
+                        };
+                    }
+                    value = openCameraAsync(pairs, setting.Count);
+                }
+                else
+                {
+                    value = openCameraAsync(null, 0);
+                }
             }
             return value;
         }
@@ -2918,18 +2924,35 @@ namespace Unity.XR.PICO.TOBSupport
             return value;
         }
         
-        public static void Configure()
+        public static void Configure(Dictionary<string, string> config=null)
         {
             if (Application.platform == RuntimePlatform.Android)
             {
-                setConfigureDefault();
+                if (config==null)
+                {
+                    setConfigureDefault();
+                }
+                else
+                {
+                    var pairs = new KeyValuePair[config.Count];
+                    int index = 0;
+                    foreach (var pair in config)
+                    {
+                        pairs[index++] = new KeyValuePair 
+                        { 
+                            Key = pair.Key, 
+                            Value = pair.Value 
+                        };
+                    }
+                    setConfigureMap(pairs, config.Count);
+                }
             }
         }
         public static void Configure(bool enableMvHevc,int videoFps)
         {
             if (Application.platform == RuntimePlatform.Android)
             {
-                setCconfigure(enableMvHevc, videoFps);
+                setConfigure(enableMvHevc, videoFps);
             }
         }
         public static bool StartPerformance(PXRCaptureRenderMode mode,int width, int height)
@@ -2953,6 +2976,8 @@ namespace Unity.XR.PICO.TOBSupport
         }
         public static bool GetCameraExtrinsics(out double[] leftExtrinsics, out double[] rightExtrinsics)
         {
+            leftExtrinsics = Array.Empty<double>();
+            rightExtrinsics = Array.Empty<double>();
             int leftCount = 0;
             int rightCount = 0;
             IntPtr leftHandle = IntPtr.Zero;
@@ -2966,12 +2991,7 @@ namespace Unity.XR.PICO.TOBSupport
                 Marshal.Copy(rightHandle, rightExtrinsics, 0, rightCount);
                 return ret;
             }
-            else
-            {
-                leftExtrinsics = null;
-                rightExtrinsics = null;
-                return false;
-            }
+            return false;
         }
         public static double[] GetCameraIntrinsics(int width, int height, double h_fov, double v_fov)
         {
@@ -2988,6 +3008,10 @@ namespace Unity.XR.PICO.TOBSupport
         }
         public static Matrix4x4 DoubleArrayToMatrix4x4(double[] array)
         {
+            if (array==null)
+            {
+                return Matrix4x4.identity;
+            }
             if (array.Length != 16)
             {
                 Debug.LogError("The double array must have exactly 16 elements for a 4x4 matrix.");
@@ -3105,6 +3129,290 @@ namespace Unity.XR.PICO.TOBSupport
 #endif
             return LargeSpaceBoundsInfos.ToArray();
         }
+        
+        public static int UPxr_GetHeadTrackingStatus()
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("getHeadTrackingStatus");
+#endif
+            return value;
+        }
+        
+        public static Pose UPxr_GetHeadPose(long predictTime)
+        {
+            Pose value = null;
+#if PICO_PLATFORM
+          string  temp= tobHelper.Call<string>("pbsGetHeadPose",predictTime);
+          if (!string.IsNullOrEmpty(temp))
+          {
+              // Debug.Log("pbsGetHeadPose: headPose = "+temp);
+              value=JsonParser.ParsePoseFromJson(temp);
+          }
+#endif
+            return value;
+        }
+
+        public static List<Pose> UPxr_GetControllerPose(long predictTime)
+        {
+            List<Pose> value = null;
+#if PICO_PLATFORM
+          string  temp= tobHelper.Call<string>("pbsGetControllerPose",predictTime);
+          if (!string.IsNullOrEmpty(temp))
+          {
+              // Debug.Log("pbsGetControllerPose: ControllerPose = "+temp);
+              value=JsonParser.ParsePoseArrayFromJson(temp);
+              if (value==null)
+              {
+                  Debug.Log("pbsGetControllerPose: value=null ");
+              }
+          }
+#endif
+            return value;
+        }
+        public static List<SwiftDevice> UPxr_GetSwiftTrackerDevices()
+        {
+            List<SwiftDevice> value = null;
+#if PICO_PLATFORM
+          string  temp= tobHelper.Call<string>("pbsGetSwiftTrackerDevices");
+          if (!string.IsNullOrEmpty(temp))
+          {
+              // Debug.Log("pbsGetSwiftTrackerDevices: devices = "+temp);
+              value=JsonParser.ParseSwiftDeviceArrayFromJson(temp);
+              if (value==null)
+              {
+                  Debug.Log("pbsGetSwiftTrackerDevices: value=null ");
+              }
+          }
+#endif
+            return value;
+        }
+        
+        public static Pose UPxr_GetSwiftPose(String swiftSN, long predictTime)
+        {
+            Pose value = null;
+#if PICO_PLATFORM
+          string  temp= tobHelper.Call<string>("pbsGetSwiftPose",swiftSN,predictTime);
+          if (!string.IsNullOrEmpty(temp))
+          {
+              // Debug.Log("pbsGetSwiftPose: Pose = "+temp);
+              value=JsonParser.ParsePoseFromJson(temp);
+          }
+#endif
+            return value;
+        }
+        
+        public static IMUData UPxr_GetSwiftIMUData(String swiftSN, long predictTime)
+        {
+            IMUData value = null;
+#if PICO_PLATFORM
+          string  temp= tobHelper.Call<string>("pbsGetSwiftIMUData",swiftSN,predictTime);
+          if (!string.IsNullOrEmpty(temp))
+          {
+              // Debug.Log("pbsGetSwiftIMUData: data = "+temp);
+              value=JsonParser.ParseIMUDataFromJson(temp);
+          }
+#endif
+            return value;
+        }
+        public static IMUData UPxr_GetHeadIMUData(long predictTime)
+        {
+            IMUData value = null;
+#if PICO_PLATFORM
+          string  temp= tobHelper.Call<string>("pbsGetHeadIMUData",predictTime);
+          if (!string.IsNullOrEmpty(temp))
+          {
+              // Debug.Log("pbsGetHeadIMUData: IMUData = "+temp);
+              value=JsonParser.ParseIMUDataFromJson(temp);
+          }
+#endif
+            return value;
+        }
+        
+        public static List<IMUData> UPxr_GetControllerIMUData(long predictTime)
+        {
+            List<IMUData> value = null;
+#if PICO_PLATFORM
+          string  temp= tobHelper.Call<string>("pbsGetControllerIMUData",predictTime);
+          if (!string.IsNullOrEmpty(temp))
+          {
+              // Debug.Log("pbsGetControllerIMUData: IMUDatas = "+temp);
+              value=JsonParser.ParseIMUDatasFromJson(temp);
+              if (value==null)
+              {
+                  Debug.Log("pbsGetControllerIMUData: value=null ");
+              }
+          }
+#endif
+            return value;
+        }
+        
+        public static int UPxr_StartSwiftTrackerPairing(int trackerId)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("startSwiftTrackerPairing",trackerId);
+#endif
+            return value;
+        }
+        public static int UPxr_UnBondSwiftTracker(int trackerId)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("unBondSwiftTracker",trackerId);
+#endif
+            return value;
+        }
+        public static int UPxr_ResetTracking()
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("resetTracking");
+#endif
+            return value;
+        }
+        
+        
+        public static int UPxr_FileSync()
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("fileSync");
+#endif
+            return value;
+        }
+        public static int UPxr_SetFenceColor(int fenceType, int red, int green, int blue, int alpha)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("setFenceColor",fenceType,red,green,blue,alpha);
+#endif
+            return value;
+        }
+        public static int[] UPxr_GetFenceColor(int fenceType)
+        {
+            int[] value = null;
+#if PICO_PLATFORM
+            value= IToBService.Call<int[]>("getFenceColor",fenceType);
+#endif
+            return value;
+        }
+        
+        public static int UPxr_BeginHandTrackingHook()
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("beginHandTrackingHook");
+#endif
+            return value;
+        }
+        public static int UPxr_EndHandTrackingHook()
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("endHandTrackingHook");
+#endif
+            return value;
+        }
+        
+        public static int UPxr_SetHandTrackingHookData(HandStateAlg left, HandStateAlg right)
+        {
+            int value = 1;
+            string leftJson = HandStateAlg.ToJson(left);
+            string rightJson = HandStateAlg.ToJson(right);
+#if PICO_PLATFORM
+            value= tobHelper.Call<int>("pbsSetHandTrackingHookData",leftJson,rightJson);
+          
+#endif
+            return value;
+        }
+        public static int UPxr_SetUsbTetheringStaticIP(String localAddr, String clientAddr)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value= IToBService.Call<int>("setUsbTetheringStaticIP",localAddr,clientAddr);
+#endif
+            return value;
+        }
+        public static string UPxr_GetUsbTetheringStaticIPLocal()
+        {
+            string value = "";
+#if PICO_PLATFORM
+            value= IToBService.Call<string>("getUsbTetheringStaticIPLocal");
+#endif
+            return value;
+        }
+        public static string UPxr_GetUsbTetheringStaticIPClient()
+        {
+            string value = "";
+#if PICO_PLATFORM
+            value= IToBService.Call<string>("getUsbTetheringStaticIPClient");
+#endif
+            return value;
+        }
+        public static int UPxr_SetLargeSpaceMapScale(float scale, Action<int> callback)
+        {
+            int value = -1;
+#if PICO_PLATFORM
+            value=tobHelper.Call<int>("pbsSetLargeSpaceMapScale",scale,new IntCallback(callback));
+#endif
+            return value;
+        }
+        
+        public static PxrSensorState2 UPxr_GetPredictedMainSensorState2(double predictTime)
+        {
+            PxrSensorState2 sensorState2 = new PxrSensorState2();
+            int sensorFrameIndex = 0;
+#if PICO_PLATFORM
+            PXR_Plugin.Pxr_GetPredictedMainSensorState2(predictTime, ref sensorState2, ref sensorFrameIndex);
+#endif
+            return sensorState2;
+        }
+        
+        private const string SLAM_DLL_NAME="libtrackingclient.pxr";
+
+        [DllImport(SLAM_DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr CreateClient();
+        [DllImport(SLAM_DLL_NAME, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int ConvertCoordinate(IntPtr client, ref AlgoResult src,ConvertCoordinateType type,ref AlgoResult dest);
+
+        private static IntPtr SlamDllclient;
+        public static void Create_Client()
+        {
+            SlamDllclient= CreateClient();
+        }
+        public static int ConvertCoordinate(ConvertCoordinateType type,UnityEngine.Pose srcPose,ref UnityEngine.Pose destPose)
+        {
+            AlgoResult src = new AlgoResult();
+            AlgoResult dest = new AlgoResult();
+            src.pose.x = srcPose.position.x;
+            src.pose.y = srcPose.position.y;
+            src.pose.z = srcPose.position.z;
+            src.pose.rw = srcPose.rotation.w;
+            src.pose.rx = srcPose.rotation.x;
+            src.pose.rz = srcPose.rotation.z;
+            src.pose.ry = srcPose.rotation.y;
+            int ret= ConvertCoordinate(SlamDllclient, ref src, type, ref dest);
+            destPose.position = new Vector3((float)dest.pose.x, (float)dest.pose.y, (float)dest.pose.z);
+            destPose.rotation = new Quaternion( (float)dest.pose.rx,(float)dest.pose.ry, (float)dest.pose.rz,(float) dest.pose.rw);
+            float y = PXR_Plugin.System.UPxr_GetConfigFloat(ConfigType.ToDelaSensorY);
+            if (type==ConvertCoordinateType.kLocal2Global)
+            {
+                destPose.position -= y * Vector3.up;
+            }
+            else
+            {
+                destPose.position += y * Vector3.up;
+            }
+           
+            return ret;
+        }
+        public enum ConvertCoordinateType{
+            kLocal2Global = 0,
+            kGlobal2Local = 1,
+        }
+            
+       
     }
    
 }

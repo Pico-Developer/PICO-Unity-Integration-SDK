@@ -812,18 +812,880 @@ namespace Unity.XR.PXR
         XR_DEVICE_BODYTRACKING_ACTION = 26
     }
     
+    public enum SecureContentFlag
+    {
+        SECURE_CONTENT_OFF = 0,
+        SECURE_CONTENT_EXCLUDE_LAYER = 1,
+        SECURE_CONTENT_REPLACE_LAYER = 2
+    }
+
+
+    /// <summary>
+    /// Runtime XR Session State. <see cref="Features.Mock.MockRuntime.TransitionToState"/>
+    /// </summary>
     public enum XrSessionState
     {
+        /// <summary>
+        /// Session State Unknown.
+        /// </summary>
         Unknown = 0,
+
+        /// <summary>
+        /// Session State Idle.
+        /// </summary>
         Idle = 1,
+
+        /// <summary>
+        /// Session State Ready.
+        /// </summary>
         Ready = 2,
+
+        /// <summary>
+        /// Session State Synchronized.
+        /// </summary>
         Synchronized = 3,
+
+        /// <summary>
+        /// Session State Visible.
+        /// </summary>
         Visible = 4,
+
+        /// <summary>
+        /// Session State Focused.
+        /// </summary>
         Focused = 5,
+
+        /// <summary>
+        /// Session State Stopping.
+        /// </summary>
         Stopping = 6,
+
+        /// <summary>
+        /// Session State Loss Pending.
+        /// </summary>
         LossPending = 7,
+
+        /// <summary>
+        /// Session State Exiting.
+        /// </summary>
         Exiting = 8,
     }
+
+
+    /// <summary>
+    /// Values to specify the intended usage of swapchain images.
+    /// </summary>
+    [Flags]
+    public enum XrSwapchainUsageFlags : ulong
+    {
+        /// <summary>
+        /// Specifies that the image may be a color rendering target.
+        /// </summary>
+        XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT = 0x00000001,
+
+        /// <summary>
+        ///  Specifies that the image may be a depth/stencil rendering target.
+        /// </summary>
+        XR_SWAPCHAIN_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT = 0x00000002,
+
+        /// <summary>
+        /// Specifies that the image may be accessed out of order and that access may be via atomic operations.
+        /// </summary>
+        XR_SWAPCHAIN_USAGE_UNORDERED_ACCESS_BIT = 0x00000004,
+
+        /// <summary>
+        /// Specifies that the image may be used as the source of a transfer operation.
+        /// </summary>
+        XR_SWAPCHAIN_USAGE_TRANSFER_SRC_BIT = 0x00000008,
+
+        /// <summary>
+        /// Specifies that the image may be used as the destination of a transfer operation.
+        /// </summary>
+        XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT = 0x00000010,
+
+        /// <summary>
+        /// Specifies that the image may be sampled by a shader.
+        /// </summary>
+        XR_SWAPCHAIN_USAGE_SAMPLED_BIT = 0x00000020,
+
+        /// <summary>
+        /// Specifies that the image may be reinterpreted as another image format
+        /// </summary>
+        XR_SWAPCHAIN_USAGE_MUTABLE_FORMAT_BIT = 0x00000040,
+
+        /// <summary>
+        /// Specifies that the image may be used as a input attachment. (Added by the XR_MND_swapchain_usage_input_attachment_bit extension)
+        /// </summary>
+        XR_SWAPCHAIN_USAGE_INPUT_ATTACHMENT_BIT_MND = 0x00000080,
+
+        /// <summary>
+        ///  Specifies that the image may be used as a input attachment. (Added by the XR_KHR_swapchain_usage_input_attachment_bit extension)
+        /// </summary>
+        XR_SWAPCHAIN_USAGE_INPUT_ATTACHMENT_BIT_KHR = 0x00000080
+    }
+
+
+    /// <summary>
+    /// Convenience type for iterating (read only).
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct XrBaseInStructure
+    {
+        /// <summary>
+        /// The XrStructureType of this structure. This base structure itself has no associated XrStructureType value.
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+    }
+
+    /// <summary>
+    /// Two-dimensional vector.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrVector2f
+    {
+        /// <summary>
+        /// The x coordinate of the vector.
+        /// </summary>
+        public float X;
+
+        /// <summary>
+        /// The y coordinate of the vector.
+        /// </summary>
+        public float Y;
+
+        /// <summary>
+        /// Constructor for two float values.
+        /// </summary>
+        /// <param name="x">The x coordinate of the vector.</param>
+        /// <param name="y">The y coordinate of the vector.</param>
+        public XrVector2f(float x, float y)
+        {
+            this.X = x;
+            this.Y = y;
+        }
+
+        /// <summary>
+        /// Initializes and returns an instance of XrVector2f with the provided parameters.
+        /// </summary>
+        /// <param name="value">Vector2 struct coming from Unity that is translated into the OpenXR XrVector2f struct.</param>
+        public XrVector2f(Vector2 value)
+        {
+            X = value.x;
+            Y = value.y;
+        }
+    };
+
+    /// <summary>
+    /// Three-dimensional vector.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrVector3f
+    {
+        /// <summary>
+        /// The x coordinate of the vector.
+        /// </summary>
+        public float X;
+
+        /// <summary>
+        /// The y coordinate of the vector.
+        /// </summary>
+        public float Y;
+
+        /// <summary>
+        /// The z coordinate of the vector.
+        /// </summary>
+        public float Z;
+
+        /// <summary>
+        /// Initializes and returns an instance of XrVector3f with the provided parameters.
+        /// </summary>
+        /// <param name="x">The x coordinate of the vector.</param>
+        /// <param name="y">The y coordinate of the vector.</param>
+        /// <param name="z">The z coordinate of the vector.</param>
+        public XrVector3f(float x, float y, float z)
+        {
+            this.X = x;
+            this.Y = y;
+            this.Z = -z;
+        }
+
+        /// <summary>
+        /// Initializes and returns an instance of XrVector3f with the provided parameters.
+        /// </summary>
+        /// <param name="value">Vector3 struct coming from Unity that is translated into the OpenXR XrVector3f struct.</param>
+        public XrVector3f(Vector3 value)
+        {
+            X = value.x;
+            Y = value.y;
+            Z = -value.z;
+        }
+    };
+
+    /// <summary>
+    /// Unit Quaternion.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrQuaternionf
+    {
+        /// <summary>
+        /// The x coordinate of the quaternion.
+        /// </summary>
+        public float X;
+
+        /// <summary>
+        /// The y coordinate of the quaternion.
+        /// </summary>
+        public float Y;
+
+        /// <summary>
+        /// The z coordinate of the quaternion.
+        /// </summary>
+        public float Z;
+
+        /// <summary>
+        /// The w coordinate of the quaternion.
+        /// </summary>
+        public float W;
+
+        /// <summary>
+        /// Initializes and returns an instance of XrQuaternionf with the provided parameters.
+        /// </summary>
+        /// <param name="x">The x coordinate of the quaternion.</param>
+        /// <param name="y">The y coordinate of the quaternion.</param>
+        /// <param name="z">The z coordinate of the quaternion.</param>
+        /// <param name="w">The w coordinate of the quaternion.</param>
+        public XrQuaternionf(float x, float y, float z, float w)
+        {
+            this.X = -x;
+            this.Y = -y;
+            this.Z = z;
+            this.W = w;
+        }
+
+        /// <summary>
+        /// Initializes and returns an instance of XrQuaternionf with the provided parameters.
+        /// </summary>
+        /// <param name="quaternion">Quaternion struct coming from Unity that is translated into the OpenXR XrQuaternionf struct.</param>
+        public XrQuaternionf(Quaternion quaternion)
+        {
+            this.X = -quaternion.x;
+            this.Y = -quaternion.y;
+            this.Z = quaternion.z;
+            this.W = quaternion.w;
+        }
+    };
+
+    /// <summary>
+    /// A construct representing a position and orientation within a space, with position expressed in meters, and orientation represented as a unit quaternion.
+    /// <a href="https://registry.khronos.org/OpenXR/specs/1.0/man/html/XrPosef.html">OpenXR Spec</a>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrPosef
+    {
+        /// <summary>
+        /// The orientation/rotation of the pose.
+        /// </summary>
+        public XrQuaternionf Orientation;
+
+        /// <summary>
+        /// The position of the pose.
+        /// </summary>
+        public XrVector3f Position;
+
+        /// <summary>
+        /// Initializes and returns an instance of XrPosef with the provided parameters.
+        /// </summary>
+        /// <param name="vec3">vector3 position.</param>
+        /// <param name="quaternion">quaternion orientation.</param>
+        public XrPosef(Vector3 vec3, Quaternion quaternion)
+        {
+            this.Position = new XrVector3f(vec3);
+            this.Orientation = new XrQuaternionf(quaternion);
+        }
+    };
+
+    /// <summary>
+    /// Creation info for a swapchain.
+    /// <a href="https://registry.khronos.org/OpenXR/specs/1.0/man/html/XrSwapchainCreateInfo.html">OpenXR Spec</a>
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrSwapchainCreateInfo
+    {
+        /// <summary>
+        /// The XrStructureType of this structure.
+        /// <a href="https://registry.khronos.org/OpenXR/specs/1.0/man/html/XrStructureType.html">OpenXR Spec</a>
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain. Can be null.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// Bitmask of XrSwapchainCreateFlagBits describing additional properties of the swapchain.
+        /// <a href="https://registry.khronos.org/OpenXR/specs/1.0/man/html/XrSwapchainCreateFlagBits.html">OpenXR Spec</a>
+        /// </summary>
+        public ulong CreateFlags;
+
+        /// <summary>
+        /// Bitmask of XrSwapchainUsageFlagBits describing the intended usage of the swapchain�s images.
+        /// The usage flags define how the corresponding graphics API objects are created.
+        /// A mismatch may result in swapchain images that do not support the application�s usage.
+        /// <a href="https://registry.khronos.org/OpenXR/specs/1.0/man/html/XrSwapchainUsageFlagBits.html">OpenXR Spec</a>
+        /// </summary>
+        public ulong UsageFlags;
+
+        /// <summary>
+        /// The graphics API-specific texture format identifier.
+        /// Can use OpenXRLayerUtility.GetDefaultColorFormat() to get the default format.
+        /// </summary>
+        public long Format;
+
+        /// <summary>
+        /// The number of sub-data element samples in the image, must not be 0 or greater than the graphics API�s maximum limit.
+        /// </summary>
+        public uint SampleCount;
+
+        /// <summary>
+        /// The width of the image, must not be 0 or greater than the graphics API�s maximum limit.
+        /// </summary>
+        public uint Width;
+
+        /// <summary>
+        /// The height of the image, must not be 0 or greater than the graphics API�s maximum limit.
+        /// </summary>
+        public uint Height;
+
+        /// <summary>
+        /// The number of faces, which can be either 6 (for cubemaps) or 1.
+        /// </summary>
+        public uint FaceCount;
+
+        /// <summary>
+        /// The number of array layers in the image or 1 for a 2D image, must not be 0 or greater than the graphics API�s maximum limit.
+        /// </summary>
+        public uint ArraySize;
+
+        /// <summary>
+        /// Describes the number of levels of detail available for minified sampling of the image, must not be 0 or greater than the graphics APIs maximum limit.
+        /// </summary>
+        public uint MipCount;
+    }
+
+#if XR_COMPOSITION_LAYERS
+
+    /// <summary>
+    /// Specifies options for individual composition layers, and contains a bitwise-OR of zero or more of the bits.
+    /// </summary>
+    [Flags]
+    public enum XrCompositionLayerFlags : ulong
+    {
+        /// <summary>
+        /// Enables chromatic aberration correction when not done by default. This flag has no effect on any known conformant runtime, and is planned for deprecation for OpenXR 1.1
+        /// </summary>
+        CorrectChromaticAberration = 1,
+
+        /// <summary>
+        /// Enables the layer texture alpha channel.
+        /// </summary>
+        SourceAlpha = 2,
+
+        /// <summary>
+        /// Indicates the texture color channels have not been premultiplied by the texture alpha channel.
+        /// </summary>
+        UnPremultipliedAlpha = 4
+    }
+
+    /// <summary>
+    /// Offset in two dimensions
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrOffset2Di
+    {
+        /// <summary>
+        /// The integer offset in the x direction.
+        /// </summary>
+        public int X;
+
+        /// <summary>
+        /// The integer offset in the y direction.
+        /// </summary>
+        public int Y;
+    }
+
+    /// <summary>
+    /// Extent  in two dimensions.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrExtent2Di
+    {
+        /// <summary>
+        /// The integer width of the extent.
+        /// </summary>
+        public int Width;
+
+        /// <summary>
+        /// The integer height of the extent.
+        /// </summary>
+        public int Height;
+    }
+
+    /// <summary>
+    /// Rect in two dimensions, integer values.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrRect2Di
+    {
+        /// <summary>
+        /// The XrOffset2Di specifying the integer rectangle offset.
+        /// </summary>
+        public XrOffset2Di Offset;
+
+        /// <summary>
+        /// The XrExtent2Di specifying the integer rectangle extent.
+        /// </summary>
+        public XrExtent2Di Extent;
+    }
+
+
+    /// <summary>
+    /// Field of view.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrFovf
+    {
+        /// <summary>
+        /// The angle of the left side of the field of view. For a symmetric field of view this value is negative.
+        /// </summary>
+        public float AngleLeft;
+
+        /// <summary>
+        /// The angle of the right side of the field of view.
+        /// </summary>
+        public float AngleRight;
+
+        /// <summary>
+        /// The angle of the top part of the field of view.
+        /// </summary>
+        public float AngleUp;
+
+        /// <summary>
+        /// The angle of the bottom part of the field of view. For a symmetric field of view this value is negative.
+        /// </summary>
+        public float AngleDown;
+    }
+
+    /// <summary>
+    /// Composition layer data describing the associated swapchain.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrSwapchainSubImage
+    {
+        /// <summary>
+        /// The XrSwapchain to be displayed.
+        /// </summary>
+        public ulong Swapchain;
+
+        /// <summary>
+        /// An XrRect2Di representing the valid portion of the image to use, in pixels.
+        /// It also implicitly defines the transform from normalized image coordinates into pixel coordinates.
+        /// The coordinate origin depends on which graphics API is being used.
+        /// See the graphics API extension details for more information on the coordinate origin definition. Note that the compositor may bleed in pixels from outside the bounds in some cases, for instance due to mipmapping.
+        /// </summary>
+        public XrRect2Di ImageRect;
+
+        /// <summary>
+        /// Composition layer data describing the associated swapchain.
+        /// </summary>
+        public uint ImageArrayIndex;
+    }
+
+    /// <summary>
+    /// Composition layer base header.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrCompositionLayerBaseHeader
+    {
+        /// <summary>
+        /// The XrStructureType of this structure. This base structure itself has no associated XrStructureType value
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// Bitmask of XrCompositionLayerFlags describing flags to apply to the layer.
+        /// </summary>
+        public XrCompositionLayerFlags LayerFlags;
+
+        /// <summary>
+        /// The XrSpace in which the layer will be kept stable over time.
+        /// </summary>
+        public ulong Space;
+    }
+
+    /// <summary>
+    /// Quad composition layer.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrCompositionLayerQuad
+    {
+        /// <summary>
+        /// The XrStructureType of this structure.
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// Bitmask of XrCompositionLayerFlags describing flags to apply to the layer.
+        /// </summary>
+        public XrCompositionLayerFlags LayerFlags;
+
+        /// <summary>
+        /// The XrSpace in which the layer will be kept stable over time.
+        /// </summary>
+        public ulong Space;
+
+        /// <summary>
+        /// The XrEyeVisibility for this layer.
+        /// </summary>
+        public uint EyeVisibility;
+
+        /// <summary>
+        /// The image layer XrSwapchainSubImage to use. The swapchain must have been created with a XrSwapchainCreateInfo.faceCount of 1.
+        /// </summary>
+        public XrSwapchainSubImage SubImage;
+
+        /// <summary>
+        /// An XrPosef defining the position and orientation of the quad in the reference frame of the space.
+        /// </summary>
+        public XrPosef Pose;
+
+        /// <summary>
+        /// The width and height of the quad in meters.
+        /// </summary>
+        public XrExtent2Df Size;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrCompositionLayerCylinderKHR
+    {
+        /// <summary>
+        /// The XrStructureType of this structure.
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// Bitmask of XrCompositionLayerFlags describing flags to apply to the layer.
+        /// </summary>
+        public XrCompositionLayerFlags LayerFlags;
+
+        /// <summary>
+        /// The XrSpace in which the layer will be kept stable over time.
+        /// </summary>
+        public ulong Space;
+
+        /// <summary>
+        /// The XrEyeVisibility for this layer.
+        /// </summary>
+        public uint EyeVisibility;
+
+        /// <summary>
+        /// The image layer XrSwapchainSubImage to use. The swapchain must have been created with a XrSwapchainCreateInfo.faceCount of 1.
+        /// </summary>
+        public XrSwapchainSubImage SubImage;
+
+        /// <summary>
+        /// An XrPosef defining the position and orientation of the center point of the view of the cylinder within the reference frame of the space.
+        /// </summary>
+        public XrPosef Pose;
+
+        /// <summary>
+        /// The non-negative radius of the cylinder. Values of zero or floating point positive infinity are treated as an infinite cylinder.
+        /// </summary>
+        public float Radius;
+
+        /// <summary>
+        /// The angle of the visible section of the cylinder, based at 0 radians, in the range of [0, 2π). It grows symmetrically around the 0 radian angle.
+        /// </summary>
+        public float CentralAngle;
+
+        /// <summary>
+        /// The ratio of the visible cylinder section width / height. The height of the cylinder is given by: (cylinder radius × cylinder angle) / aspectRatio.
+        /// </summary>
+        public float AspectRatio;
+    }
+
+    /// <summary>
+    /// Struct containing view projection state.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrView
+    {
+        /// <summary>
+        /// The XrStructureType of this structure.
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// An XrPosef defining the location and orientation of the view in the space specified by the xrLocateViews function.
+        /// </summary>
+        public XrPosef Pose;
+
+        /// <summary>
+        /// The XrFovf for the four sides of the projection.
+        /// </summary>
+        public XrFovf Fov;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrCompositionLayerProjection
+    {
+        /// <summary>
+        /// The XrStructureType of this structure.
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// Bitmask of XrCompositionLayerFlags describing flags to apply to the layer.
+        /// </summary>
+        public XrCompositionLayerFlags LayerFlags;
+
+        /// <summary>
+        /// The XrSpace in which the layer will be kept stable over time.
+        /// </summary>
+        public ulong Space;
+
+        /// <summary>
+        /// The count of views in the views array. This must be equal to the number of view poses returned by xrLocateViews.
+        /// </summary>
+        public uint ViewCount;
+
+        /// <summary>
+        /// The array of type XrCompositionLayerProjectionView containing each projection layer view.
+        /// </summary>
+        public XrCompositionLayerProjectionView* Views;
+    }
+
+    /// <summary>
+    /// Projection layer element
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrCompositionLayerProjectionView
+    {
+        /// <summary>
+        /// The XrStructureType of this structure.
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// An XrPosef defining the location and orientation of this projection element in the space of the corresponding XrCompositionLayerProjectionView.
+        /// </summary>
+        public XrPosef Pose;
+
+        /// <summary>
+        /// The XrFovf for this projection element.
+        /// </summary>
+        public XrFovf Fov;
+
+        /// <summary>
+        /// The image layer XrSwapchainSubImage to use. The swapchain must have been created with a XrSwapchainCreateInfo.faceCount of 1.
+        /// </summary>
+        public XrSwapchainSubImage SubImage;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrCompositionLayerCubeKHR
+    {
+        /// <summary>
+        /// The XrStructureType of this structure. This base structure itself has no associated XrStructureType value
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// Bitmask of XrCompositionLayerFlags describing flags to apply to the layer.
+        /// </summary>
+        public XrCompositionLayerFlags LayerFlags;
+
+        /// <summary>
+        /// The XrSpace in which the layer will be kept stable over time.
+        /// </summary>
+        public ulong Space;
+
+        /// <summary>
+        /// The XrEyeVisibility for this layer.
+        /// </summary>
+        public uint EyeVisibility;
+
+        /// <summary>
+        /// The swapchain, which must have been created with a XrSwapchainCreateInfo.faceCount of 6.
+        /// </summary>
+        public ulong Swapchain;
+
+        /// <summary>
+        /// The image array index, with 0 meaning the first or only array element.
+        /// </summary>
+        public uint ImageArrayIndex;
+
+        /// <summary>
+        /// The orientation of the environment map in the space.
+        /// </summary>
+        public XrQuaternionf Orientation;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrCompositionLayerEquirectKHR
+    {
+        /// <summary>
+        /// The XrStructureType of this structure. This base structure itself has no associated XrStructureType value
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// Bitmask of XrCompositionLayerFlags describing flags to apply to the layer.
+        /// </summary>
+        public XrCompositionLayerFlags LayerFlags;
+
+        /// <summary>
+        /// The XrSpace in which the layer will be kept stable over time.
+        /// </summary>
+        public ulong Space;
+
+        /// <summary>
+        /// The eye represented by this layer.
+        /// </summary>
+        public uint EyeVisibility;
+
+        /// <summary>
+        /// Identifies the image XrSwapchainSubImage to use. The swapchain must have been created with a XrSwapchainCreateInfo.faceCount of 1.
+        /// </summary>
+        public XrSwapchainSubImage SubImage;
+
+        /// <summary>
+        /// An XrPosef defining the position and orientation of the center point of the sphere onto which the equirect image data is mapped, relative to the reference frame of the space.
+        /// </summary>
+        public XrPosef Pose;
+
+        /// <summary>
+        /// The non-negative radius of the sphere onto which the equirect image data is mapped. Values of zero or floating point positive infinity are treated as an infinite sphere.
+        /// </summary>
+        public float Radius;
+
+        /// <summary>
+        /// An XrVector2f indicating a scale of the texture coordinates after the mapping to 2D.
+        /// </summary>
+        public XrVector2f Scale;
+
+        /// <summary>
+        /// An XrVector2f indicating a bias of the texture coordinates after the mapping to 2D.
+        /// </summary>
+        public XrVector2f Bias;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe struct XrCompositionLayerEquirect2KHR
+    {
+        /// <summary>
+        /// The XrStructureType of this structure. This base structure itself has no associated XrStructureType value
+        /// </summary>
+        public uint Type;
+
+        /// <summary>
+        /// Pointer to the next structure in a structure chain.
+        /// </summary>
+        public void* Next;
+
+        /// <summary>
+        /// Bitmask of XrCompositionLayerFlags describing flags to apply to the layer.
+        /// </summary>
+        public XrCompositionLayerFlags LayerFlags;
+
+        /// <summary>
+        /// The XrSpace in which the layer will be kept stable over time.
+        /// </summary>
+        public ulong Space;
+
+        /// <summary>
+        /// The eye represented by this layer.
+        /// </summary>
+        public uint EyeVisibility;
+
+        /// <summary>
+        /// Identifies the image XrSwapchainSubImage to use. The swapchain must have been created with a XrSwapchainCreateInfo.faceCount of 1.
+        /// </summary>
+        public XrSwapchainSubImage SubImage;
+
+        /// <summary>
+        /// An XrPosef defining the position and orientation of the center point of the sphere onto which the equirect image data is mapped, relative to the reference frame of the space.
+        /// </summary>
+        public XrPosef Pose;
+
+        /// <summary>
+        /// The non-negative radius of the sphere onto which the equirect image data is mapped. Values of zero or floating point positive infinity are treated as an infinite sphere.
+        /// </summary>
+        public float Radius;
+
+        /// <summary>
+        /// Defines the visible horizontal angle of the sphere, based at 0 radians, in the range of [0, 2π]. It grows symmetrically around the 0 radian angle.
+        /// </summary>
+        public float CentralHorizontalAngle;
+
+        /// <summary>
+        /// Defines the upper vertical angle of the visible portion of the sphere, in the range of [-π/2, π/2].
+        /// </summary>
+        public float UpperVerticalAngle;
+
+        /// <summary>
+        /// Defines the lower vertical angle of the visible portion of the sphere, in the range of [-π/2, π/2].
+        /// </summary>
+        public float LowerVerticalAngle;
+
+    }
+
+#endif
 
     /// <summary>
     /// The codes that indicates the state of motion tracking features.
@@ -1495,18 +2357,7 @@ namespace Unity.XR.PXR
 
         public override string ToString()
         {
-            return string.Format(" displayTime:{0}",  displayTime);
-        }
-    }
-    public struct BodyTrackingGetDataInfo_
-    {
-        private int apiVersion;
-        /// <summary>The predict time. For example, when it is set to `0.1` second, it means predicting the pose of the tracked node 0.1 seconds ahead.</summary>
-        public long displayTime;
-        
-        public override string ToString()
-        {
-            return string.Format("apiVersion :{0}, displayTime:{1}, flags:{2}", apiVersion, displayTime);
+            return string.Format("displayTime:{0}", displayTime);
         }
     }
     /// <summary>Information about the tracked bone node.</summary>
@@ -1734,6 +2585,8 @@ namespace Unity.XR.PXR
     [StructLayout(LayoutKind.Sequential)]
     public struct ExpandDevicesCustomData
     {
+        private XrStructureType type ;
+        private IntPtr next ;
         /// <summary>The serial number of the external device.</summary>
         public long deviceId;
         /// <summary>The array of the data to be passed through, the maximum number of elements allowed is 15, any exceeding is considered invalid.<summary>
@@ -1857,4 +2710,454 @@ namespace Unity.XR.PXR
     };
     #endregion
 
+    public enum PassthroughColorMapType
+    {
+        None = 0,
+        MonoToRgba = 1,
+        MonoToMono = 2,
+        BrightnessContrastSaturation = 3
+    }
+    public struct PassthroughStyle
+    {
+        public bool enableEdgeColor;
+        public bool enableColorMap;
+        public float TextureOpacityFactor;
+        public Color EdgeColor;
+        public PassthroughColorMapType TextureColorMapType;
+        public uint TextureColorMapDataSize;
+        public IntPtr TextureColorMapData;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Colorf
+    {
+        public float r;
+        public float g;
+        public float b;
+        public float a;
+
+        public override string ToString()
+        {
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "R:{0:F3} G:{1:F3} B:{2:F3} A:{3:F3}", r, g, b, a);
+        }
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct _PassthroughStyle
+    {
+        public uint enableEdgeColor;
+        public uint enableColorMap;
+        public float TextureOpacityFactor;
+        public Colorf EdgeColor;
+        public PassthroughColorMapType TextureColorMapType;
+        public uint TextureColorMapDataSize;
+        public IntPtr TextureColorMapData;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct GeometryInstanceTransform
+    {
+        public PxrPosef pose;
+        public PxrVector3f scale;
+        public bool isFloor;
+        public override string ToString()
+        {
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "Rotation:({0:F3},{1:F3},{2:F3},{3:F3})  Position:({4:F3},{5:F3},{6:F3})  scale:({7},{8},{9})", pose.orientation.x,
+                pose.orientation.y, pose.orientation.z, pose.orientation.w, pose.position.x, pose.position.y,
+                pose.position.z,scale.x,scale.y,scale.z);
+        }
+    };
+    
+    public enum XrReferenceSpaceType
+    {
+        View = 1,
+        Local = 2,
+        Stage = 3,
+        UnboundedMsft = 1000038000,
+        CombinedEyeVarjo = 1000121000,
+        LocalizationMap = 1000139000,
+        LocalFloor = 1000426000,
+        MAX_ENUM = 0x7FFFFFFF
+
+    }
+     /// <summary>
+    /// Hand types.
+    /// </summary>
+    public enum HandType
+    {
+        /// <summary>
+        /// Left hand.
+        /// </summary>
+        HandLeft = 0,
+        /// <summary>
+        /// Right hand.
+        /// </summary>
+        HandRight = 1,
+    }
+
+    /// <summary>
+    /// The current active input device.
+    /// </summary>
+    public enum ActiveInputDevice
+    {
+        /// <summary>
+        /// HMD
+        /// </summary>
+        HeadActive = 0,
+        /// <summary>
+        /// Controllers
+        /// </summary>
+        ControllerActive = 1,
+        /// <summary>
+        /// Hands
+        /// </summary>
+        HandTrackingActive = 2,
+    }
+
+    public struct Vector3f
+    {
+        public float x;
+        public float y;
+        public float z;
+
+        public Vector3 ToVector3()
+        {
+            return new Vector3() { x = x, y = y, z = -z };
+        }
+        public Vector3 ToFloat3()
+        {
+            return new Vector3() { x = x, y = y, z = z };
+        }
+    }
+
+    public struct Quatf
+    {
+        public float x;
+        public float y;
+        public float z;
+        public float w;
+
+        public Quaternion ToQuat()
+        {
+            return new Quaternion() { x = x, y = y, z = -z, w = -w };
+        }
+        public Quaternion ToFloat4()
+        {
+            return new Quaternion() { x = x, y = y, z = z, w = w };
+        }
+    }
+    
+    /// <summary>
+    /// The location of hand joint.
+    /// </summary>
+    public struct Posef
+    {
+        /// <summary>
+        /// The orientation of hand joint.
+        /// </summary>
+        public Quatf Orientation;
+        /// <summary>
+        /// The position of hand joint.
+        /// </summary>
+        public Vector3f Position;
+        public override string ToString()
+        {
+            return string.Format("Orientation :{0}, {1}, {2}, {3}  Position: {4}, {5}, {6}",
+                Orientation.x, Orientation.y, Orientation.z, Orientation.w,
+                Position.x, Position.y, Position.z);
+        }
+    }
+    
+    /// <summary>
+    /// The status of ray and fingers.
+    /// </summary>
+    public enum HandAimStatus : ulong
+    {
+        /// <summary>
+        /// Whether the data is valid.
+        /// </summary>
+        AimComputed = 0x00000001,
+        /// <summary>
+        /// Whether the ray appears.
+        /// </summary>
+        AimRayValid = 0x00000002,
+        /// <summary>
+        /// Whether the index finger pinches.
+        /// </summary>
+        AimIndexPinching = 0x00000004,
+        /// <summary>
+        /// Whether the middle finger pinches.
+        /// </summary>
+        AimMiddlePinching = 0x00000008,
+        /// <summary>
+        /// Whether the ring finger pinches.
+        /// </summary>
+        AimRingPinching = 0x00000010,
+        /// <summary>
+        /// Whether the little finger pinches.
+        /// </summary>
+        AimLittlePinching = 0x00000020,
+        /// <summary>
+        /// Whether the ray touches.
+        /// </summary>
+        AimRayTouched = 0x00000200
+    }
+
+    /// <summary>
+    /// The data about the poses of ray and fingers.
+    /// </summary>
+    public struct HandAimState
+    {
+        /// <summary>
+        /// The status of hand tracking. If it is not `tracked`, confidence will be `0`.
+        /// </summary>
+        public HandAimStatus aimStatus;
+        /// <summary>
+        /// The pose of the ray.
+        /// </summary>
+        public Posef aimRayPose;
+        /// <summary>
+        /// The strength of index finger's pinch.
+        /// </summary>
+        private float pinchStrengthIndex;
+        /// <summary>
+        /// The strength of middle finger's pinch.
+        /// </summary>
+        private float pinchStrengthMiddle;
+        /// <summary>
+        /// The strength of ring finger's pinch.
+        /// </summary>
+        private float pinchStrengthRing;
+        /// <summary>
+        /// The strength of little finger's pinch.
+        /// </summary>
+        private float pinchStrengthLittle;
+        /// <summary>
+        /// The strength of ray's touch.
+        /// </summary>
+        public float touchStrengthRay;
+    }
+
+    /// <summary>
+    /// The data about the status of hand joint location.
+    /// </summary>
+    public enum HandLocationStatus : ulong
+    {
+        /// <summary>
+        /// Whether the joint's orientation is valid.
+        /// </summary>
+        OrientationValid = 0x00000001,
+        /// <summary>
+        /// Whether the joint's position is valid.
+        /// </summary>
+        PositionValid = 0x00000002,
+        /// <summary>
+        /// Whether the joint's orientation is being tracked.
+        /// </summary>
+        OrientationTracked = 0x00000004,
+        /// <summary>
+        /// Whether the joint's position is being tracked.
+        /// </summary>
+        PositionTracked = 0x00000008
+    }
+
+    public enum HandJoint
+    {
+        JointPalm = 0,
+        JointWrist = 1,
+
+        JointThumbMetacarpal = 2,
+        JointThumbProximal = 3,
+        JointThumbDistal = 4,
+        JointThumbTip = 5,
+
+        JointIndexMetacarpal = 6,
+        JointIndexProximal = 7,
+        JointIndexIntermediate = 8,
+        JointIndexDistal = 9,
+        JointIndexTip = 10,
+
+        JointMiddleMetacarpal = 11,
+        JointMiddleProximal = 12,
+        JointMiddleIntermediate = 13,
+        JointMiddleDistal = 14,
+        JointMiddleTip = 15,
+
+        JointRingMetacarpal = 16,
+        JointRingProximal = 17,
+        JointRingIntermediate = 18,
+        JointRingDistal = 19,
+        JointRingTip = 20,
+
+        JointLittleMetacarpal = 21,
+        JointLittleProximal = 22,
+        JointLittleIntermediate = 23,
+        JointLittleDistal = 24,
+        JointLittleTip = 25,
+
+        JointMax = 26
+    }
+
+    /// <summary>
+    /// The data about the location of hand joint.
+    /// </summary>
+    public struct HandJointLocation
+    {
+        /// <summary>
+        /// The status of hand joint location.
+        /// </summary>
+        public HandLocationStatus locationStatus;
+        /// <summary>
+        /// The orientation and position of hand joint.
+        /// </summary>
+        public Posef pose;
+        /// <summary>
+        /// The radius of hand joint.
+        /// </summary>
+        public float radius;
+    }
+
+    /// <summary>
+    /// The data about hand tracking.
+    /// </summary>
+    public struct HandJointLocations
+    {
+        /// <summary>
+        /// The quality level of hand tracking:
+        /// `0`: low
+        /// `1`: high
+        /// </summary>
+        public uint isActive;
+        /// <summary>
+        /// The number of hand joints that the SDK supports. Currenty returns `26`.
+        /// </summary>
+        public uint jointCount;
+        /// <summary>
+        /// The scale of the hand.
+        /// </summary>
+        public float handScale;
+
+        /// <summary>
+        /// The locations (orientation and position) of hand joints.
+        /// </summary>
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = (int)HandJoint.JointMax)]
+        public HandJointLocation[] jointLocations;
+    }
+
+    public enum HandFinger
+    {
+        Thumb = 0,
+        Index = 1,
+        Middle = 2,
+        Ring = 3,
+        Pinky = 4
+    }
+
+    public partial class PXR_Input
+    {
+        /// <summary>Device models.</summary>
+        public enum ControllerDevice
+        {
+            /// <summary>PICO G2.</summary>
+            G2 = 3,
+
+            /// <summary>PICO Neo2.</summary>
+            Neo2,
+
+            /// <summary>PICO Neo3.</summary>
+            Neo3,
+
+            /// <summary>PICO 4.</summary>
+            PICO_4,
+
+            /// <summary>PICO G3.</summary>
+            G3,
+
+            /// <summary>PICO 4 Ultra.</summary>
+            PICO_4U,
+
+            /// <summary>A new device model.</summary>
+            NewController = 10
+        }
+
+        /// <summmary>The controller types.</summary>
+        public enum Controller
+        {
+            /// <summary>Left controller.</summary>
+            LeftController,
+
+            /// <summary>Right controller.</summary>
+            RightController,
+        }
+
+        /// <summary>For specifying the controller(s) to send the haptic data to.</summary>
+        public enum VibrateType
+        {
+            /// <summary>Both controllers.</summary>
+            None = 0,
+
+            /// <summary>The left controller.</summary>
+            LeftController = 1,
+
+            /// <summary>The right controller.</summary>
+            RightController = 2,
+
+            /// <summary>Both controllers.</summary>
+            BothController = 3,
+        }
+
+        /// <summary>Whether to keep the controller vibrating while caching haptic data.</summary>
+        public enum CacheType
+        {
+            /// <summary>Don't cache.</summary>
+            DontCache = 0,
+
+            /// <summary>Cache haptic data and keep vibrating.</summary>
+            CacheAndVibrate = 1,
+
+            /// <summary>Cache haptic data and stop vibrating.</summary>
+            CacheNoVibrate = 2,
+        }
+
+        /// <summary>Whether to enable audio channel inversion. Once audio channel inversion is enabled, the left controller vibrates with the audio data from the right channel, and vice versa.</summary>
+        public enum ChannelFlip
+        {
+            /// <summary>Disable audio channel inversion.</summary>
+            No,
+
+            /// <summary>Enable audio channel inversion.</summary>
+            Yes,
+        }
+
+        /// <summary>Whether to keep the controller vibrating while caching audio-based vibration data.</summary>
+        public enum CacheConfig
+        {
+            /// <summary>Cache audio-based vibration data and keep vibrating.</summary>
+            CacheAndVibrate = 1,
+
+            /// <summary>Cache audio-based vibration data and stop vibrating.</summary>
+            CacheNoVibrate = 2,
+        }
+
+        /// <summary>The status of controllers.</summary>
+        public enum ControllerStatus
+        {
+            /// <summary>The controller is static.</summary>
+            Static = 0,
+
+            /// <summary>The controller is in 6DoF tracking mode.</summary>
+            SixDof,
+
+            /// <summary>The controller is in 3DoF tracking mode.</summary>
+            ThreeDof,
+
+            /// <summary>The controller remains static for a long time and is now in sleep mode.</summary>
+            Sleep,
+
+            /// <summary>The controller collided with something else during 3DoF tracking.</summary>
+            CollidedIn3Dof,
+
+            /// <summary>The controller collided with something else during 6DoF tracking.</summary>
+            CollidedIn6Dof,
+        }
+    }
 }

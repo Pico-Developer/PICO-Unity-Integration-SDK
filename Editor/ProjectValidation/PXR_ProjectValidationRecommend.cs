@@ -18,9 +18,13 @@ using static Unity.XR.CoreUtils.XROrigin;
 using UnityEngine.Rendering.Universal;
 #endif
 
+#if PICO_OPENXR_SDK
+using Unity.XR.OpenXR.Features.PICOSupport;
+#endif
+
 static class PXR_ProjectValidationRecommend
 {
-    const string k_Catergory = "PICO XR Recommend";
+    const string k_Catergory = "PICO Recommend";
 
     [InitializeOnLoadMethod]
     static void AddRecommendRules()
@@ -32,11 +36,15 @@ static class PXR_ProjectValidationRecommend
 #endif
         var androidGlobalRules = new[]
         {
+#region Cross-Platform Validation (PXR & OpenXR)
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = "Set 'Target API Level' to automatic.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return PlayerSettings.Android.targetSdkVersion == AndroidSdkVersions.AndroidApiLevelAuto;
@@ -49,11 +57,14 @@ static class PXR_ProjectValidationRecommend
                     },
                     Error = false
                 },
-                 new BuildValidationRule
+                new BuildValidationRule
                 {
                     Category = k_Catergory,
                     Message = "Set 'Install Location' to automatic.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return PlayerSettings.Android.preferredInstallLocation == AndroidPreferredInstallLocation.Auto;
@@ -69,81 +80,11 @@ static class PXR_ProjectValidationRecommend
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
-                    Message = "Using MRC.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        return PXR_ProjectSetting.GetProjectConfig().openMRC;
-                    },
-                    FixItMessage = "PXR_Manager > 'MRC' set to enable.",
-                    FixIt = () =>
-                    {
-                        PXR_ProjectSetting.GetProjectConfig().openMRC = true;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_MRC);
-                    },
-                    Error = false
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = "Recommended to set system refresh rate to default. After setting, executed based on device rates.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        return GetSettings().systemDisplayFrequency == PXR_Settings.SystemDisplayFrequency.Default;
-                    },
-                    FixItMessage = "Open Project Settings > Player Settings> PICO > Display Refresh Rates: Default.",
-                    FixIt = () =>
-                    {
-                        GetSettings().systemDisplayFrequency = PXR_Settings.SystemDisplayFrequency.Default;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_DisplayRefreshRatesDefault);
-                    },
-                    Error = false
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = "When using Vulkan, it is recommended to check the 'Optimize Buffer Discards' option.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        if (GraphicsDeviceType.OpenGLES3 == PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget)[0])
-                        {
-                            return true;
-                        }
-
-                        return GetSettings().optimizeBufferDiscards;
-                    },
-                    FixItMessage = "Open Project Settings > Player Settings> PICO > 'Optimize Buffer Discards' set to enable.",
-                    FixIt = () =>
-                    {
-                        GetSettings().optimizeBufferDiscards = true;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_VKOptimizeBufferDiscards);
-                    },
-                    Error = false
-               },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = "'Color Space' using Linear.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        return PlayerSettings.colorSpace == ColorSpace.Linear;
-                    },
-                    FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > 'Color Space' set to 'Linear'.",
-                    FixIt = () =>
-                    {
-                        PlayerSettings.colorSpace = ColorSpace.Linear;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_ColorSpaceLinear);
-                    },
-                    Error = false
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
                     Message = "'Graphics Jobs' using disable.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return !PlayerSettings.graphicsJobs;
@@ -159,50 +100,11 @@ static class PXR_ProjectValidationRecommend
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
-                    Message = "When using ETFR/FFR, it is recommended to enable subsampling to improve performance.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        if (PXR_ProjectSetting.GetProjectConfig().recommendSubsamping)
-                        {
-                            return PXR_ProjectSetting.GetProjectConfig().enableSubsampled;
-                        }
-                        return true;
-                    },
-                    FixItMessage = "PXR_Manager > Subsamping set to enable.",
-                    FixIt = () =>
-                    {
-                        PXR_ProjectSetting.GetProjectConfig().enableSubsampled = true;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_FFRSubsampling);
-                    },
-                    Error = false
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
-                    Message = "Using recommended MSAA.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        if (PXR_ProjectSetting.GetProjectConfig().recommendMSAA)
-                        {
-                            return PXR_ProjectSetting.GetProjectConfig().enableRecommendMSAA;
-                        }
-                        return true;
-                    },
-                    FixItMessage = "PXR_Manager > 'Use Recommended MSAA' set to enable.",
-                    FixIt = () =>
-                    {
-                        PXR_ProjectSetting.GetProjectConfig().enableRecommendMSAA = true;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_MSAA);
-                    },
-                    Error = false
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
                     Message = "Using tracking origin mode : Device or Floor.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         List<XROrigin> components = FindComponentsInScene<XROrigin>().Where(component => component.isActiveAndEnabled).ToList();
@@ -231,25 +133,11 @@ static class PXR_ProjectValidationRecommend
                 new BuildValidationRule
                 {
                     Category = k_Catergory,
-                    Message = "Not recommended to use both 'Application SpaceWarp' and 'Content Protect' simultaneously.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
-                    CheckPredicate = () =>
-                    {
-                        return !(PXR_ProjectSetting.GetProjectConfig().useContentProtect && GetSettings().enableAppSpaceWarp);
-                    },
-                    FixItMessage = "Open Project Settings > Player Settings> PICO > Application SpaceWarp: disabled.",
-                    FixIt = () =>
-                    {
-                        GetSettings().enableAppSpaceWarp = false;
-                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_APPSWNoContentProtect);
-                    },
-                    Error = false
-                },
-                new BuildValidationRule
-                {
-                    Category = k_Catergory,
                     Message = "Using recommended 'Texture compression': ETC2 or ASTC.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return EditorUserBuildSettings.androidBuildSubtarget == MobileTextureSubtarget.ASTC ||
@@ -267,7 +155,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using '32-bit Display Buffer*'.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return PlayerSettings.use32BitDisplayBuffer;
@@ -284,7 +175,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using Multithreaded Rendering.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return PlayerSettings.GetMobileMTRendering(recommendedBuildTarget);
@@ -301,7 +195,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using recommended 'Pixel Light Count'.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         if(EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
@@ -324,7 +221,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using recommended Texture Quality.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return QualitySettings.globalTextureMipmapLimit == 0;
@@ -342,7 +242,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using recommended Texture Quality.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return QualitySettings.masterTextureLimit == 0;
@@ -360,7 +263,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using recommended 'Anisotropic Texture'.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return QualitySettings.anisotropicFiltering == AnisotropicFiltering.Enable;
@@ -377,7 +283,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using rendering path: forward.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return EditorGraphicsSettings.GetTierSettings(BuildTargetGroup.Android, Graphics.activeTier).renderingPath == RenderingPath.Forward;
@@ -396,7 +305,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using stereo rendering mode: multiview.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return GetSettings().stereoRenderingModeAndroid == PXR_Settings.StereoRenderingModeAndroid.Multiview;
@@ -413,7 +325,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using Default Contact Offset: 0.01f.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return Physics.defaultContactOffset >= 0.01f;
@@ -430,7 +345,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using Sleep Threshold: 0.005f.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return Physics.sleepThreshold >= 0.005f;
@@ -447,7 +365,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using Default Solver Iterations: 8.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         return Physics.defaultSolverIterations <= 8;
@@ -464,10 +385,13 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = $"A single scene recommended up to 4 compositor layers.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
-                        return FindComponentsInScene<PXR_OverLay>().Where(component => component.isActiveAndEnabled).ToList().Count <= 4;
+                        return FindComponentsInScene<PXR_CompositionLayer>().Where(component => component.isActiveAndEnabled).ToList().Count <= 4;
                     },
                     FixItMessage = "You can click 'Fix' to navigate to the designated developer documentation page and follow the instructions to set it. ",
                     FixIt = () =>
@@ -483,7 +407,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "When using URP, set IntermediateTextureMode.Auto.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         UniversalRenderPipelineAsset universalRenderPipelineAsset = PXR_Utils.GetCurrentURPAsset();
@@ -527,7 +454,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "When using URP, set disable SSAO.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         UniversalRenderPipelineAsset universalRenderPipelineAsset = PXR_Utils.GetCurrentURPAsset();
@@ -576,7 +506,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "When the URP package is installed but not set up and used, it is recommended to use or delete it.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         if (QualitySettings.renderPipeline == null && GraphicsSettings.currentRenderPipeline == null)
@@ -600,7 +533,10 @@ static class PXR_ProjectValidationRecommend
                 {
                     Category = k_Catergory,
                     Message = "Using recommended 'Run Without Focus'.",
-                    IsRuleEnabled = PXR_Utils.IsPXRPluginEnabled,
+                    IsRuleEnabled = ()=>
+                    {
+                        return PXR_Utils.IsPXRValidationEnabled() || PXR_Utils.IsOpenXRValidationEnabled();
+                    },
                     CheckPredicate = () =>
                     {
                         bool isRunInBackgroundEnabled = PlayerSettings.runInBackground;
@@ -616,6 +552,146 @@ static class PXR_ProjectValidationRecommend
                     Error = false
                 },
 #endif
+#endregion
+
+#region PXR Platform Validation
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "Using MRC.",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        return PXR_ProjectSetting.GetProjectConfig().openMRC;
+                    },
+                    FixItMessage = "PXR_Manager > 'MRC' set to enable.",
+                    FixIt = () =>
+                    {
+                        PXR_ProjectSetting.GetProjectConfig().openMRC = true;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_MRC);
+                    },
+                    Error = false
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "Recommended to set system refresh rate to default. After setting, executed based on device rates.",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        return GetSettings().systemDisplayFrequency == PXR_Settings.SystemDisplayFrequency.Default;
+                    },
+                    FixItMessage = "Open Project Settings > Player Settings> PICO > Display Refresh Rates: Default.",
+                    FixIt = () =>
+                    {
+                        GetSettings().systemDisplayFrequency = PXR_Settings.SystemDisplayFrequency.Default;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_DisplayRefreshRatesDefault);
+                    },
+                    Error = false
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When using Vulkan, it is recommended to check the 'Optimize Buffer Discards' option.",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (GraphicsDeviceType.OpenGLES3 == PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget)[0])
+                        {
+                            return true;
+                        }
+
+                        return GetSettings().optimizeBufferDiscards;
+                    },
+                    FixItMessage = "Open Project Settings > Player Settings> PICO > 'Optimize Buffer Discards' set to enable.",
+                    FixIt = () =>
+                    {
+                        GetSettings().optimizeBufferDiscards = true;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_VKOptimizeBufferDiscards);
+                    },
+                    Error = false
+               },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "'Color Space' using Linear.",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        return PlayerSettings.colorSpace == ColorSpace.Linear;
+                    },
+                    FixItMessage = "Open Project Settings > Player Settings > Player> Other Settings > 'Color Space' set to 'Linear'.",
+                    FixIt = () =>
+                    {
+                        PlayerSettings.colorSpace = ColorSpace.Linear;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_ColorSpaceLinear);
+                    },
+                    Error = false
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "When using ETFR/FFR, it is recommended to enable subsampling to improve performance.",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().recommendSubsamping)
+                        {
+                            return PXR_ProjectSetting.GetProjectConfig().enableSubsampled;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "PXR_Manager > Subsamping set to enable.",
+                    FixIt = () =>
+                    {
+                        PXR_ProjectSetting.GetProjectConfig().enableSubsampled = true;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_FFRSubsampling);
+                    },
+                    Error = false
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "Using recommended MSAA.",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        if (PXR_ProjectSetting.GetProjectConfig().recommendMSAA)
+                        {
+                            return PXR_ProjectSetting.GetProjectConfig().enableRecommendMSAA;
+                        }
+                        return true;
+                    },
+                    FixItMessage = "PXR_Manager > 'Use Recommended MSAA' set to enable.",
+                    FixIt = () =>
+                    {
+                        PXR_ProjectSetting.GetProjectConfig().enableRecommendMSAA = true;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_MSAA);
+                    },
+                    Error = false
+                },
+                new BuildValidationRule
+                {
+                    Category = k_Catergory,
+                    Message = "Not recommended to use both 'Application SpaceWarp' and 'Content Protect' simultaneously.",
+                    IsRuleEnabled = PXR_Utils.IsPXRValidationEnabled,
+                    CheckPredicate = () =>
+                    {
+                        return !(PXR_ProjectSetting.GetProjectConfig().useContentProtect && GetSettings().enableAppSpaceWarp);
+                    },
+                    FixItMessage = "Open Project Settings > Player Settings> PICO > Application SpaceWarp: disabled.",
+                    FixIt = () =>
+                    {
+                        GetSettings().enableAppSpaceWarp = false;
+                        PXR_AppLog.PXR_OnEvent(PXR_AppLog.strProjectValidation, PXR_AppLog.strProjectValidation_APPSWNoContentProtect);
+                    },
+                    Error = false
+                },
+#endregion
+
+#region PICO OpenXR Validation
+                
+#endregion   
 
         };
         BuildValidator.AddRules(BuildTargetGroup.Android, androidGlobalRules);

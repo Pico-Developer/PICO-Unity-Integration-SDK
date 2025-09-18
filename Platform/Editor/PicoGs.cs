@@ -58,7 +58,7 @@ namespace Pico.Platform.Editor
             set { PXR_PlatformSetting.Instance.deviceSN = value; }
         }
 
-#if USING_XR_SDK_PICO
+#if USING_XR_SDK_PICO&&!PICO_OPENXR_SDK
         static XRManagerSettings GetXrSettings()
         {
             XRGeneralSettings generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);

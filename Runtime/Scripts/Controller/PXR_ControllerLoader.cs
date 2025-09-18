@@ -99,8 +99,8 @@ namespace Unity.XR.PXR
 #if UNITY_ANDROID && !UNITY_EDITOR
                 LoadResFromJson();
 #endif
-            leftControllerState = PXR_Input.IsControllerConnected(PXR_Input.Controller.LeftController);
-            rightControllerState = PXR_Input.IsControllerConnected(PXR_Input.Controller.RightController);
+            leftControllerState = PXR_Plugin.Controller.UPxr_IsControllerConnected(PXR_Input.Controller.LeftController);
+            rightControllerState = PXR_Plugin.Controller.UPxr_IsControllerConnected(PXR_Input.Controller.RightController);
             if (hand == PXR_Input.Controller.LeftController)
                 RefreshController(PXR_Input.Controller.LeftController);
             if (hand == PXR_Input.Controller.RightController)
@@ -111,7 +111,7 @@ namespace Unity.XR.PXR
         {
             if (hand == PXR_Input.Controller.LeftController)
             {
-                if (PXR_Input.IsControllerConnected(PXR_Input.Controller.LeftController))
+                if (PXR_Plugin.Controller.UPxr_IsControllerConnected(PXR_Input.Controller.LeftController))
                 {
                     if (!leftControllerState)
                     {
@@ -132,7 +132,7 @@ namespace Unity.XR.PXR
 
             if (hand == PXR_Input.Controller.RightController)
             {
-                if (PXR_Input.IsControllerConnected(PXR_Input.Controller.RightController))
+                if (PXR_Plugin.Controller.UPxr_IsControllerConnected(PXR_Input.Controller.RightController))
                 {
                     if (!rightControllerState)
                     {
@@ -154,7 +154,7 @@ namespace Unity.XR.PXR
 
         private void RefreshController(PXR_Input.Controller hand)
         {
-            if (PXR_Input.IsControllerConnected(hand))
+            if (PXR_Plugin.Controller.UPxr_IsControllerConnected(hand))
             {
                 if (systemOrLocal == 0)
                 {

@@ -1,4 +1,5 @@
-﻿/*******************************************************************************
+﻿#if !PICO_OPENXR_SDK
+/*******************************************************************************
 Copyright © 2015-2022 PICO Technology Co., Ltd.All rights reserved.  
 
 NOTICE：All information contained herein is, and remains the property of 
@@ -17,7 +18,6 @@ using UnityEngine;
 
 namespace Unity.XR.PXR
 {
-    public delegate void XrEventDataBufferCallBack(ref XrEventDataBuffer dataBuffer);
     public class PXR_System
     {
         /// <summary>
@@ -86,14 +86,18 @@ namespace Unity.XR.PXR
         {
             return PXR_Plugin.System.UPxr_GetSystemDisplayFrequency();
         }
+        
         /// <summary>
-        /// Gets the available display frequencies
+        /// Gets the available display refresh rates.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>
+        /// The available refresh rates (in Hz).
+        /// </returns>
         public static  float[] GetDisplayFrequenciesAvailable()
         {
             return PXR_Plugin.System.UPxr_GetDisplayFrequenciesAvailable();
         }
+        
         /// <summary>
         /// Gets the predicted status of the sensor.
         /// </summary>
@@ -433,4 +437,4 @@ namespace Unity.XR.PXR
         }
     }
 }
-
+#endif

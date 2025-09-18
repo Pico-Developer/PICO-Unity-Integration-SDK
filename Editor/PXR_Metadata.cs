@@ -39,7 +39,8 @@ namespace Unity.XR.PXR.Editor
 
             private static readonly List<BuildTargetGroup> SupportedBuildTargets = new List<BuildTargetGroup>()
             {
-                BuildTargetGroup.Android
+                BuildTargetGroup.Android,
+                BuildTargetGroup.Standalone
             };
         }
 

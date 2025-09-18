@@ -1,4 +1,5 @@
-﻿/*******************************************************************************
+﻿#if !PICO_OPENXR_SDK
+/*******************************************************************************
 Copyright © 2015-2022 PICO Technology Co., Ltd.All rights reserved.  
 
 NOTICE：All information contained herein is, and remains the property of 
@@ -45,3 +46,4 @@ namespace Unity.XR.PXR
         public float transHoldDuration = 0.022f;
     }
 }
+#endif

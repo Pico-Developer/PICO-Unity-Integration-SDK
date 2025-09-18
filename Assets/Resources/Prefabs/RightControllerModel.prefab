@@ -53,4 +53,4 @@ MonoBehaviour:
   PICO_4U_L: {fileID: 5160734707760153619, guid: d600af752179d4343b26d6d3eab89e8d, type: 3}
   PICO_4U_R: {fileID: 2641197622611298662, guid: ab854e81d8fcde04eb1603f397457afc, type: 3}
   legacyMaterial: {fileID: 2100000, guid: 45c160cca437e8f4b80736d356e92034, type: 2}
-  controllerSimulation: 0
+  controllerSimulation: 4

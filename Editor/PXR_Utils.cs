@@ -16,6 +16,25 @@ using UnityEngine.SceneManagement;
 using static Unity.XR.CoreUtils.XROrigin;
 using UnityEngine.Rendering;
 using UnityEditor.Build;
+using Unity.XR.CoreUtils.Capabilities.Editor;
+using UnityEngine.XR.Management;
+using Unity.XR.CoreUtils.Capabilities;
+
+#if UNITY_OPENXR
+using UnityEngine.XR.OpenXR;
+using UnityEngine.XR.OpenXR.Features;
+
+#if XR_HAND
+using UnityEngine.XR.Hands.OpenXR;
+#endif
+
+#if PICO_OPENXR_SDK
+using Unity.XR.OpenXR.Features.PICOSupport;
+#endif
+
+#endif
+
+
 #if URP
 using UnityEngine.Rendering.Universal;
 #endif
@@ -30,6 +49,15 @@ namespace Unity.XR.PXR
         public const string BuildingBlockPathP = "PICO/PICO Building Blocks/";
         public static string sdkPackageName = "Packages/com.unity.xr.picoxr/";
 
+
+        public static AndroidSdkVersions minSdkVersionInEditor = AndroidSdkVersions.AndroidApiLevel29;
+#if UNITY_2021_2_OR_NEWER
+        public static NamedBuildTarget recommendedBuildTarget = NamedBuildTarget.Android;
+#else
+        public static BuildTargetGroup recommendedBuildTarget = BuildTargetGroup.Android;
+#endif
+
+        #region xr.interaction.toolkit
         public static string xriPackageName = "com.unity.xr.interaction.toolkit";
         public static string xriVersion = "2.5.4";
         public static PackageVersion xriPackageVersion250 = new PackageVersion("2.5.0");
@@ -40,14 +68,6 @@ namespace Unity.XR.PXR
         public static string xriHandsInteractionDemoSampleName = "Hands Interaction Demo";
         public static string xri2HandsSetupPefabName = "XR Interaction Hands Setup";
         public static string xri3HandsSetupPefabName = "XR Origin Hands (XR Rig)";
-
-        public static AndroidSdkVersions minSdkVersionInEditor = AndroidSdkVersions.AndroidApiLevel29;
-#if UNITY_2021_2_OR_NEWER
-        public static NamedBuildTarget recommendedBuildTarget = NamedBuildTarget.Android;
-#else
-        public static BuildTargetGroup recommendedBuildTarget = BuildTargetGroup.Android;
-#endif
-
         public static PackageVersion XRICurPackageVersion
         {
             get
@@ -140,7 +160,9 @@ namespace Unity.XR.PXR
                 }
             }
         }
+        #endregion
 
+        #region xr.hands
         public static string xrHandPackageName = "com.unity.xr.hands";
         public static string xrHandVersion = "1.4.1";
         public static PackageVersion xrHandRecommendedPackageVersion = new PackageVersion("1.3.0");
@@ -164,8 +186,86 @@ namespace Unity.XR.PXR
             }
         }
 
-
         static AddRequest xrHandsPackageAddRequest;
+        public static void InstallOrUpdateHands()
+        {
+            var currentT = DateTime.Now;
+            var endT = currentT + TimeSpan.FromSeconds(3);
+
+            var request = Client.Search(xrHandPackageName);
+            if (request.Status == StatusCode.InProgress)
+            {
+                Debug.Log($"Searching for ({xrHandPackageName}) in Unity Package Registry.");
+                while (request.Status == StatusCode.InProgress && currentT < endT)
+                {
+                    currentT = DateTime.Now;
+                }
+            }
+
+            var addRequest = xrHandPackageName;
+            if (request.Status == StatusCode.Success && request.Result.Length > 0)
+            {
+                var versions = request.Result[0].versions;
+#if UNITY_2022_2_OR_NEWER
+                var recommendedVersion = new PackageVersion(versions.recommended);
+#else
+                var recommendedVersion = new PackageVersion(versions.verified);
+#endif
+                var latestCompatible = new PackageVersion(versions.latestCompatible);
+                if (recommendedVersion < xrHandRecommendedPackageVersion && xrHandRecommendedPackageVersion <= latestCompatible)
+                    addRequest = $"{xrHandPackageName}@{xrHandRecommendedPackageVersion}";
+            }
+
+            xrHandsPackageAddRequest = Client.Add(addRequest);
+            if (xrHandsPackageAddRequest.Error != null)
+            {
+                Debug.LogError($"Package installation error: {xrHandsPackageAddRequest.Error}: {xrHandsPackageAddRequest.Error.message}");
+            }
+        }
+        #endregion
+
+        #region xr.openxr
+        public static string openXRPackageName = "com.unity.xr.openxr";
+        public static PackageVersion openXRPackageVersion182 = new PackageVersion("1.8.2");
+        public static string openXRVersion = "1.7.1";
+
+        public static PackageVersion openXRCurPackageVersion
+        {
+            get
+            {
+                return new PackageVersion(openXRVersion);
+            }
+        }
+        public static string GetPackageVersionSync(string packageName)
+        {
+            var request = Client.List();
+            while (!request.IsCompleted) { }
+            return request.Result.FirstOrDefault(p => p.name == packageName)?.version;
+        }
+
+        public static void EnableHandTrackingFeature()
+        {
+#if XR_HAND && PICO_OPENXR_SDK
+            EnableOpenXRFeature<HandTracking>();
+            EnableOpenXRFeature<UnityEngine.XR.OpenXR.Features.Interactions.HandInteractionProfile>();
+#endif
+        }
+
+#if PICO_OPENXR_SDK
+        public static void EnableOpenXRFeature<T>() where T : OpenXRFeature
+        {
+            var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
+            foreach (var feature in settings.GetFeatures<OpenXRFeature>())
+            {
+                if (feature is T targetFeature && !targetFeature.enabled)
+                {
+                    targetFeature.enabled = true;
+                }
+            }
+        }
+#endif
+
+        #endregion
 
         public static List<T> FindComponentsInScene<T>() where T : Component
         {
@@ -314,6 +414,12 @@ namespace Unity.XR.PXR
                     cameraOrigin.AddComponent<PXR_Manager>();
                 }
 
+                var characterController = cameraOrigin.GetComponent<CharacterController>();
+                if (characterController)
+                {
+                    characterController.enabled = false;
+                }
+
                 if (cameraOrigin.transform.Find("Locomotion/Move"))
                 {
                     cameraOrigin.transform.Find("Locomotion/Move").gameObject.SetActive(false);
@@ -402,55 +508,57 @@ namespace Unity.XR.PXR
             return mainCamera;
         }
 
-        public static void UpdateSamples(string packageName, string sampleDisplayName)
+        public static void SetOneMainCameraInScene()
+        {
+            bool hasOneMainCamera = false;
+            List<Camera> components = FindComponentsInScene<Camera>().Where(component => (component.enabled && component.gameObject.activeSelf)).ToList();
+            if (components.Count == 0)
+            {
+                if (!EditorApplication.ExecuteMenuItem("GameObject/XR/XR Origin (VR)"))
+                {
+                    EditorApplication.ExecuteMenuItem("GameObject/XR/XR Origin (Action-based)");
+                }
+                return;
+            }
+            for (int i = 0; i < components.Count; i++)
+            {
+                GameObject gameObject = components[i].transform.gameObject;
+                if (gameObject.GetComponentsInParent<XROrigin>().Length >= 1 && !hasOneMainCamera)
+                {
+                    if (!gameObject.CompareTag("MainCamera"))
+                    {
+                        gameObject.tag = "MainCamera";
+                    }
+                    gameObject.SetActive(true);
+                    hasOneMainCamera = true;
+                }
+                else
+                {
+                    string newTag = $"Camera{i}";
+                    AddNewTag(newTag);
+                    gameObject.tag = newTag;
+                    gameObject.SetActive(false);
+                    components[i].enabled = false;
+                }
+            }
+        }
+
+        public static bool UpdateSamples(string packageName, string sampleDisplayName)
         {
             Debug.LogError($"Need to import {sampleDisplayName} first! Once completed, click this Block again.");
             bool result = EditorUtility.DisplayDialog($"{sampleDisplayName}", $"It's detected that {sampleDisplayName} has not been imported in the current project. You can choose OK to auto-import it, or Cancel and install it manually. ", "OK", "Cancel");
             if (result)
             {
-                // Get XRI Interaction
                 if (TryFindSample(packageName, string.Empty, sampleDisplayName, out var sample))
                 {
                     sample.Import(Sample.ImportOptions.OverridePreviousImports);
+                    AssetDatabase.Refresh();
+                    return true;
                 }
             }
+            return false;
         }
 
-        public static void InstallOrUpdateHands()
-        {
-            var currentT = DateTime.Now;
-            var endT = currentT + TimeSpan.FromSeconds(3);
-
-            var request = Client.Search(xrHandPackageName);
-            if (request.Status == StatusCode.InProgress)
-            {
-                Debug.Log($"Searching for ({xrHandPackageName}) in Unity Package Registry.");
-                while (request.Status == StatusCode.InProgress && currentT < endT)
-                {
-                    currentT = DateTime.Now;
-                }
-            }
-
-            var addRequest = xrHandPackageName;
-            if (request.Status == StatusCode.Success && request.Result.Length > 0)
-            {
-                var versions = request.Result[0].versions;
-#if UNITY_2022_2_OR_NEWER
-                var recommendedVersion = new PackageVersion(versions.recommended);
-#else
-                var recommendedVersion = new PackageVersion(versions.verified);
-#endif
-                var latestCompatible = new PackageVersion(versions.latestCompatible);
-                if (recommendedVersion < xrHandRecommendedPackageVersion && xrHandRecommendedPackageVersion <= latestCompatible)
-                    addRequest = $"{xrHandPackageName}@{xrHandRecommendedPackageVersion}";
-            }
-
-            xrHandsPackageAddRequest = Client.Add(addRequest);
-            if (xrHandsPackageAddRequest.Error != null)
-            {
-                Debug.LogError($"Package installation error: {xrHandsPackageAddRequest.Error}: {xrHandsPackageAddRequest.Error.message}");
-            }
-        }
 
         public static string minUnityVersion = "2020.3.21f1";
         public static int CompareUnityVersions(string versionA, string versionB)
@@ -466,12 +574,48 @@ namespace Unity.XR.PXR
                 int partB = i < partsB.Length ? int.Parse(partsB[i]) : 0;
 
                 if (partA > partB)
-                    return 1; 
+                    return 1;
                 if (partA < partB)
                     return -1;
             }
 
-            return 0; 
+            return 0;
+        }
+
+        public static bool updateBasedOnCapabilityProfileSelection = false;
+        static PXR_Utils()
+        {
+            CapabilityProfileSelection.SelectionSaved += OnSelectionSaved;
+        }
+
+        private static void OnSelectionSaved()
+        {
+            updateBasedOnCapabilityProfileSelection = true;
+        }
+
+        public static bool IsPXRValidationEnabled()
+        {
+            if (updateBasedOnCapabilityProfileSelection)
+            {
+                return CapabilityProfileSelection.Selected.Any(c => c is PXR_SDKCapability);
+            }
+            return IsPXRPluginEnabled();
+        }
+
+        public static bool IsOpenXRValidationEnabled()
+        {
+            if (updateBasedOnCapabilityProfileSelection)
+            {
+                return CapabilityProfileSelection.Selected.Any(c => c is PXR_OpenXR_SDKCapability);
+            }
+            return IsOpenXRPluginEnabled();
+        }
+
+        public static void ReSetCapabilityProfileSelection()
+        {
+            CapabilityProfileSelection.Clear();
+            CapabilityProfileSelection.Save();
+            updateBasedOnCapabilityProfileSelection = false;
         }
 
         public static bool IsPXRPluginEnabled()
@@ -486,13 +630,32 @@ namespace Unity.XR.PXR
             return managerSettings != null && managerSettings.activeLoaders.Any(loader => loader is PXR_Loader);
         }
 
-        [DidReloadScripts]
+
+        public static bool IsOpenXRPluginEnabled()
+        {
+#if PICO_OPENXR_SDK
+            var generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(
+                BuildTargetGroup.Android);
+            if (generalSettings == null)
+                return false;
+
+            var managerSettings = generalSettings.AssignedSettings;
+
+            return managerSettings != null && managerSettings.activeLoaders.Any(loader => loader is OpenXRLoader);
+#else
+            return false;
+#endif
+        }
+
+        #region Symbols
+        public static string _openxr_xdk = "PICO_OPENXR_SDK";
+
         [InitializeOnLoadMethod]
         public static void IsPicoSpatializerAvailable()
         {
             string name = "PICO_SPATIALIZER";
 #if UNITY_EDITOR
-            string spatializerPath = sdkPackageName + "SpatialAudio/Pico.Spatializer.asmdef";
+            string spatializerPath = sdkPackageName + "SpatialAudio/ByteDance.PICO.XR.Spatializer.asmdef";
             var asmDef = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(spatializerPath);
             if (asmDef == null)
             {
@@ -505,44 +668,77 @@ namespace Unity.XR.PXR
 #endif
         }
 
-        [Obsolete]
         public static bool SetDefineSymbols(string name)
         {
-            string defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
-            //Debug.Log($"SetDefineSymbols : {defines} , targetGroup={EditorUserBuildSettings.selectedBuildTargetGroup}");
-            if (!defines.Contains(name))
+            var buildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            string currentDefines = PlayerSettings.GetScriptingDefineSymbols(buildTarget);
+
+            var defineSymbols = new HashSet<string>(currentDefines.Split(';', StringSplitOptions.RemoveEmptyEntries));
+
+            if (!defineSymbols.Contains(name))
             {
-                defines += ";" + name;
-                PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, defines);
-                //Debug.Log($"Added {name} to scripting define symbols.");
+                defineSymbols.Add(name);
+                string newDefines = string.Join(";", defineSymbols);
+                PlayerSettings.SetScriptingDefineSymbols(buildTarget, newDefines);
+                Debug.Log($"SetDefineSymbols Final define symbols: {newDefines}");
                 return true;
             }
-            else
-            {
-                //Debug.Log($"{name} already exists.");
-                return false;
-            }
+            return false;
         }
 
-        [Obsolete]
         public static void RemoveDefineSymbol(string name)
         {
-            string currentDefines = PlayerSettings.GetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            var buildTarget = NamedBuildTarget.FromBuildTargetGroup(EditorUserBuildSettings.selectedBuildTargetGroup);
+            string currentDefines = PlayerSettings.GetScriptingDefineSymbols(buildTarget);
 
-            Debug.Log($"RemoveDefineSymbol : {currentDefines} , targetGroup={EditorUserBuildSettings.selectedBuildTargetGroup}");
-            string[] definesArray = currentDefines.Split(';');
-            List<string> definesList = new List<string>(definesArray);
+            var defineSymbols = new HashSet<string>(currentDefines.Split(';', StringSplitOptions.RemoveEmptyEntries));
 
-            if (definesList.Contains(name))
+            if (defineSymbols.Remove(name))
             {
-                definesList.Remove(name);
+                string newDefines = string.Join(";", defineSymbols);
+                PlayerSettings.SetScriptingDefineSymbols(buildTarget, newDefines);
+            }
+        }
+
+        public static bool UpdateSDKSymbols()
+        {
+            XRGeneralSettings generalSettings = XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
+            if (generalSettings == null) return false;
+            var assignedSettings = generalSettings.AssignedSettings;
+            if (assignedSettings == null) return false;
+
+            string[] defineSymbols = PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.Android).Split(';');
+            List<string> defineSymbolsList = new List<string>(defineSymbols);
+
+            bool modified = false;
+            foreach (XRLoader loader in assignedSettings.activeLoaders)
+            {
+#if UNITY_OPENXR
+                if (loader is OpenXRLoader)
+                {
+                    if (!defineSymbolsList.Contains(_openxr_xdk))
+                    {
+                        defineSymbolsList.Add(_openxr_xdk);
+                        modified = true;
+                    }
+                }
+#endif
+                if (loader is PXR_Loader)
+                {
+                    modified |= defineSymbolsList.Remove(PXR_Utils._openxr_xdk);
+                }
             }
 
-            string newDefines = string.Join(";", definesList.ToArray());
-
-            PlayerSettings.SetScriptingDefineSymbolsForGroup(EditorUserBuildSettings.selectedBuildTargetGroup, newDefines);
-            Debug.Log($"Removed {name} from scripting define symbols.");
+            if (modified)
+            {
+                PXR_Utils.ReSetCapabilityProfileSelection();
+                string finalSymbols = string.Join(";", defineSymbolsList);
+                PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.Android, finalSymbols);
+                return true;
+            }
+            return false;
         }
+        #endregion
 
 #if URP
         public static UniversalRenderPipelineAsset GetCurrentURPAsset()
@@ -560,5 +756,22 @@ namespace Unity.XR.PXR
             return universalRenderPipelineAsset;
         }
 #endif
+
+        public static void DisableHDR()
+        {
+#if URP
+            if (QualitySettings.renderPipeline != null)
+            {
+                UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)QualitySettings.renderPipeline;
+                universalRenderPipelineAsset.supportsHDR = false;
+
+            }
+            else if (GraphicsSettings.currentRenderPipeline != null)
+            {
+                UniversalRenderPipelineAsset universalRenderPipelineAsset = (UniversalRenderPipelineAsset)GraphicsSettings.defaultRenderPipeline;
+                universalRenderPipelineAsset.supportsHDR = false;
+            }
+#endif
+        }
     }
 }

@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-#if PICO_XR
 using Unity.XR.PXR;
-#else
-using Unity.XR.OpenXR.Features.PICOSupport;
-#endif
 using UnityEngine;
 
 namespace Unity.XR.PICO.TOBSupport
@@ -154,13 +150,22 @@ namespace Unity.XR.PICO.TOBSupport
         public long time; //
     }
 
+    // [StructLayout(LayoutKind.Sequential)]
+    // public struct CameraFrame
+    // {
+    //     public UInt32 width; // width
+    //     public UInt32 height; // height
+    //     public UInt32 size;
+    //     public IntPtr data; // image data 
+    //     public UInt64 time; //
+    // }
     [StructLayout(LayoutKind.Sequential)]
-    public struct CameraFrame
+    public struct KeyValuePair
     {
-        public UInt32 width; // width
-        public UInt32 height; // height
-        public UInt32 size;
-        public IntPtr data; // image data 
-        public UInt64 time; //
+        [MarshalAs(UnmanagedType.LPStr)]
+        public string Key;
+        
+        [MarshalAs(UnmanagedType.LPStr)]
+        public string Value;
     }
 }

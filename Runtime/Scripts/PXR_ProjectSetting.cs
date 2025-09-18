@@ -41,7 +41,6 @@ namespace Unity.XR.PXR
         public bool sceneCapture;
         public bool sharedAnchor;
         public bool spatialMesh;
-        public bool secureMR;
         public PxrMeshLod meshLod;
         public bool superResolution;
         public bool normalSharpening;
@@ -58,7 +57,12 @@ namespace Unity.XR.PXR
         public bool validationFFREnabled;
         public bool validationETFREnabled;
         #endregion
+        
+        #region portal
         public bool portalInited;
+        public bool isDataCollectionDisabled;
+        public int portalFirstSelected;
+        #endregion 
 
         public static PXR_ProjectSetting GetProjectConfig()
         {
@@ -103,8 +107,9 @@ namespace Unity.XR.PXR
                 projectConfig.validationFFREnabled = false;
                 projectConfig.validationETFREnabled = false;
                 projectConfig.portalInited = false;
+                projectConfig.isDataCollectionDisabled = false;
+                projectConfig.portalFirstSelected = 0;
                 projectConfig.meshLod = PxrMeshLod.Low;
-                projectConfig.secureMR = false;
 
                 string path = Application.dataPath + "/Resources";
                 if (!Directory.Exists(path))

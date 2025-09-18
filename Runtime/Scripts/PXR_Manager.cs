@@ -19,6 +19,7 @@ using UnityEngine.XR;
 using UnityEngine.XR.Management;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Unity.XR.CoreUtils;
 
 namespace Unity.XR.PXR
 {
@@ -144,6 +145,21 @@ namespace Unity.XR.PXR
         [HideInInspector]
         public bool useRecommendedAntiAliasingLevel = true;
 
+        [HideInInspector]
+        public bool usePremultipliedAlpha = false;
+
+        // LayerBlend
+        [HideInInspector]
+        public bool useLayerBlend = false;
+        [HideInInspector]
+        public PxrBlendFactor srcColor = PxrBlendFactor.PxrBlendFactorOne;
+        [HideInInspector]
+        public PxrBlendFactor dstColor = PxrBlendFactor.PxrBlendFactorOne;
+        [HideInInspector]
+        public PxrBlendFactor srcAlpha = PxrBlendFactor.PxrBlendFactorOne;
+        [HideInInspector]
+        public PxrBlendFactor dstAlpha = PxrBlendFactor.PxrBlendFactorOne;
+
         public static event Action<PxrSpatialMapSizeLimitedReason> SpatialMapSizeLimited;
         public static event Action<PxrEventAutoRoomCaptureUpdated> AutoRoomCaptureUpdated;
         public static event Action<PxrEventSenseDataProviderStateChanged> SenseDataProviderStateChanged;
@@ -180,13 +196,6 @@ namespace Unity.XR.PXR
 
         void Awake()
         {
-            //version log
-            Debug.Log("PXRLog XR Platform----SDK Version:" + PXR_Plugin.System.UPxr_GetSDKVersion());
-
-            //log level
-            int logLevel = PXR_Plugin.System.UPxr_GetConfigInt(ConfigType.UnityLogLevel);
-            Debug.Log("PXRLog XR Platform----SDK logLevel:" + logLevel);
-            PLog.logLevel = (PLog.LogLevel)logLevel;
             eyeCamera = new Camera[3];
             Camera[] cam = gameObject.GetComponentsInChildren<Camera>();
             for (int i = 0; i < cam.Length; i++)
@@ -205,9 +214,16 @@ namespace Unity.XR.PXR
                 }
             }
 
+#if PICO_OPENXR_SDK
+#else
+            //version log
+            Debug.Log("PXRLog XR Platform----SDK Version:" + PXR_Plugin.System.UPxr_GetSDKVersion());
+
+            //log level
+            int logLevel = PXR_Plugin.System.UPxr_GetConfigInt(ConfigType.UnityLogLevel);
+            Debug.Log("PXRLog XR Platform----SDK logLevel:" + logLevel);
+            PLog.logLevel = (PLog.LogLevel)logLevel;
             PXR_Plugin.System.UPxr_EnableEyeTracking(eyeTracking);
-            PXR_Plugin.System.UPxr_EnableFaceTracking(faceTracking);
-            PXR_Plugin.System.UPxr_EnableLipSync(lipsyncTracking);
 
             StartCoroutine("SetFoveationLevel");
 
@@ -232,33 +248,25 @@ namespace Unity.XR.PXR
                 }
             }
 
-            if (eyeTracking)
-            {
-                PXR_Plugin.MotionTracking.UPxr_WantEyeTrackingService();
-            }
-            if (faceTracking || lipsyncTracking)
-            {
-                PXR_Plugin.MotionTracking.UPxr_WantFaceTrackingService();
-            }
-            if (bodyTracking)
-            {
-                PXR_Plugin.MotionTracking.UPxr_WantBodyTrackingService();
-            }
-
             Debug.LogFormat(TAG_MRC + "Awake openMRC = {0} ,MRCInitSucceed = {1}.", openMRC, initMRCSucceed);
             PXR_Plugin.System.UPxr_LogSdkApi("pico_msaa|" + QualitySettings.antiAliasing.ToString());
-        }
+#endif
 
+            PXR_Plugin.Render.UPxr_EnablePremultipliedAlpha(usePremultipliedAlpha);
+            PxrLayerBlend layerBlend = new PxrLayerBlend();
+            layerBlend.srcColor = srcColor;
+            layerBlend.dstColor = dstColor;
+            layerBlend.srcAlpha = srcAlpha;
+            layerBlend.dstAlpha = dstAlpha;
+            PXR_Plugin.Render.UPxr_SetLayerBlend(useLayerBlend, layerBlend);
+        }
+#if !PICO_OPENXR_SDK
         IEnumerator SetFoveationLevel()
         {
             int num = 3;
             bool result;
             do
             {
-                if (eyeFoveationLevel == FoveationLevel.None&&foveationLevel == FoveationLevel.None)
-                {
-                    yield break;
-                }
                 if (FoveatedRenderingMode.EyeTrackedFoveatedRendering == foveatedRenderingMode)
                 {
                     result = PXR_FoveationRendering.SetFoveationLevel(eyeFoveationLevel, true);
@@ -272,9 +280,11 @@ namespace Unity.XR.PXR
                 yield return new WaitForSeconds(1);
             } while (!result && num-- > 0);
         }
-
+#endif
         void OnApplicationPause(bool pause)
         {
+#if PICO_OPENXR_SDK
+#else
             if (!pause)
             {
                 PXR_Plugin.Boundary.UPxr_SetSeeThroughBackground(EnableVideoSeeThrough);
@@ -284,6 +294,8 @@ namespace Unity.XR.PXR
                     isNeedResume = false;
                 }
             }
+#endif
+
         }
 
         private void OnApplicationQuit()
@@ -320,16 +332,22 @@ namespace Unity.XR.PXR
 #if UNITY_EDITOR
             Application.targetFrameRate = 72;
 #endif
+#if PICO_OPENXR_SDK
+#else
             PXR_Plugin.Controller.UPxr_SetControllerDelay();
 
             if (adaptiveResolution)
             {
                 XRSettings.eyeTextureResolutionScale = maxEyeTextureScale;
             }
+#endif
+            
         }
 
         void Update()
         {
+#if PICO_OPENXR_SDK
+#else
             if (openMRC && initMRCSucceed)
             {
                 UpdateMRCCam();
@@ -340,9 +358,7 @@ namespace Unity.XR.PXR
             {
                 UpdateAdaptiveResolution();
             }
-
-            //pollEvent
-            // PollEvent();
+#endif
         }
 
         void UpdateAdaptiveResolution()
@@ -363,6 +379,8 @@ namespace Unity.XR.PXR
 
         void OnEnable()
         {
+
+#if !PICO_OPENXR_SDK
             if (PXR_OverLay.Instances.Count > 0)
             {
                 if (Camera.main.gameObject.GetComponent<PXR_OverlayManager>() == null)
@@ -382,6 +400,29 @@ namespace Unity.XR.PXR
                     }
                 }
             }
+#endif
+
+
+            if (PXR_CompositionLayer.Instances.Count > 0)
+            {
+                if (Camera.main.gameObject.GetComponent<PXR_CompositionLayerManager>() == null)
+                {
+                    Camera.main.gameObject.AddComponent<PXR_CompositionLayerManager>();
+                }
+
+                foreach (var layer in PXR_CompositionLayer.Instances)
+                {
+                    if (eyeCamera[0] != null && eyeCamera[0].enabled)
+                    {
+                        layer.RefreshCamera(eyeCamera[0], eyeCamera[0]);
+                    }
+                    else if (eyeCamera[1] != null && eyeCamera[1].enabled)
+                    {
+                        layer.RefreshCamera(eyeCamera[1], eyeCamera[2]);
+                    }
+                }
+            }
+            
             if (openMRC)
             {
                 PXR_Plugin.System.MRCStateChangedAction += OnMRCStateChanged;
@@ -476,26 +517,26 @@ namespace Unity.XR.PXR
 
                 case XrStructureType.XR_TYPE_EVENT_DATA_AUTO_SCENE_CAPTURE_UPDATE_PICO:
                 {
-                        if (AutoRoomCaptureUpdated != null)
+                    if (AutoRoomCaptureUpdated != null)
+                    {
+                        PxrEventAutoRoomCaptureUpdated info = new PxrEventAutoRoomCaptureUpdated()
                         {
-                            PxrEventAutoRoomCaptureUpdated info = new PxrEventAutoRoomCaptureUpdated()
-                            {
-                                state = (PxrSpatialSceneCaptureStatus)BitConverter.ToUInt32(eventDB.data, 0),
-                                msg = BitConverter.ToUInt32(eventDB.data, 4),
-                            };
+                            state = (PxrSpatialSceneCaptureStatus)BitConverter.ToUInt32(eventDB.data, 0),
+                            msg = BitConverter.ToUInt32(eventDB.data, 4),
+                        };
                             
-                            AutoRoomCaptureUpdated(info);
-                        }
+                        AutoRoomCaptureUpdated(info);
                     }
+                }
                     break;
                 case XrStructureType.XR_TYPE_EVENT_DATA_SPATIAL_MAP_SIZE_LIMITED_PICO:
+                {
+                    if (SpatialMapSizeLimited != null)
                     {
-                        if (SpatialMapSizeLimited != null)
-                        {
-                            var reason = (PxrSpatialMapSizeLimitedReason)BitConverter.ToInt32(eventDB.data, 0);
-                            SpatialMapSizeLimited(reason);
-                        }
+                        var reason = (PxrSpatialMapSizeLimitedReason)BitConverter.ToInt32(eventDB.data, 0);
+                        SpatialMapSizeLimited(reason);
                     }
+                }
                     break;
             }
         }
@@ -652,9 +693,9 @@ namespace Unity.XR.PXR
             if (!initMRCSucceed)
             {
                 layerParam.layerId = LAYER_MRC;
-                layerParam.layerShape = PXR_OverLay.OverlayShape.Quad;
-                layerParam.layerType = PXR_OverLay.OverlayType.Overlay;
-                layerParam.layerLayout = PXR_OverLay.LayerLayout.Stereo;
+                layerParam.layerShape = PXR_CompositionLayer.OverlayShape.Quad;
+                layerParam.layerType = PXR_CompositionLayer.OverlayType.Overlay;
+                layerParam.layerLayout = PXR_CompositionLayer.LayerLayout.Stereo;
                 layerParam.width = (uint)cameraInfo.width;
                 layerParam.height = (uint)cameraInfo.height;
                 layerParam.sampleCount = 1;
@@ -670,17 +711,17 @@ namespace Unity.XR.PXR
                 {
                     if (ColorSpace.Linear == QualitySettings.activeColorSpace)
                     {
-                        layerParam.format = (UInt64)PXR_OverLay.ColorForamt.VK_FORMAT_R8G8B8A8_SRGB;
+                        layerParam.format = (UInt64)PXR_CompositionLayer.ColorForamt.VK_FORMAT_R8G8B8A8_SRGB;
                     }
                     else
                     {
-                        layerParam.format = (UInt64)PXR_OverLay.ColorForamt.VK_FORMAT_R8G8B8A8_UNORM;
+                        layerParam.format = (UInt64)PXR_CompositionLayer.ColorForamt.VK_FORMAT_R8G8B8A8_UNORM;
                         textureM.SetFloat("_Gamma", 2.2f);
                     }
                 }
                 else
                 {
-                    layerParam.format = (UInt64)PXR_OverLay.ColorForamt.GL_SRGB8_ALPHA8;
+                    layerParam.format = (UInt64)PXR_CompositionLayer.ColorForamt.GL_SRGB8_ALPHA8;
                 }
                 PXR_Plugin.Render.UPxr_CreateLayerParam(layerParam);
 
@@ -787,7 +828,7 @@ namespace Unity.XR.PXR
 
             PxrLayerQuad2 layerSubmit = new PxrLayerQuad2();
             layerSubmit.header.layerId = LAYER_MRC;
-            layerSubmit.header.layerShape = PXR_OverLay.OverlayShape.Quad;
+            layerSubmit.header.layerShape = PXR_CompositionLayer.OverlayShape.Quad;
             layerSubmit.header.layerFlags = (UInt32)PxrLayerSubmitFlags.PxrLayerFlagMRCComposition;
             layerSubmit.header.colorScaleX = 1.0f;
             layerSubmit.header.colorScaleY = 1.0f;
@@ -995,5 +1036,7 @@ namespace Unity.XR.PXR
             PXR_Plugin.Sensor.UPxr_HMDUpdateSwitch(!enable);
         }
         #endregion
+        
+       
     }
 }

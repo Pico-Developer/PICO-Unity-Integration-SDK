@@ -1,3 +1,4 @@
+#if !PICO_OPENXR_SDK
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -27,4 +28,4 @@ namespace Unity.XR.PXR.SecureMR
         }
     }
 }
-
+#endif

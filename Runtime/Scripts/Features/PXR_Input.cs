@@ -1,4 +1,5 @@
-﻿/*******************************************************************************
+﻿#if !PICO_OPENXR_SDK
+/*******************************************************************************
 Copyright © 2015-2022 PICO Technology Co., Ltd.All rights reserved.  
 
 NOTICE：All information contained herein is, and remains the property of 
@@ -17,95 +18,8 @@ using UnityEngine.XR;
 
 namespace Unity.XR.PXR
 {
-    public static class PXR_Input
+    public static partial class PXR_Input
     {
-        /// <summary>Device models.</summary>
-        public enum ControllerDevice
-        {
-            /// <summary>PICO G2.</summary>
-            G2 = 3,
-            /// <summary>PICO Neo2.</summary>
-            Neo2,
-            /// <summary>PICO Neo3.</summary>
-            Neo3,
-            /// <summary>PICO 4.</summary>
-            PICO_4,
-            /// <summary>PICO G3.</summary>
-            G3,
-            /// <summary>PICO 4 Ultra.</summary>
-            PICO_4U,
-            /// <summary>A new device model.</summary>
-            NewController = 10
-        }
-
-        /// <summmary>The controller types.</summary>
-        public enum Controller
-        {
-            /// <summary>Left controller.</summary>
-            LeftController,
-            /// <summary>Right controller.</summary>
-            RightController,
-        }
-
-        /// <summary>For specifying the controller(s) to send the haptic data to.</summary>
-        public enum VibrateType
-        {
-            /// <summary>Both controllers.</summary>
-            None = 0,
-            /// <summary>The left controller.</summary>
-            LeftController = 1,
-            /// <summary>The right controller.</summary>
-            RightController = 2,
-            /// <summary>Both controllers.</summary>
-            BothController = 3,
-        }
-
-        /// <summary>Whether to keep the controller vibrating while caching haptic data.</summary>
-        public enum CacheType
-        {
-            /// <summary>Don't cache.</summary>
-            DontCache = 0,
-            /// <summary>Cache haptic data and keep vibrating.</summary>
-            CacheAndVibrate = 1,
-            /// <summary>Cache haptic data and stop vibrating.</summary>
-            CacheNoVibrate = 2,
-        }
-
-        /// <summary>Whether to enable audio channel inversion. Once audio channel inversion is enabled, the left controller vibrates with the audio data from the right channel, and vice versa.</summary>
-        public enum ChannelFlip
-        {
-            /// <summary>Disable audio channel inversion.</summary>
-            No,
-            /// <summary>Enable audio channel inversion.</summary>
-            Yes,
-        }
-
-        /// <summary>Whether to keep the controller vibrating while caching audio-based vibration data.</summary>
-        public enum CacheConfig
-        {
-            /// <summary>Cache audio-based vibration data and keep vibrating.</summary>
-            CacheAndVibrate = 1,
-            /// <summary>Cache audio-based vibration data and stop vibrating.</summary>
-            CacheNoVibrate = 2,
-        }
-
-        /// <summary>The status of controllers.</summary>
-        public enum ControllerStatus
-        {
-            /// <summary>The controller is static.</summary>
-            Static = 0,
-            /// <summary>The controller is in 6DoF tracking mode.</summary>
-            SixDof,
-            /// <summary>The controller is in 3DoF tracking mode.</summary>
-            ThreeDof,
-            /// <summary>The controller remains static for a long time and is now in sleep mode.</summary>
-            Sleep,
-            /// <summary>The controller collided with something else during 3DoF tracking.</summary>
-            CollidedIn3Dof,
-            /// <summary>The controller collided with something else during 6DoF tracking.</summary>
-            CollidedIn6Dof,
-        }
-
         /// <summary>Gets the status of the specified controller.</summary>
         /// <param name="controller">Specifies the controller to get status for: `LeftController` or `RightController`.</param>
         /// <returns>The status of the specified controller:
@@ -180,17 +94,7 @@ namespace Unity.XR.PXR
         /// </returns>
         public static bool IsControllerConnected(Controller controller)
         {
-            var state = false;
-            switch (controller)
-            {
-                case Controller.LeftController:
-                    InputDevices.GetDeviceAtXRNode(XRNode.LeftHand).TryGetFeatureValue(PXR_Usages.controllerStatus, out state);
-                    return state;
-                case Controller.RightController:
-                    InputDevices.GetDeviceAtXRNode(XRNode.RightHand).TryGetFeatureValue(PXR_Usages.controllerStatus, out state);
-                    return state;
-            }
-            return state;
+            return PXR_Plugin.Controller.UPxr_IsControllerConnected(controller);
         }
 
         /// <summary>
@@ -1045,3 +949,4 @@ namespace Unity.XR.PXR
 
     }
 }
+#endif
