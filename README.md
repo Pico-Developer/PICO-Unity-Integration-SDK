@@ -1,107 +1,23 @@
-This article records the changes to the PICO Unity Integration SDK in version 3.2.0.
+This article records the changes to the PICO Unity Integration SDK in version 3.3.0.
+## Download the SDK
+Download the latest version of the PICO Unity Integration SDK from the [Download](https://developer-global.pico-interactive.com/resources/#sdk) screen.
 ## What's new
-Released on: May 29, 2025
-Required PICO device's system version: 5.13.0 or later (PICO Neo3 and PICO 4 series devices are currently not supported)
-The newly added content is as follows:
+Released on: September 18, 2025
+Required PICO device's system version: 5.13.0 for PICO 4 series, 5.14.0 or later for PICO 4 Ultra series
+**Add**
 | **Module** | **Description** |
 | --- | --- |
-| General | Added the [PICO XR Portal](https://developer.picoxr.com/document/unity/pico-xr-portal/) - a developer portal consisting of four sections: Configs, Tools, Samples, and About. |
-|  | [Project Validation](https://developer.picoxr.com/document/unity/project-validation/) supported checking the following settings: <br>  <br> * When using Unity6, check if the current project has the **Run In Background** option checked. If not, report an error. <br> * Check if the **MRC** checkbox is checked in the **PXR_Manager (Script)** panel. If not, report an error. <br> *  Verify if the **Display Refresh Rates** parameter is set to **Default**. If not, report an error. <br> *  When using Vulkan, check if the **Optimize Buffer Discards** option is checked. If not, report an error. |
-|  | [PICO Building Blocks](https://developer.picoxr.com/document/unity/pico-building-blocks) supported setting up the following: <br>  <br> * Spatial Audio: free field <br> * Spatial Audio: ambisonics |
-| Rendering | Added the `UPxr_SetSuperResolutionOrSharpening` API for dynamically enabling and disabling the [Super Resolution](https://developer.picoxr.com/document/unity/super-resolution) and [Sharpening](https://developer.picoxr.com/document/unity/sharpening) functionalities. |
-| Sense Pack | Added the following APIs for getting the progress of uploading and downloading shared spatial anchors: <br>  <br> * `UploadSpatialAnchorWithProgressAsync`: Upload spatial anchors and get the upload progress. <br> * `DownloadSharedSpatialAnchorWithProgressAsync`: Download shared spatial anchors and get the download progress. |
-| SecureMR | Added [SecureMR](https://developer.picoxr.com/document/unity/securemr-overview) capabilities, which enables secure, AI-powered mixed reality use cases while maintaining rigorous protection of user data and privacy. |
-| Enterprise services | Added the following APIs: <br>  <br> * `SetDeviceOwner`: Sets an app as the device owner app. <br> * `GetDeviceOwner`: Gets the device owner app. <br> * `SetBrowserHomePage`: Sets a home page for the browser. <br> * `GetBrowserHomePage`: Gets the home page of the browser. <br> * `SetMotionTrackerAutoStart`: Sets the capability for the PICO Motion Tracker to automatically power on when plugged in. <br> * `AllowWifiAutoJoin`: Enables the device to automatically join WiFi. <br> * `GetLargeSpaceBoundsInfoWithType`: Gets the bound information of the large space. |
-Below are the changes to APIs:
-| **Class** | **API** | **What's changed** |
-| --- | --- | --- |
-| [PXR_Boundary](https://developer.picoxr.com/reference/unity/client-api/PXR_Boundary) | GetDimensions | Currently, only supported to be called at the StageLevel. |
-|  | GetSeeThroughTrackingState | Deprecated. |
-|  | UseGlobalPose | Deprecated. |
-| [PXR_FoveationRendering](https://developer.picoxr.com/reference/unity/client-api/PXR_FoveationRendering/) | SetFoveationParameters | Deprecated. |
-| [PXR_HandTracking](https://developer.picoxr.com/reference/unity/client-api/PXR_HandTracking/) | GetSettingState | Deprecated. |
-| [PXR_Input](https://developer.picoxr.com/reference/unity/client-api/PXR_Input/) | GetDominantHand | Deprecated. |
-|  | SetDominantHand | Deprecated. |
-|  | SetControllerVibration | Deprecated. |
-|  | SetControllerVibrationEvent | Deprecated. |
-|  | StopControllerVCMotor | Deprecated. |
-|  | StartControllerVCMotor | Deprecated. |
-|  | SetControllerAmp | Deprecated. |
-|  | StartVibrateBySharem | Deprecated. |
-|  | SaveVibrateByCache | Deprecated. |
-|  | StartVibrateByCache | Deprecated. |
-|  | ClearVibrateByCache | Deprecated. |
-|  | StartVibrateByPHF | Deprecated. |
-|  | PauseVibrate | Deprecated. |
-|  | ResumeVibrate | Deprecated. |
-|  | UpdateVibrateParams | Deprecated. |
-|  | GetBodyTrackingPose | Deprecated. |
-|  | GetMotionTrackerConnectStateWithID | Deprecated. |
-|  | GetMotionTrackerBattery | Deprecated. |
-|  | GetMotionTrackerCalibState | Deprecated. |
-|  | SetBodyTrackingMode | Deprecated. |
-|  | SetBodyTrackingBoneLength | Deprecated. |
-|  | ResetController | Deprecated. |
-|  | SetArmModelParameters | Deprecated. |
-|  | CreateHapticStream | Deprecated. |
-|  | WriteHapticStream | Deprecated. |
-|  | SetHapticStreamSpeed | Deprecated. |
-|  | GetHapticStreamSpeed | Deprecated. |
-|  | GetHapticStreamCurrentFrameSequence | Deprecated. |
-|  | StartHapticStream | Deprecated. |
-|  | StopHapticStream | Deprecated. |
-|  | RemoveHapticStream | Deprecated. |
-|  | AnalysisHapticStreamPHF | Deprecated. |
-| [PXR_MotionTracking](https://developer.picoxr.com/reference/unity/client-api/PXR_MotionTracking/) | WantEyeTrackingService | Deprecated. |
-|  | WantFaceTrackingService | Deprecated. |
-|  | GetFaceTrackingSupported | Deprecated. |
-|  | StartFaceTracking | Deprecated. |
-|  | StopFaceTracking | Deprecated. |
-|  | GetFaceTrackingState | Deprecated. |
-|  | GetFaceTrackingData | Deprecated. |
-|  | BodyTrackingAbnormalCalibrationData | Deprecated. Please use `GetBodyTrackingState` instead. |
-|  | BodyTrackingStateError | Deprecated. Please use `GetBodyTrackingState` instead. |
-|  | BodyTrackingAction | Deprecated. |
-|  | RequestMotionTrackerCompleteAction | New callback event. |
-|  | MotionTrackerConnectionAction | New callback event. |
-|  | MotionTrackerPowerKeyAction | New callback event. |
-|  | MotionTrackerNumberOfConnections | Deprecated. You can use `MotionTrackerConnectionAction` to be notified when the connection state of PICO Motion Tracker changes. |
-|  | MotionTrackerBatteryLevel | Deprecated. You can use `GetMotionTrackerBattery` to get the battery of a PICO Motion Tracker. |
-|  | MotionTrackerKeyAction | Deprecated. You can use `MotionTrackerPowerKeyAction` to receive events for the Power key of PICO Motion Trackers. |
-|  | MotionTrackingModeChangedAction | Deprecated. |
-|  | CheckMotionTrackerNumber | Newly added. |
-|  | GetMotionTrackerLocation | Newly added. |
-|  | GetMotionTrackerBattery | Newly added. |
-|  | GetMotionTrackerConnectStateWithSN | Not supported. You can use `MotionTrackerConnectionAction` to be notified when the connection state of PICO Motion Tracker changes. |
-|  | GetMotionTrackerDeviceType | Deprecated. |
-|  | CheckMotionTrackerModeAndNumber | Deprecated. Please use `CheckMotionTrackerNumber` instead. <br>  |
-|  | GetMotionTrackerMode | Deprecated. |
-|  | GetMotionTrackerLocations | Deprecated. Please use `GetMotionTrackerLocation` instead. |
-|  | ExpandDeviceConnectionAction | New callback event. |
-|  | ExpandDeviceBatteryAction | New callback event. |
-|  | ExtDevConnectAction | Deprecated. Please use `ExpandDeviceConnectionAction` instead. |
-|  | ExtDevBatteryAction | Deprecated. Please use `ExtDevBatteryAction` instead. |
-|  | GetExtDevTrackerConnectState | Deprecated. You can use `ExpandDeviceConnectionAction` to get notified when the state of the connection between the PICO Motion Tracker and an external device changes. |
-|  | SetExpandDeviceVibrate | Newly added. |
-|  | GetExpandDevice | Newly added. |
-|  | SetExpandDeviceCustomData | Newly added. |
-|  | GetExpandDeviceCustomData | Newly added. |
-|  | GetExpandDeviceBattery | Newly added. |
-|  | SetExtDevTrackerMotorVibrate | Deprecated. Please use `SetExpandDeviceVibrate` instead. |
-|  | SetExtDevTrackerByPassData | Deprecated. Please use `SetExpandDeviceCustomData` instead. |
-|  | GetExtDevTrackerByPassData | Deprecated. Please use `GetExpandDeviceCustomData` instead. |
-|  | GetExtDevTrackerBattery | Deprecated. Please use `GetExpandDeviceBattery` instead. |
-|  | GetExtDevTrackerKeyData | Not supported. |
-| [PXR_System](https://developer.picoxr.com/reference/unity/client-api/PXR_System/) | SetExtraLatencyMode | Not supported. |
-|  | EnableFaceTracking | Not supported. |
-|  | EnableLipSync | Not supported. |
-|  | GetFaceTrackingData | Not supported. |
-|  | SetEyeFOV | Not supported. |
-|  | SetFaceTrackingStatus | Not supported. |
-|  | SetCommonBrightness | Not supported. |
-|  | GetCommonBrightness | Not supported. |
-|  | GetScreenBrightnessLevel | Not supported. |
-|  | SetScreenBrightnessLevel | Not supported. |
-|  | *GetDisplayFrequenciesAvailable* | Newly added. You can use it to get the available display refresh rates. |
-|  | Action<int> SessionStateChanged; | Modified to the enumeration type Action<XrSessionState> SessionStateChanged. |
+| General | Supported the Unity OpenXR Plugin, and you can use this plugin to integrate XR functionalities into your app. For more information, refer to [Add support for the Unity OpenXR Plugin](/document/unity/support-for-the-unity-openxr-plugin). |
+| PICO Building Blocks | Added the following blocks: <br>  <br> * PICO Spatial Anchor Sample <br> * PICO Spatial Mesh <br> * PICO Scene Capture <br> * PICO Composition Layer Overlay <br> * PICO Composition Layer Underlay <br>  <br> For more information, refer to [PICO Building Blocks](/document/unitypico-building-blocks). |
+|  | Compatible with the Unity OpenXR Plugin. |
+| Enterprise services | Added the following APIs: <br>  <br> * `GetHeadTrackingStatus`: Gets the status of HMD tracking. <br> * `GetHeadPose`: Gets the pose of the HMD. <br> * `GetControllerPose`: Gets the pose of the controller. <br> * `GetSwiftPose`: Gets the pose of a motion tracker. <br> * `GetSwiftTrackerDevices`: Gets the information of motion trackers. <br> * `GetHeadIMUData`: Gets the IMU data of the HMD. <br> * `GetControllerIMUData`: Gets the IMU data of the controller. <br> * `GetSwiftIMUData`: Gets the IMU data of a motion tracker. <br> * `StartSwiftTrackerPairing`: Starts pairing motion tracker(s). <br> * `UnBondSwiftTracker`: Unbonds motion tracker(s). <br> * `ResetTracking`: Resets tracking. <br> * `SetFenceColor`: Sets the color of the fence. <br> * `GetFenceColor`: Gets the color of the fence. <br> * `SetUsbTetheringStaticIP`: Sets the static IP for USB tethering. <br> * `GetUsbTetheringStaticIPLocal`: Gets the local static IP for USB tethering. <br> * `GetUsbTetheringStaticIPClient`: Gets the client static IP for USB tethering. <br> * `SetLargeSpaceMapScale`: Sets the scale of the large-space map. <br> * `GetPredictedMainSensorState2`: Gets the predicted pose and status of the main sensor when the VST image is being displayed. <br> * `UseGlobalPose`: Uses the global pose for HMD and controller tracking. <br> * `ConvertPoseCoordinate`: Converts the coordinate of a pose. |
+| Developer Tools | Added the PICO Debugger, which is a debugging tool that allows you not only to view logs and scene information, but also to use its built-in tools to optimize your application in a more targeted way. For more information, refer to "[PICO Debugger](/document/unity/pico-debugger)". |
+**Optimize**
+| **Module** | **Description** |
+| --- | --- |
+| Rendering | Optimized the "Use Premultiplied Alpha" parameter used for configuring composition layers: <br>  <br> * Enabled the premultiplied alpha effect for content, which multiplies the RGB color channels by the alpha value `(R×A, G×A, B×A)`. <br> * Improved the rendering performance of transparent elements, such as UI, particles, and more. <br> * Fixed visual defects such as color fringing at the edges of semi-transparent objects. <br> * Supported the specification for OpenXR and GPU hybrid rendering. |
+**Change**
+| **Module** | **Description** |
+| --- | --- |
+| Rendering | Renamed the PXR_Over Lay component used for configuring composition layer parameters to PXR_Composition Layer. |
 
