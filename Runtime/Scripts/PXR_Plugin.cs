@@ -5469,10 +5469,17 @@ namespace Unity.XR.PXR
                 return val;
             }
 
-            public static int UPxr_GetExpandDeviceCustomData(out List<ExpandDevicesCustomData>  _dataArray)
+            public static int UPxr_GetExpandDeviceCustomData(out List<ExpandDevicesCustomData> _dataArray)
             {
+                _dataArray = new List<ExpandDevicesCustomData>();
+                return UPxr_GetExpandDeviceCustomDataReuse(ref _dataArray);
+            }
+
+            public static int UPxr_GetExpandDeviceCustomDataReuse(ref List<ExpandDevicesCustomData> _dataArray)
+            {
+                if (_dataArray == null) _dataArray = new List<ExpandDevicesCustomData>();
+                _dataArray.Clear();
                 Int32 Count = 0;
-                _dataArray=new List<ExpandDevicesCustomData>();
                 int ret = -1;
 #if !UNITY_EDITOR && UNITY_ANDROID
                  ret = Pxr_GetExpandDeviceCustomData(ref Count);

@@ -121,6 +121,8 @@ namespace Unity.XR.PXR
         public bool enableSubmitLayer = true;
         public PXR_CompositionLayer originalOverLay;
         public IntPtr layerSubmitPtr = IntPtr.Zero;
+        [NonSerialized]
+        public OverlayShape prevOverlayShape;
 
         [HideInInspector]
         public SuperSamplingMode supersamplingMode = SuperSamplingMode.None;
