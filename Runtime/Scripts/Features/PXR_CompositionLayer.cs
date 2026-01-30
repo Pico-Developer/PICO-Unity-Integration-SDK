@@ -121,8 +121,11 @@ namespace Unity.XR.PXR
         public bool enableSubmitLayer = true;
         public PXR_CompositionLayer originalOverLay;
         public IntPtr layerSubmitPtr = IntPtr.Zero;
+        
+        // Initialized to an invalid value to ensure first-time memory allocation
+        // This prevents skipping allocation when the default value (0) matches the initial overlayShape
         [NonSerialized]
-        public OverlayShape prevOverlayShape;
+        public OverlayShape prevOverlayShape = (OverlayShape)(-1);
 
         [HideInInspector]
         public SuperSamplingMode supersamplingMode = SuperSamplingMode.None;

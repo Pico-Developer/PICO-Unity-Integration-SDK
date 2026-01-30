@@ -5479,22 +5479,36 @@ namespace Unity.XR.PXR
             {
                 if (_dataArray == null) _dataArray = new List<ExpandDevicesCustomData>();
                 _dataArray.Clear();
+                
                 Int32 Count = 0;
                 int ret = -1;
 #if !UNITY_EDITOR && UNITY_ANDROID
-                 ret = Pxr_GetExpandDeviceCustomData(ref Count);
-                if (ret==(int)PxrResult.SUCCESS)
+                ret = Pxr_GetExpandDeviceCustomData(ref Count);
+                if (ret == (int)PxrResult.SUCCESS)
                 {
+                    if (_dataArray.Capacity < Count)
+                    {
+                        _dataArray.Capacity = Count;
+                    }
+                    
                     for (int i = 0; i < Count; i++)
                     {
-                        ExpandDevicesCustomData _data=new ExpandDevicesCustomData();
+                        ExpandDevicesCustomData _data = new ExpandDevicesCustomData();
                         int datasize = 0;
                         IntPtr Handle = IntPtr.Zero;
-                        ret = Pxr_GetExpandDeviceCustomDatabyID(i,ref _data.deviceId,ref Handle,ref datasize);
+                        ret = Pxr_GetExpandDeviceCustomDatabyID(i, ref _data.deviceId, ref Handle, ref datasize);
                         if (ret == (int)PxrResult.SUCCESS)
                         {
-                            _data.data = new byte[datasize];
-                            Marshal.Copy(Handle, _data.data, 0, datasize);
+                            try
+                            {
+                                _data.data = new byte[datasize];
+                                Marshal.Copy(Handle, _data.data, 0, datasize);
+                            }
+                            catch (ArgumentException ex)
+                            {
+                                PLog.e(TAG, $"Failed to copy custom data for device {_data.deviceId}: {ex.Message}");
+                                _data.data = Array.Empty<byte>();
+                            }
                         }
                         _dataArray.Add(_data);
                     }
