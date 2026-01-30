@@ -308,6 +308,10 @@ namespace Unity.XR.PXR.Editor
                 "MR safety, if you choose this option, your application will adopt MR safety policies during runtime. If not selected, it will continue to use VR safety policies by default.";
             projectConfig.mrSafeguard = EditorGUILayout.Toggle(mrSafeguardContent, projectConfig.mrSafeguard);
 
+            var secureMRContent = new GUIContent();
+            secureMRContent.text = "SecureMR";
+            projectConfig.secureMR = EditorGUILayout.Toggle(secureMRContent, projectConfig.secureMR);
+
             //Super Resolution
             var superresolutionContent = new GUIContent();
             superresolutionContent.text = "Super Resolution";

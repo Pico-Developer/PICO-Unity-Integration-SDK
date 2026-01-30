@@ -744,19 +744,6 @@ namespace Unity.XR.PXR
         {
             return PXR_Plugin.MotionTracking.UPxr_GetExpandDeviceCustomData(out dataArray);
         }
-
-        /// <summary>
-        /// Gets the custom data from expansion devices. This method reuses the provided list to minimize garbage collection allocations.
-        /// </summary>
-        /// <param name="dataArray">The list to be populated with expansion device custom data.</param>
-        /// <returns>
-        /// - `0`: success
-        /// - `1`: failure
-        /// </returns>
-        public static int GetExpandDeviceCustomDataReuse(ref List<ExpandDevicesCustomData> dataArray)
-        {
-            return PXR_Plugin.MotionTracking.UPxr_GetExpandDeviceCustomDataReuse(ref dataArray);
-        }
         
         /// <summary>
         /// Sets the data to be passed to external devices. The protocol is defined by yourself according to your own hardware.

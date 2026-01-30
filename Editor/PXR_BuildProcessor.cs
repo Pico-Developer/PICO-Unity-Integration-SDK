@@ -191,7 +191,8 @@ namespace Unity.XR.PXR.Editor
         {
             { "xr-usable-core-mask-enabled", "1"},
             { "xr-require-backbuffer-textures", "0" },
-            { "xr-hide-memoryless-render-texture", "1" }
+            { "xr-hide-memoryless-render-texture", "1" },
+            { "xr-vulkan-extension-fragment-density-map-enabled", "1"}
         };
 
         public void OnPreprocessBuild(BuildReport report)
@@ -330,6 +331,7 @@ namespace Unity.XR.PXR.Editor
 #if PICO_OPENXR_SDK
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","use.pxr.sdk"}},new Dictionary<string, string>{{"value", "2"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.sdk.version"}},new Dictionary<string, string>{{"value","Unity OpenXR "+PXR_Constants.SDKVersion}});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","sdk.unity.version"}},new Dictionary<string, string>{{"value",Application.unityVersion}});
             var settings = OpenXRSettings.GetSettingsForBuildTargetGroup(BuildTargetGroup.Android);
             bool mrPermission = false;
 
@@ -479,6 +481,7 @@ namespace Unity.XR.PXR.Editor
             var settings = PXR_XmlTools.GetSettings();
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","use.pxr.sdk"}},new Dictionary<string, string>{{"value", "1"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.sdk.version"}},new Dictionary<string, string>{{"value","XR Platform_"+PXR_Constants.SDKVersion}});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","sdk.unity.version"}},new Dictionary<string, string>{{"value",Application.unityVersion}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","enable_cpt"}},new Dictionary<string, string>{{"value",PXR_ProjectSetting.GetProjectConfig().useContentProtect ? "1" : "0"}});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","Enable_AdaptiveHandModel"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().adaptiveHand ? "1" : "0" }});
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","Hand_Tracking_HighFrequency"}},new Dictionary<string, string> {{"value",PXR_ProjectSetting.GetProjectConfig().highFrequencyHand ? "1" : "0" }});

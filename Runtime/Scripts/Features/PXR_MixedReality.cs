@@ -710,14 +710,8 @@ namespace Unity.XR.PXR
                                         if (getResult == PxrResult.SUCCESS)
                                         {
                                             var anchorDictionary = new Dictionary<ulong, Guid>();
-                                            if (PXR_Plugin.MixedReality.SceneAnchorData == null)
-                                            {
-                                                PXR_Plugin.MixedReality.SceneAnchorData = new Dictionary<ulong, PxrSceneComponentData>();
-                                            }
-                                            else
-                                            {
-                                                PXR_Plugin.MixedReality.SceneAnchorData.Clear();
-                                            }
+                                            PXR_Plugin.MixedReality.SceneAnchorData.Clear();
+                                            PXR_Plugin.MixedReality.SceneAnchorData = new Dictionary<ulong, PxrSceneComponentData>();
                                             foreach (var e in entityInfos)
                                             {
                                                 byte[] byteArray = new byte[16];

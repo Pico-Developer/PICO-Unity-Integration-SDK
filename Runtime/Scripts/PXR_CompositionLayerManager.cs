@@ -323,16 +323,12 @@ namespace Unity.XR.PXR
                             layerSubmit2.sizeRight.x = compositeLayer.modelScales[0].x * Mathf.Min(compositeLayer.dstRectRight.width, 1 - compositeLayer.dstRectRight.x);
                             layerSubmit2.sizeRight.y = compositeLayer.modelScales[0].y * Mathf.Min(compositeLayer.dstRectRight.height, 1 - compositeLayer.dstRectRight.y);
                         }
-                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero && compositeLayer.prevOverlayShape != compositeLayer.overlayShape)
+                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero)
                         {
                             Marshal.FreeHGlobal(compositeLayer.layerSubmitPtr);
                             compositeLayer.layerSubmitPtr = IntPtr.Zero;
                         }
-                        if (compositeLayer.layerSubmitPtr == IntPtr.Zero)
-                        {
-                            compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
-                        }
-                        compositeLayer.prevOverlayShape = compositeLayer.overlayShape;
+                        compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
                         Marshal.StructureToPtr(layerSubmit2, compositeLayer.layerSubmitPtr, false);
                         PXR_Plugin.Render.UPxr_SubmitLayerQuad2ByRender(compositeLayer.layerSubmitPtr);
                     }
@@ -357,16 +353,12 @@ namespace Unity.XR.PXR
                         layerSubmit2.radiusLeft = compositeLayer.modelScales[0].z;
                         layerSubmit2.radiusRight = compositeLayer.modelScales[0].z;
 
-                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero && compositeLayer.prevOverlayShape != compositeLayer.overlayShape)
+                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero)
                         {
                             Marshal.FreeHGlobal(compositeLayer.layerSubmitPtr);
                             compositeLayer.layerSubmitPtr = IntPtr.Zero;
                         }
-                        if (compositeLayer.layerSubmitPtr == IntPtr.Zero)
-                        {
-                            compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
-                        }
-                        compositeLayer.prevOverlayShape = compositeLayer.overlayShape;
+                        compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
                         Marshal.StructureToPtr(layerSubmit2, compositeLayer.layerSubmitPtr, false);
                         PXR_Plugin.Render.UPxr_SubmitLayerCylinder2ByRender(compositeLayer.layerSubmitPtr);
                     }
@@ -387,16 +379,12 @@ namespace Unity.XR.PXR
                         layerSubmit2.lowerVerticalAngleLeft = (compositeLayer.dstRectLeft.y - 0.5f) * Mathf.PI;
                         layerSubmit2.lowerVerticalAngleRight = (compositeLayer.dstRectRight.y - 0.5f) * Mathf.PI;
 
-                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero && compositeLayer.prevOverlayShape != compositeLayer.overlayShape)
+                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero)
                         {
                             Marshal.FreeHGlobal(compositeLayer.layerSubmitPtr);
                             compositeLayer.layerSubmitPtr = IntPtr.Zero;
                         }
-                        if (compositeLayer.layerSubmitPtr == IntPtr.Zero)
-                        {
-                            compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
-                        }
-                        compositeLayer.prevOverlayShape = compositeLayer.overlayShape;
+                        compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
                         Marshal.StructureToPtr(layerSubmit2, compositeLayer.layerSubmitPtr, false);
                         PXR_Plugin.Render.UPxr_SubmitLayerEquirect2ByRender(compositeLayer.layerSubmitPtr);
                     }
@@ -407,16 +395,12 @@ namespace Unity.XR.PXR
                         layerSubmit2.poseLeft = poseLeft;
                         layerSubmit2.poseRight = poseRight;
 
-                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero && compositeLayer.prevOverlayShape != compositeLayer.overlayShape)
+                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero)
                         {
                             Marshal.FreeHGlobal(compositeLayer.layerSubmitPtr);
                             compositeLayer.layerSubmitPtr = IntPtr.Zero;
                         }
-                        if (compositeLayer.layerSubmitPtr == IntPtr.Zero)
-                        {
-                            compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
-                        }
-                        compositeLayer.prevOverlayShape = compositeLayer.overlayShape;
+                        compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
                         Marshal.StructureToPtr(layerSubmit2, compositeLayer.layerSubmitPtr, false);
                         PXR_Plugin.Render.UPxr_SubmitLayerCube2ByRender(compositeLayer.layerSubmitPtr);
                     }
@@ -445,16 +429,12 @@ namespace Unity.XR.PXR
                         layerSubmit2.overlapFactor = compositeLayer.overlapFactor;
                         layerSubmit2.timestamp = compositeLayer.timestamp;
 
-                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero && compositeLayer.prevOverlayShape != compositeLayer.overlayShape)
+                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero)
                         {
                             Marshal.FreeHGlobal(compositeLayer.layerSubmitPtr);
                             compositeLayer.layerSubmitPtr = IntPtr.Zero;
                         }
-                        if (compositeLayer.layerSubmitPtr == IntPtr.Zero)
-                        {
-                            compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
-                        }
-                        compositeLayer.prevOverlayShape = compositeLayer.overlayShape;
+                        compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
                         Marshal.StructureToPtr(layerSubmit2, compositeLayer.layerSubmitPtr, false);
                         PXR_Plugin.Render.UPxr_SubmitLayerEac2ByRender(compositeLayer.layerSubmitPtr);
                     }
@@ -477,16 +457,12 @@ namespace Unity.XR.PXR
                         layerSubmit.biasYLeft = 1 + (compositeLayer.dstRectLeft.y - 1) / compositeLayer.dstRectLeft.height;
                         layerSubmit.biasYRight = 1 + (compositeLayer.dstRectRight.y - 1) / compositeLayer.dstRectRight.height;
 
-                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero && compositeLayer.prevOverlayShape != compositeLayer.overlayShape)
+                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero)
                         {
                             Marshal.FreeHGlobal(compositeLayer.layerSubmitPtr);
                             compositeLayer.layerSubmitPtr = IntPtr.Zero;
                         }
-                        if (compositeLayer.layerSubmitPtr == IntPtr.Zero)
-                        {
-                            compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit));
-                        }
-                        compositeLayer.prevOverlayShape = compositeLayer.overlayShape;
+                        compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit));
                         Marshal.StructureToPtr(layerSubmit, compositeLayer.layerSubmitPtr, false);
                         PXR_Plugin.Render.UPxr_SubmitLayerFisheyeByRender(compositeLayer.layerSubmitPtr);
                     }
@@ -542,16 +518,12 @@ namespace Unity.XR.PXR
                         layerSubmit2.blurredQuadFOV = compositeLayer.blurredQuadFOV;
                         layerSubmit2.blurredQuadIPD = compositeLayer.blurredQuadIPD;
 
-                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero && compositeLayer.prevOverlayShape != compositeLayer.overlayShape)
+                        if (compositeLayer.layerSubmitPtr != IntPtr.Zero)
                         {
                             Marshal.FreeHGlobal(compositeLayer.layerSubmitPtr);
                             compositeLayer.layerSubmitPtr = IntPtr.Zero;
                         }
-                        if (compositeLayer.layerSubmitPtr == IntPtr.Zero)
-                        {
-                            compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
-                        }
-                        compositeLayer.prevOverlayShape = compositeLayer.overlayShape;
+                        compositeLayer.layerSubmitPtr = Marshal.AllocHGlobal(Marshal.SizeOf(layerSubmit2));
                         Marshal.StructureToPtr(layerSubmit2, compositeLayer.layerSubmitPtr, false);
                         PXR_Plugin.Render.UPxr_SubmitLayerQuad2ByRender(compositeLayer.layerSubmitPtr);
                     }

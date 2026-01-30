@@ -16,7 +16,6 @@ using UnityEngine;
 using UnityEngine.XR.Management;
 using UnityEngine.XR;
 using AOT;
-using UnityEngine.Rendering;
 
 #if UNITY_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -152,11 +151,7 @@ namespace Unity.XR.PXR
                     colorSpace = (ushort)((QualitySettings.activeColorSpace == ColorSpace.Linear) ? 1 : 0),
                     useContentProtect = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().useContentProtect),
                     systemDisplayFrequency = settings.GetSystemDisplayFrequency(),
-                    // Vulkan Workaround: Disable buffer discards optimization to prevent left eye rendering artifacts
-                    // Issue: On certain Vulkan implementations, optimizeBufferDiscards can cause the left eye 
-                    // render buffer to be incorrectly discarded, resulting in a white screen
-                    // Impact: performance reduction when using Vulkan renderer
-                    optimizeBufferDiscards = (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan) ? (ushort)0 : settings.GetOptimizeBufferDiscards(),
+                    optimizeBufferDiscards = settings.GetOptimizeBufferDiscards(),
                     enableAppSpaceWarp = Convert.ToUInt16(settings.enableAppSpaceWarp),
                     enableSubsampled = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().enableSubsampled),
                     lateLatchingDebug = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().latelatchingDebug),

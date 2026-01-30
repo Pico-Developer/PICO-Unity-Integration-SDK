@@ -23,7 +23,7 @@ public class PXR_UIManager : MonoBehaviour
     private void Start()
     {
         config = Resources.Load<PXR_PicoDebuggerSO>("PXR_PicoDebuggerSO");
-        uiController = Resources.Load<GameObject>("DebuggerPanel").GetComponent<PXR_UIController>();
+        uiController = Resources.Load<GameObject>("PXR_DebuggerPanel").GetComponent<PXR_UIController>();
         if(config.isOpen)
         {
             switch (config.debuggerLauncherButton)

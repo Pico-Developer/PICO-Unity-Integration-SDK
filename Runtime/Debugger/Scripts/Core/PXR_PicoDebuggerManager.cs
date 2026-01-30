@@ -27,7 +27,7 @@ namespace Unity.XR.PXR.Debugger
 
         private static void AddPrefab()
         {
-            GameObject prefab = Resources.Load<GameObject>("PICODebugger");
+            GameObject prefab = Resources.Load<GameObject>("PXR_PICODebugger");
             if (prefab != null)
             {
                 Instantiate(prefab, Vector3.zero, Quaternion.identity);

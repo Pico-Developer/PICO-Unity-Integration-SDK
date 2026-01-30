@@ -2982,7 +2982,7 @@ namespace Unity.XR.PICO.TOBSupport
             int rightCount = 0;
             IntPtr leftHandle = IntPtr.Zero;
             IntPtr rightHandle = IntPtr.Zero;
-            if (UPxr_GetToken())
+            // if (UPxr_GetToken())
             {
                 bool ret = getCameraExtrinsics(ref leftCount, ref leftHandle, ref rightCount, ref rightHandle);
                 leftExtrinsics = new Double[leftCount];
@@ -2998,7 +2998,7 @@ namespace Unity.XR.PICO.TOBSupport
             double[] configArray = null;
             int configCount = 0;
             IntPtr configHandle = IntPtr.Zero;
-            if (UPxr_GetToken())
+            // if (UPxr_GetToken())
             {
                 getCameraIntrinsics(width ,height,h_fov,v_fov,ref configCount, ref configHandle);
                 configArray = new Double[configCount];
@@ -3026,13 +3026,9 @@ namespace Unity.XR.PICO.TOBSupport
         }
         public static bool GetCameraParametersNew(int width, int height, ref RGBCameraParamsNew paramsNew)
         {
-            if (UPxr_GetToken())
+            // if (UPxr_GetToken())
             {
                 return getCameraParametersNew(width,height,ref paramsNew);
-            }
-            else
-            {
-                return false;
             }
         }
         

@@ -325,6 +325,9 @@ namespace Unity.XR.PXR
         UpdateGltf = 31,
         RenderText = 32,
         LoadTexture = 33,
+        Svd = 34,
+        Norm = 35,
+        SwapHwcChw = 36,
     }
 
     #endregion
@@ -5469,46 +5472,25 @@ namespace Unity.XR.PXR
                 return val;
             }
 
-            public static int UPxr_GetExpandDeviceCustomData(out List<ExpandDevicesCustomData> _dataArray)
+            public static int UPxr_GetExpandDeviceCustomData(out List<ExpandDevicesCustomData>  _dataArray)
             {
-                _dataArray = new List<ExpandDevicesCustomData>();
-                return UPxr_GetExpandDeviceCustomDataReuse(ref _dataArray);
-            }
-
-            public static int UPxr_GetExpandDeviceCustomDataReuse(ref List<ExpandDevicesCustomData> _dataArray)
-            {
-                if (_dataArray == null) _dataArray = new List<ExpandDevicesCustomData>();
-                _dataArray.Clear();
-                
                 Int32 Count = 0;
+                _dataArray=new List<ExpandDevicesCustomData>();
                 int ret = -1;
 #if !UNITY_EDITOR && UNITY_ANDROID
-                ret = Pxr_GetExpandDeviceCustomData(ref Count);
-                if (ret == (int)PxrResult.SUCCESS)
+                 ret = Pxr_GetExpandDeviceCustomData(ref Count);
+                if (ret==(int)PxrResult.SUCCESS)
                 {
-                    if (_dataArray.Capacity < Count)
-                    {
-                        _dataArray.Capacity = Count;
-                    }
-                    
                     for (int i = 0; i < Count; i++)
                     {
-                        ExpandDevicesCustomData _data = new ExpandDevicesCustomData();
+                        ExpandDevicesCustomData _data=new ExpandDevicesCustomData();
                         int datasize = 0;
                         IntPtr Handle = IntPtr.Zero;
-                        ret = Pxr_GetExpandDeviceCustomDatabyID(i, ref _data.deviceId, ref Handle, ref datasize);
+                        ret = Pxr_GetExpandDeviceCustomDatabyID(i,ref _data.deviceId,ref Handle,ref datasize);
                         if (ret == (int)PxrResult.SUCCESS)
                         {
-                            try
-                            {
-                                _data.data = new byte[datasize];
-                                Marshal.Copy(Handle, _data.data, 0, datasize);
-                            }
-                            catch (ArgumentException ex)
-                            {
-                                PLog.e(TAG, $"Failed to copy custom data for device {_data.deviceId}: {ex.Message}");
-                                _data.data = Array.Empty<byte>();
-                            }
+                            _data.data = new byte[datasize];
+                            Marshal.Copy(Handle, _data.data, 0, datasize);
                         }
                         _dataArray.Add(_data);
                     }
@@ -6885,6 +6867,9 @@ namespace Unity.XR.PXR
                 { typeof(UpdateGltfOperator), SecureMROperatorType.UpdateGltf },
                 { typeof(RenderTextOperator), SecureMROperatorType.RenderText },
                 { typeof(LoadTextureOperator), SecureMROperatorType.LoadTexture },
+                { typeof(SvdOperator), SecureMROperatorType.Svd },
+                { typeof(NormOperator), SecureMROperatorType.Norm },
+                { typeof(SwapHwcChwOperator), SecureMROperatorType.SwapHwcChw },
             };
             
             public static PxrResult UPxr_CreateSecureMRProvider(int width, int height, out ulong providerHandle)
