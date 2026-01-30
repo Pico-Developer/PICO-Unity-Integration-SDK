@@ -211,6 +211,21 @@ namespace Unity.XR.PXR.SecureMR
                     Operator = pipeline.pipeline.CreateOperator<LoadTextureOperator>();
                 }
                     break;
+                case SecureMROperatorType.Svd:
+                {
+                    Operator = pipeline.pipeline.CreateOperator<SvdOperator>();
+                }
+                    break;
+                case SecureMROperatorType.Norm:
+                {
+                    Operator = pipeline.pipeline.CreateOperator<NormOperator>();
+                }
+                    break;
+                case SecureMROperatorType.SwapHwcChw:
+                {
+                    Operator = pipeline.pipeline.CreateOperator<SwapHwcChwOperator>();
+                }
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }

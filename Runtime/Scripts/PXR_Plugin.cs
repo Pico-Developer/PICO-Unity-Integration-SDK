@@ -325,6 +325,9 @@ namespace Unity.XR.PXR
         UpdateGltf = 31,
         RenderText = 32,
         LoadTexture = 33,
+        Svd = 34,
+        Norm = 35,
+        SwapHwcChw = 36,
     }
 
     #endregion
@@ -6864,6 +6867,9 @@ namespace Unity.XR.PXR
                 { typeof(UpdateGltfOperator), SecureMROperatorType.UpdateGltf },
                 { typeof(RenderTextOperator), SecureMROperatorType.RenderText },
                 { typeof(LoadTextureOperator), SecureMROperatorType.LoadTexture },
+                { typeof(SvdOperator), SecureMROperatorType.Svd },
+                { typeof(NormOperator), SecureMROperatorType.Norm },
+                { typeof(SwapHwcChwOperator), SecureMROperatorType.SwapHwcChw },
             };
             
             public static PxrResult UPxr_CreateSecureMRProvider(int width, int height, out ulong providerHandle)

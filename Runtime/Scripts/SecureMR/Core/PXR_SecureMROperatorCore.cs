@@ -547,6 +547,45 @@ namespace Unity.XR.PXR.SecureMR
             }
         }
     }
+    
+    public class SvdOperator : Operator
+    {
+        public SvdOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
+        {
+            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            if (result == PxrResult.SUCCESS)
+            {
+                base.OperatorHandle = operatorHandle;
+            }
+        }
+    }
+    
+    public class NormOperator : Operator
+    {
+        public NormOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
+        {
+            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            if (result == PxrResult.SUCCESS)
+            {
+                base.OperatorHandle = operatorHandle;
+            }
+        }
+    }
+    
+    public class SwapHwcChwOperator : Operator
+    {
+        public SwapHwcChwOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
+        {
+            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            if (result == PxrResult.SUCCESS)
+            {
+                base.OperatorHandle = operatorHandle;
+            }
+        }
+    }
 }
 
 #endif

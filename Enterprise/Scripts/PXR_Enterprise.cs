@@ -3841,6 +3841,7 @@ namespace Unity.XR.PICO.TOBSupport
         private static Action<Frame> onImageAvailable;
         private static Action<bool> openCameraAsyncSuccess;
         static Frame pxrFrame;
+  		private static bool isGlobalPose = false;
         /// <summary>
         /// Sets a frame buffer for the camera. The frame buffer is used to store image data with specified width and height.
         /// @note Only supported by PICO 4 Ultra Enterprise.
@@ -3866,7 +3867,7 @@ namespace Unity.XR.PICO.TOBSupport
                     if (onImageAvailable!=null)
                     {
                      
-                        SensorState a = GetPredictedMainSensorState(pxrFrame.timestamp / 1000000.0f);
+                        SensorState a = GetPredictedMainSensorState(pxrFrame.timestamp / 1000000.0f,isGlobalPose);
                        
                         pxrFrame.pose = a.pose;
                         pxrFrame.status=a.status;
@@ -4329,6 +4330,7 @@ namespace Unity.XR.PICO.TOBSupport
         /// </param>
         public static void UseGlobalPose(bool flg)
         {
+			isGlobalPose=flg;
             PXR_Plugin.Boundary.UPxr_SetSeeThroughState(flg);
             if (flg)
             {

@@ -40,7 +40,7 @@ namespace Unity.XR.OpenXR.Features.PICOSupport
         /// The feature id string. This is used to give the feature a well known id for reference.
         /// </summary>
         public const string featureId = "com.unity.openxr.feature.pico";
-        public const string OpenXrExtensionList = "XR_PICO_controller_interaction";
+        public const string OpenXrExtensionList = "XR_PICO_controller_interaction "+"XR_PICO_view_state";
         public bool isPicoSupport = false;
         public static Action<bool> onAppFocusedAction;
         

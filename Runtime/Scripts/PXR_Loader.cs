@@ -151,7 +151,8 @@ namespace Unity.XR.PXR
                     colorSpace = (ushort)((QualitySettings.activeColorSpace == ColorSpace.Linear) ? 1 : 0),
                     useContentProtect = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().useContentProtect),
                     systemDisplayFrequency = settings.GetSystemDisplayFrequency(),
-                    optimizeBufferDiscards = settings.GetOptimizeBufferDiscards(),
+                    // Workaround: Disable optimizeBufferDiscards for Vulkan to prevent rendering artifacts (left eye whiteout)
+                    optimizeBufferDiscards = (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Vulkan) ? (ushort)0 : settings.GetOptimizeBufferDiscards(),
                     enableAppSpaceWarp = Convert.ToUInt16(settings.enableAppSpaceWarp),
                     enableSubsampled = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().enableSubsampled),
                     lateLatchingDebug = Convert.ToUInt16(PXR_ProjectSetting.GetProjectConfig().latelatchingDebug),
