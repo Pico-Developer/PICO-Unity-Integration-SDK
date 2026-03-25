@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.IO;
-#if UNITY_EDITOR 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 namespace Unity.XR.PXR.Debugger
 {
     [RequireComponent(typeof(MeshFilter))]
@@ -42,22 +42,6 @@ namespace Unity.XR.PXR.Debugger
                 meshFilter = GetComponent<MeshFilter>();
                 isInit = true;
             }
-        }
-        // 在Inspector中通过按钮触发保存
-        [ContextMenu("Save Mesh And Remove Component")]
-        public void SaveMesh()
-        {
-            MeshFilter mf = GetComponent<MeshFilter>();
-            if (mf == null || mf.mesh == null) return;
-
-            string path = $"Assets/{saveName}.asset";
-            if(File.Exists(path)){
-                Debug.Log($"Remove Exist File");
-                AssetDatabase.DeleteAsset(path);
-            }
-            AssetDatabase.CreateAsset(mf.mesh, path);
-            AssetDatabase.SaveAssets();
-            Debug.Log($"Mesh saved to: {path}");
         }
         public static List<Vector3> CreateRoundedRectPath(Vector3 center, float width, float height, float radius, bool[] corners, int cornerSegments)
         {
@@ -151,11 +135,6 @@ namespace Unity.XR.PXR.Debugger
 
             mesh.RecalculateBounds();
             mesh.RecalculateNormals();
-            // mesh.RecalculateTangents();
-            // for (var i = 0; i < mesh.normals.Length; i++)
-            // {
-            //     Debug.Log($"normals {i}:{mesh.normals[i]}");
-            // }
         }
     }
 }

@@ -34,6 +34,8 @@ public partial class PXR_Audio_Spatializer_Context : MonoBehaviour
                     _api = new ApiUnityImpl();
                 else if (spatializerApiImpl == SpatializerApiImpl.wwise)
                     _api = new ApiWwiseImpl();
+                else if (spatializerApiImpl == SpatializerApiImpl.unity_native)
+                    _api = new ApiUnityNativeImpl();
 #if UNITY_EDITOR
                 _lastSpatializerApiImpl = spatializerApiImpl;
 #endif
@@ -214,14 +216,19 @@ public partial class PXR_Audio_Spatializer_Context : MonoBehaviour
     public PXR_Audio.Spatializer.Result AddSourceWithConfig(
         ref PXR_Audio.Spatializer.SourceConfig sourceConfig,
         ref int sourceId,
-        bool isAsync)
+        bool isAsync,
+        AudioSource nativeSource = null,
+        bool enablePicoAttenuation = false)
     {
-        return PXR_Audio_Spatializer_Api.AddSourceWithConfig(context, ref sourceConfig, ref sourceId, isAsync);
+        return PXR_Audio_Spatializer_Api.AddSourceWithConfig(context, ref sourceConfig, ref sourceId, isAsync,
+            nativeSource, enablePicoAttenuation);
     }
 
-    public Result SetSourceConfig(int sourceId, ref SourceConfig sourceConfig, uint propertyMask)
+    public Result SetSourceConfig(int sourceId, ref SourceConfig sourceConfig, uint propertyMask,
+        AudioSource nativeSource = null, bool enablePicoAttenuation = false)
     {
-        return PXR_Audio_Spatializer_Api.SetSourceConfig(context, sourceId, ref sourceConfig, propertyMask);
+        return PXR_Audio_Spatializer_Api.SetSourceConfig(context, sourceId, ref sourceConfig, propertyMask,
+            nativeSource, enablePicoAttenuation);
     }
 
     public PXR_Audio.Spatializer.Result SetSourceAttenuationMode(int sourceId,
@@ -455,7 +462,7 @@ public partial class PXR_Audio_Spatializer_Context : MonoBehaviour
     {
         return PXR_Audio_Spatializer_Api.GetScatteringFactor(material, ref scatteringFactor);
     }
-    
+
     public Result GetTransmissionFactors(AcousticsMaterial material,
         ref float transmissionFactor)
     {

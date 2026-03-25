@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
@@ -701,7 +701,14 @@ namespace Unity.XR.PXR
         XR_TYPE_SECURE_MR_OPERATOR_IO_MAP_PICO = 1010007018,
         XR_TYPE_SECURE_MR_OPERATOR_SORT_MATRIX_PICO = 1010007019,
         XR_TYPE_SECURE_MR_OPERATOR_COLOR_CONVERT_PICO = 1010007020,
-
+        XR_TYPE_SECURE_MR_OPERATOR_JAVASCRIPT_PICO = 1010007021,
+        XR_TYPE_SENSE_DATA_PROVIDER_CREATE_INFO_SPATIAL_PLANE_PICO =  1010027001,
+        // Readback Tensor (RelaxMR)
+        XR_TYPE_READBACK_TENSOR_BUFFER_PICO = 1010029000,
+        XR_TYPE_CREATE_BUFFER_FROM_GLOBAL_TENSOR_COMPLETION_PICO = 1010029001,
+        XR_TYPE_CREATE_TEXTURE_FROM_GLOBAL_TENSOR_COMPLETION_PICO = 1010029002,
+        XR_TYPE_READBACK_TEXTURE_IMAGE_VULKAN_PICO = 1010030000,
+        XR_TYPE_READBACK_TEXTURE_IMAGE_OPENGL_PICO = 1010031000,
         //pico system
         XR_TYPE_EVENT_CONTROLLER_STATE_CHANGED_PICO = 1200006064,
         XR_TYPE_EVENT_SEETHROUGH_STATE_CHANGED = 1200006065,
@@ -725,6 +732,13 @@ namespace Unity.XR.PXR
         XR_TYPE_EVENT_DATA_EXPAND_DEVICE_CUSTOM_DATA_STATE_CHANGED = 1010008006,
         XR_TYPE_EXPAND_DEVICE_CUSTOM_DATA = 1010008001,
      
+        //MR2.0
+        XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_CREATED_BD = 1200006335,
+        XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_PERSISTED_BD = 1200006344,
+        XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_UNPERSISTED_BD = 1200006345,
+        XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_CLEARED_BD = 1200006346,
+        XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_LOADED_BD = 1200006350,
+        XR_TYPE_EVENT_DATA_SPATIAL_SCENE_CAPTURED_BD =  1200006361,
          //MR
         XR_TYPE_EVENT_DATA_ENVIRONMENT_BLEND_MODE_CHANGED_EXT = 1200007323,
         XR_TYPE_SPATIAL_ENTITY_LOCATION_GET_INFO = 1200389002,
@@ -779,7 +793,59 @@ namespace Unity.XR.PXR
       
   
         XR_STRUCTURE_TYPE_MAX_ENUM = 0x7FFFFFFF
-    } 
+    }
+
+    // Readback Tensor structs
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrReadbackTextureImageBaseHeader
+    {
+        public XrStructureType type;
+        public IntPtr next;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrReadbackTextureImageVulkan
+    {
+        public XrStructureType type;
+        public IntPtr next;
+        public IntPtr image; // VkImage
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrReadbackTextureImageOpenGL
+    {
+        public XrStructureType type;
+        public IntPtr next;
+        public uint texId; // GLuint
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrReadbackTensorBuffer
+    {
+        public XrStructureType type;
+        public IntPtr next;
+        public uint bufferCapacityInput;
+        public uint bufferCountOutput;
+        public IntPtr buffer;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrCreateBufferFromGlobalTensorCompletion
+    {
+        public XrStructureType type;
+        public IntPtr next;
+        public PxrResult futureResult;
+        public IntPtr tensorBuffer; // -> XrReadbackTensorBuffer*
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct XrCreateTextureFromGlobalTensorCompletion
+    {
+        public XrStructureType type;
+        public IntPtr next;
+        public PxrResult futureResult;
+        public ulong texture; // XrReadbackTexture
+    }
     
     public enum XrDeviceEventType
     {

@@ -36,299 +36,7 @@ namespace Unity.XR.PXR
 {
     //MR
     #region MR
-
-    #region SecureMR
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMRPipelineExecuteParameter
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public ulong pipelineRunToBeWaited;
-        public ulong conditionTensor;
-        public uint pairCount;
-        public IntPtr pipelineIOPair; //SecureMrPipelineIOPair[]
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMRPipelineIOPair
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public ulong localPlaceHolderTensor;
-        public ulong globalTensor;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMRTensorBuffer
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public uint bufferSize;
-        public IntPtr buffer;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMRTensorCreateInfoShape
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public bool placeHolder;
-        public uint dimensionsCount;
-        public IntPtr dimensions;
-        public IntPtr format; // XrSecureMrTensorFormat
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMRTensorCreateInfoGltf
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public bool placeHolder;
-        public uint bufferSize;
-        public IntPtr buffer;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMRTensorFormat
-    {
-        public SecureMRTensorDataType dataType;
-        public sbyte channel;
-        public SecureMRTensorUsage tensorUsage;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorArithmeticCompose
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2048)]
-        public byte[] configText;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorComparison
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public SecureMRComparison comparison;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorNonMaximumSuppression
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public float threshold;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorNormalize
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public SecureMRNormalizeType normalizeType;
-    }
-
-    /// <summary>
-    /// convert:https://docs.opencv.org/3.4/d8/d01/group__imgproc__color__conversions.html
-    /// </summary>
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorColorConvert
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public int convert;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorSortMatrix
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public SecureMRMatrixSortType sortType;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorUpdateGltf
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public SecureMRGltfOperatorAttribute attribute;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorRenderText
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public SecureMRFontTypeface typeFace;
-        public string languageAndLocale;
-        public int width;
-        public int height;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorModel
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public uint modelInputCount;
-        public IntPtr modelInputs;//SecureMrOperatorIOMap[]
-        public uint modelOutputCount;
-        public IntPtr modelOutputs;//SecureMrOperatorIOMap[]
-        public uint bufferSize;
-        public IntPtr buffer;
-        public SecureMRModelType modelType;
-        public string modelName;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SecureMROperatorIOMap
-    {
-        public XrStructureType type;
-        public IntPtr next;
-        public SecureMRModelEncoding encodingType;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 512)]
-        public byte[] nodeName;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 512)]
-        public byte[] operatorIOName;
-    }
-
-    public struct SecureMROperatorModelConfig
-    {
-        public SecureMRModelEncoding encodingType;
-        public string nodeName;
-        public string operatorIOName;
-    }
-
-    public enum SecureMRModelEncoding
-    {
-        Float32 = 1,
-        UInt8 = 2,
-        Int8 = 3,
-        UInt16 = 4,
-        Int32 = 5,
-    }
-
-    public enum SecureMRModelType
-    {
-        QnnContextBinary = 1,
-    }
-
-    public enum SecureMRFontTypeface
-    {
-        Default = 1,
-        SansSerif = 2,
-        Serif = 3,
-        Monospace = 4,
-        Bold = 5,
-        Italic = 6,
-    }
-
-    public enum SecureMRGltfOperatorAttribute
-    {
-        Texture = 1,
-        Animation = 2,
-        WorldPose = 3,
-        LocalTransform = 4,
-        MaterialMetallicFactor = 5,
-        MaterialRoughnessFactor = 6,
-        MaterialOcclusionMapTexture = 7,
-        MaterialBaseColorFactor = 8,
-        MaterialEmissiveFactor = 9,
-        MaterialEmissiveStrength = 10,
-        MaterialEmissiveTexture = 11,
-        MaterialBaseColorTexture = 12,
-        MaterialNormalMapTexture = 13,
-        MaterialMetallicRoughnessTexture = 14,
-    }
-
-    public enum SecureMRMatrixSortType
-    {
-        Column = 1,
-        Row = 2,
-    }
-
-    public enum SecureMRNormalizeType
-    {
-        L1 = 1,
-        L2 = 2,
-        Inf = 3,
-        MinMax = 4,
-    }
-
-    public enum SecureMRTensorDataType
-    {
-        Unknown = -1,
-        Byte = 1,
-        Sbyte,
-        Ushort,
-        Short,
-        Int,
-        Float,
-        Double,
-    }
-
-    public enum SecureMRTensorUsage
-    {
-        Unknown = -1,
-        Point = 1,
-        Scalar,
-        Slice,
-        Color,
-        TimeStamp,
-        Matrix
-    }
-
-    public enum SecureMRComparison
-    {
-        Unknown = 0,
-        LargerThan = 1,
-        SmallerThan = 2,
-        SmallerOrEqual = 3,
-        LargerOrEqual = 4,
-        EqualTo = 5,
-        NotEqual = 6,
-    }
-
-    public enum SecureMROperatorType
-    {
-        Unknown = 0,
-        ArithmeticCompose = 1,
-        ElementwiseMin = 4,
-        ElementwiseMax = 5,
-        ElementwiseMultiply = 6,
-        CustomizedCompare = 7,
-        ElementwiseOr = 8,
-        ElementwiseAnd = 9,
-        All = 10,
-        Any = 11,
-        Nms = 12,
-        SolvePnP = 13,
-        GetAffine = 14,
-        ApplyAffine = 15,
-        ApplyAffinePoint = 16,
-        UvTo3DInCameraSpace = 17,
-        Assignment = 18,
-        RunModelInference = 19,
-        Normalize = 21,
-        CameraSpaceToWorld = 22,
-        RectifiedVstAccess = 23,
-        Argmax = 24,
-        ConvertColor = 25,
-        SortVector = 26,
-        Inversion = 27,
-        GetTransformMatrix = 28,
-        SortMatrix = 29,
-        SwitchGltfRenderStatus = 30,
-        UpdateGltf = 31,
-        RenderText = 32,
-        LoadTexture = 33,
-    }
-
-    #endregion
-
+    
     #region MR3.0
     
     public enum PxrVstStatus
@@ -638,6 +346,10 @@ namespace Unity.XR.PXR
         /// Scene capture data provider.
         /// </summary>
         SceneCapture,
+        /// <summary>
+        /// Plane detection data provider.
+        /// </summary>
+        PlaneDetection,
     }
 
 
@@ -801,6 +513,27 @@ namespace Unity.XR.PXR
         public PxrScenePolygon polygon;
     }
 
+    public struct PxrPlaneData
+    {
+        public Guid uuid;
+        public Vector3 position;
+        public Quaternion rotation;
+        public PxrSemanticLabel label;
+        public PxrSceneBox2D box2D;
+        public ushort[] indices;
+        public Vector3[] vertices;
+        public MeshChangeState state;
+        public PxrPlaneOrientation orientationMode;
+    }
+
+    public enum PxrPlaneOrientation
+    {
+        HorizontalUpward = 0,
+        HorizontalDownward = 1,
+        Vertical = 2,
+        Arbitrary = 3,
+    }
+
     public struct PxrUuid
     {
         public ulong value0;
@@ -833,7 +566,6 @@ namespace Unity.XR.PXR
     #region new mr
     public struct PxrAnchorEntityCreateInfo
     {
-        public PxrTrackingOrigin origin;
         public PxrPosef pose;
         public double time;
     }
@@ -2511,6 +2243,22 @@ namespace Unity.XR.PXR
     {
         public int width;
         public int height;
+
+        public PxrExtent2Di(int width, int height)
+        {
+            this.width = width;
+            this.height = height;
+        } 
+
+        public static bool operator ==(PxrExtent2Di left, PxrExtent2Di right)
+        {
+            return left.width == right.width && left.height == right.height;
+        }
+        
+        public static bool operator !=(PxrExtent2Di left, PxrExtent2Di right)
+        {
+            return !(left == right);
+        }
     };
 
     [StructLayout(LayoutKind.Sequential)]
@@ -2528,61 +2276,7 @@ namespace Unity.XR.PXR
 
         #region DLLImports
         //MR
-
-        #region SecureMR
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMRFramework(int width, int height, out ulong providerHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_DestroySecureMRFramework(ulong providerHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMRPipeline(ulong providerHandle,out ulong pipelineHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_DestroySecureMRPipeline(ulong pipelineHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_ExecuteSecureMRPipeline(ulong pipelineHandle, ref SecureMRPipelineExecuteParameter parameter, out ulong pipelineRunHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_SetSecureMROperatorOperandByName(ulong pipelineHandle, ulong operatorHandle,ulong tensorHandle, string name);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_SetSecureMROperatorResultByName(ulong pipelineHandle, ulong operatorHandle, ulong tensorHandle, string name);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMRTensorByShape(ulong frameworkHandle, SecureMRTensorCreateInfoShape createInfo ,out ulong tensorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMRTensorByGltf(ulong frameworkHandle, SecureMRTensorCreateInfoGltf createInfo, out ulong tensorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMRPipelineTensorByShape(ulong pipelineHandle, SecureMRTensorCreateInfoShape createInfo, out ulong tensorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMRPipelineTensorByGltf(ulong pipelineHandle, SecureMRTensorCreateInfoGltf createInfo, out ulong tensorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_ResetSecureMRTensor(ulong tensorHandle,ref SecureMRTensorBuffer buffer);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_ResetSecureMRPipelineTensor(ulong pipelineHandle,ulong tensorHandle, ref SecureMRTensorBuffer buffer);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_DestroySecureMRTensor(ulong tensorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperator(ulong pipelineHandle, SecureMROperatorType operatorType, out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorArithmeticCompose(ulong pipelineHandle, ref SecureMROperatorArithmeticCompose config, out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorComparison(ulong pipelineHandle, ref SecureMROperatorComparison config, out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorNonMaximumSuppression(ulong pipelineHandle, ref SecureMROperatorNonMaximumSuppression config, out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorUVTo3D(ulong pipelineHandle, out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorNormalize(ulong pipelineHandle, ref SecureMROperatorNormalize config,out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorColorConvert(ulong pipelineHandle, ref SecureMROperatorColorConvert config, out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorSortMatrix(ulong pipelineHandle, ref SecureMROperatorSortMatrix config, out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorUpdateGltf(ulong pipelineHandle, ref SecureMROperatorUpdateGltf config, out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorRenderText(ulong pipelineHandle, ref SecureMROperatorRenderText config, out ulong operatorHandle);
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pxr_CreateSecureMROperatorModel(ulong pipelineHandle, ref SecureMROperatorModel model, out ulong operatorHandle);
-
-        #endregion
-
+        
         #region 3.0 api Refactoring
 
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
@@ -2984,9 +2678,7 @@ namespace Unity.XR.PXR
         //Tracking Sensor
         [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern int Pxr_GetPredictedMainSensorState2(double predictTimeMs, ref PxrSensorState2 sensorState, ref int sensorFrameIndex);
-
-        [DllImport(PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int Pxr_HMDUpdateSwitch(bool enable);        
+        
 
         [DllImport(PXR_Plugin.PXR_PLATFORM_DLL, CallingConvention = CallingConvention.Cdecl)]
         public static extern void Pxr_SubmitLayerSwitch(bool enable);
@@ -4524,15 +4216,6 @@ namespace Unity.XR.PXR
                 PLog.d(TAG, "UPxr_GetPSensorState() psensor:" + isUserPresent);
                 return isUserPresent;
             }
-            public static int UPxr_HMDUpdateSwitch(bool value)
-            {
-                PLog.d(TAG, $"UPxr_HMDUpdateSwitch() value={value}");
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_HMDUpdateSwitch(value);
-#else
-                return 0;
-#endif
-            }
             
             public static void UPxr_SubmitLayerSwitch(bool enable)
             {
@@ -5458,6 +5141,12 @@ namespace Unity.XR.PXR
             public static int UPxr_SetExpandDeviceCustomData( ref ExpandDevicesCustomData[] deviceArray)
             {
                 int val = -1;
+                if (deviceArray==null||deviceArray.Length==0)
+                {
+                    PLog.e(TAG, $"UPxr_SetExpandDeviceCustomData() deviceArray is null or empty");
+                    return val;
+                }
+
 #if !UNITY_EDITOR && UNITY_ANDROID
                 for (int i = 0; i < deviceArray.Length; i++)
                 {
@@ -5537,11 +5226,27 @@ namespace Unity.XR.PXR
             public static ulong SceneCaptureProviderHandle { get; set; }
             public static ulong SemiAutoSceneCaptureProviderHandle { get; set; }
             public static ulong AutoSceneCaptureProviderHandle { get; set; }
+            public static ulong PlaneDetectionProviderHandle { get; set; }
             public static Dictionary<ulong, PxrSceneComponentData> SceneAnchorData = new Dictionary<ulong, PxrSceneComponentData>();
+            public static Dictionary<Guid, PxrPlaneData> PlaneAnchorData = new Dictionary<Guid, PxrPlaneData>();
+            public static Dictionary<Guid, ulong> planeAnchorLastData = new Dictionary<Guid, ulong>();
             public static Dictionary<Guid, PxrSpatialMeshInfo> SpatialMeshData = new Dictionary<Guid, PxrSpatialMeshInfo>();
             public static Dictionary<Guid, ulong> meshAnchorLastData = new Dictionary<Guid, ulong>();
             private static readonly Dictionary<Guid, List<IDisposable>> nativeMeshArrays = new Dictionary<Guid, List<IDisposable>>();
 
+            public static bool UPxr_UseMRLegacyApi()
+            {
+                if (string.Equals(System.ProductName, "PICO 4") ||
+                    string.Equals(System.ProductName, "PICO 4 Pro") ||
+                    string.Equals(System.ProductName, "PICO 4 Enterprise"))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
             public static PxrSpatialSceneDataTypeFlags UPxr_ConvertSemanticToSceneFlag(PxrSemanticLabel label)
             {
                 switch (label)
@@ -5630,6 +5335,22 @@ namespace Unity.XR.PXR
                 return PxrResult.ERROR_RUNTIME_FAILURE;
 #endif
             }
+
+            public static PxrResult UPxr_CreatePlaneDetectionSenseDataProvider()
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                XrSenseDataProviderCreateInfoBaseHeader header = new XrSenseDataProviderCreateInfoBaseHeader()
+                {
+                    type = XrStructureType.XR_TYPE_SENSE_DATA_PROVIDER_CREATE_INFO_SPATIAL_PLANE_PICO
+                };
+
+                var pxrResult = UPxr_CreateSenseDataProvider(ref header, out var providerHandle);
+                PlaneDetectionProviderHandle = providerHandle;
+                return pxrResult;
+#else
+                return PxrResult.ERROR_RUNTIME_FAILURE;
+#endif
+            }
             public static ulong UPxr_GetSpatialMeshProviderHandle()
             {
 #if UNITY_ANDROID && !UNITY_EDITOR
@@ -5699,6 +5420,8 @@ namespace Unity.XR.PXR
                         return SpatialAnchorProviderHandle;
                     case PxrSenseDataProviderType.SceneCapture:
                         return SceneCaptureProviderHandle;
+                    case PxrSenseDataProviderType.PlaneDetection:
+                        return PlaneDetectionProviderHandle;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(type), type, null);
                 }
@@ -5849,6 +5572,23 @@ namespace Unity.XR.PXR
                 var pxrResult = UPxr_QuerySenseDataAsync(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture), ref info, out future);
                 Marshal.FreeHGlobal(semanticFilter.semantics);
                 Marshal.FreeHGlobal(info.filter);
+                return pxrResult;
+#else
+                future = ulong.MinValue;
+                return PxrResult.ERROR_RUNTIME_FAILURE;
+#endif
+            }
+
+            public static PxrResult UPxr_QueryPlaneAnchorAsync(out ulong future)
+            {
+#if UNITY_ANDROID && !UNITY_EDITOR
+                XrSenseDataQueryInfo info = new XrSenseDataQueryInfo()
+                {
+                    type = XrStructureType.XR_TYPE_SENSE_DATA_QUERY_INFO,
+                    filter = IntPtr.Zero
+                };
+
+                var pxrResult = UPxr_QuerySenseDataAsync(UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.PlaneDetection), ref info, out future);
                 return pxrResult;
 #else
                 future = ulong.MinValue;
@@ -6646,955 +6386,8 @@ namespace Unity.XR.PXR
                 return -1;
 #endif
             }
-
-            public static PxrResult UPxr_CreateAnchorEntity(ref PxrAnchorEntityCreateInfo info, out ulong anchorHandle)
-            {
-                anchorHandle = ulong.MinValue;
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_CreateAnchorEntity(ref info,out anchorHandle);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_DestroyAnchorEntity(ref PxrAnchorEntityDestroyInfo info)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_DestroyAnchorEntity(ref info);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_PersistAnchorEntity(ref PxrAnchorEntityPersistInfo info, out ulong taskId)
-            {
-                taskId = ulong.MinValue;
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_PersistAnchorEntity(ref info, out taskId);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_UnpersistAnchorEntity(ref PxrAnchorEntityUnPersistInfo info, out ulong taskId)
-            {
-                taskId = ulong.MinValue;
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_UnpersistAnchorEntity(ref info, out taskId);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_ClearPersistedAnchorEntity(ref PxrAnchorEntityClearInfo info, out ulong taskId)
-            {
-                taskId = ulong.MinValue;
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_ClearPersistedAnchorEntity(ref info, out taskId);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_GetAnchorPose(ulong anchorHandle, PxrTrackingOrigin origin, out PxrPosef pose)
-            {
-                pose = new PxrPosef();
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_GetAnchorPose(anchorHandle,origin, out pose);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_GetAnchorEntityUuid(ulong anchorHandle, out PxrUuid uuid)
-            {
-                uuid = new PxrUuid();
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_GetAnchorEntityUuid(anchorHandle, out uuid);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_GetAnchorComponentFlags(ulong anchorHandle, out ulong flag)
-            {
-                flag = UInt64.MinValue;
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_GetAnchorComponentFlags(anchorHandle, out flag);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_StartSpatialSceneCapture(out ulong taskId)
-            {
-                taskId = ulong.MinValue;
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_StartSpatialSceneCapture(out taskId);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_GetAnchorVolumeInfo(ulong anchorHandle, ref PxrAnchorVolumeInfo info)
-            {
-
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_GetAnchorBoxInfo(anchorHandle, ref info);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_GetAnchorPlanePolygonInfo(ulong anchorHandle, ref PxrAnchorPlanePolygonInfo info)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_GetAnchorPlanePolygonInfo(anchorHandle, ref info);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_GetAnchorPlaneBoundaryInfo(ulong anchorHandle, ref PxrAnchorPlaneBoundaryInfo info)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_GetAnchorPlaneBoundaryInfo(anchorHandle, ref info);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            public static PxrResult UPxr_GetAnchorSceneLabel(ulong anchorHandle, out PxrSceneLabel label)
-            {
-                label = PxrSceneLabel.UnKnown;
-#if UNITY_ANDROID && !UNITY_EDITOR
-                return Pxr_GetAnchorSceneLabel(anchorHandle, out label);
-#else
-                return PxrResult.TIMEOUT_EXPIRED;
-#endif
-            }
-
-            private const int MAX_EVENT = 20;
-            private static IntPtr[] eventArrayHandle = new IntPtr[MAX_EVENT];
-            public static bool UPxr_PollEventQueue(ref List<PxrEventDataBuffer> bufferList)
-            {
-                bool ret = false;
-#if UNITY_ANDROID && !UNITY_EDITOR
-                int eventNum = 0;
-                ret = Pxr_PollEventFromXRPlugin(ref eventNum, eventArrayHandle);
-                if (ret)
-                {
-                    for (int i = 0; i < eventNum; i++)
-                    {
-                        PxrEventDataBuffer buffer = (PxrEventDataBuffer)Marshal.PtrToStructure(eventArrayHandle[i], typeof(PxrEventDataBuffer));
-                        bufferList.Add(buffer);
-                    }
-                }
-#endif
-                return ret;
-            }
+            
 
         }
-#if !PICO_OPENXR_SDK
-        public static class SecureMR
-        {
-            public const string TAG = "SecureMR";
-
-            public static readonly Dictionary<Type, SecureMRTensorDataType> TensorDataTypeToEnum = new Dictionary<Type, SecureMRTensorDataType>
-            {
-                { typeof(char), SecureMRTensorDataType.Byte },
-                { typeof(byte), SecureMRTensorDataType.Byte },
-                { typeof(sbyte), SecureMRTensorDataType.Sbyte },
-                { typeof(ushort), SecureMRTensorDataType.Ushort },
-                { typeof(short), SecureMRTensorDataType.Short },
-                { typeof(int), SecureMRTensorDataType.Int },
-                { typeof(float), SecureMRTensorDataType.Float },
-                { typeof(double), SecureMRTensorDataType.Double },
-            };
-
-            public static readonly Dictionary<Type, SecureMRTensorUsage> TensorClassToEnum = new Dictionary<Type, SecureMRTensorUsage>
-            {
-                { typeof(Scalar), SecureMRTensorUsage.Scalar },
-                { typeof(Point), SecureMRTensorUsage.Point },
-                { typeof(Slice), SecureMRTensorUsage.Slice },
-                { typeof(PXR.SecureMR.Color), SecureMRTensorUsage.Color },
-                { typeof(TimeStamp), SecureMRTensorUsage.TimeStamp },
-                { typeof(Matrix), SecureMRTensorUsage.Matrix }
-            };
-            
-            public static readonly Dictionary<SecureMRTensorUsage, Type> TensorEnumToClass = new Dictionary<SecureMRTensorUsage, Type>
-            {
-                { SecureMRTensorUsage.Scalar, typeof(Scalar) },
-                {  SecureMRTensorUsage.Point,typeof(Point) },
-                {  SecureMRTensorUsage.Slice,typeof(Slice) },
-                {  SecureMRTensorUsage.Color,typeof(PXR.SecureMR.Color) },
-                { SecureMRTensorUsage.TimeStamp,typeof(TimeStamp)},
-                {  SecureMRTensorUsage.Matrix ,typeof(Matrix)}
-            };
-
-            public static readonly Dictionary<Type, SecureMROperatorType> OperatorClassToEnum = new Dictionary<Type, SecureMROperatorType>
-            {
-                { typeof(ArithmeticComposeOperator), SecureMROperatorType.ArithmeticCompose },
-                { typeof(ElementwiseMinOperator), SecureMROperatorType.ElementwiseMin },
-                { typeof(ElementwiseMaxOperator), SecureMROperatorType.ElementwiseMax },
-                { typeof(ElementwiseMultiplyOperator), SecureMROperatorType.ElementwiseMultiply },
-                { typeof(CustomizedCompareOperator), SecureMROperatorType.CustomizedCompare },
-                { typeof(ElementwiseOrOperator), SecureMROperatorType.ElementwiseOr },
-                { typeof(ElementwiseAndOperator), SecureMROperatorType.ElementwiseAnd },
-                { typeof(AllOperator), SecureMROperatorType.All },
-                { typeof(AnyOperator), SecureMROperatorType.Any },
-                { typeof(NmsOperator), SecureMROperatorType.Nms },
-                { typeof(SolvePnPOperator), SecureMROperatorType.SolvePnP },
-                { typeof(GetAffineOperator), SecureMROperatorType.GetAffine },
-                { typeof(ApplyAffineOperator), SecureMROperatorType.ApplyAffine },
-                { typeof(ApplyAffinePointOperator), SecureMROperatorType.ApplyAffinePoint },
-                { typeof(UvTo3DInCameraSpaceOperator), SecureMROperatorType.UvTo3DInCameraSpace },
-                { typeof(AssignmentOperator), SecureMROperatorType.Assignment },
-                { typeof(RunModelInferenceOperator), SecureMROperatorType.RunModelInference },
-                { typeof(NormalizeOperator), SecureMROperatorType.Normalize },
-                { typeof(CameraSpaceToWorldOperator), SecureMROperatorType.CameraSpaceToWorld },
-                { typeof(RectifiedVstAccessOperator), SecureMROperatorType.RectifiedVstAccess },
-                { typeof(ArgmaxOperator), SecureMROperatorType.Argmax },
-                { typeof(ConvertColorOperator), SecureMROperatorType.ConvertColor },
-                { typeof(SortVectorOperator), SecureMROperatorType.SortVector },
-                { typeof(InversionOperator), SecureMROperatorType.Inversion },
-                { typeof(GetTransformMatrixOperator), SecureMROperatorType.GetTransformMatrix },
-                { typeof(SortMatrixOperator), SecureMROperatorType.SortMatrix },
-                { typeof(SwitchGltfRenderStatusOperator), SecureMROperatorType.SwitchGltfRenderStatus },
-                { typeof(UpdateGltfOperator), SecureMROperatorType.UpdateGltf },
-                { typeof(RenderTextOperator), SecureMROperatorType.RenderText },
-                { typeof(LoadTextureOperator), SecureMROperatorType.LoadTexture },
-            };
-            
-            public static PxrResult UPxr_CreateSecureMRProvider(int width, int height, out ulong providerHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                var result = Pxr_CreateSecureMRFramework(width, height, out providerHandle);
-
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                providerHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_DestroySecureMRProvider(ulong providerHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                var result = Pxr_DestroySecureMRFramework(providerHandle);
-
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-
-#else
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMRPipeline(ulong providerHandle, out ulong pipelineHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                var result = Pxr_CreateSecureMRPipeline(providerHandle, out pipelineHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                pipelineHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_DestroySecureMRPipeline(ulong pipelineHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                var result = Pxr_DestroySecureMRPipeline(pipelineHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_SetSecureMROperatorOperandByName(ulong pipelineHandle, ulong operatorHandle, ulong tensorHandle, string name)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                var result = Pxr_SetSecureMROperatorOperandByName(pipelineHandle, operatorHandle, tensorHandle, name);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_SetSecureMROperatorResultByName(ulong pipelineHandle, ulong operatorHandle, ulong tensorHandle, string name)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                var result = Pxr_SetSecureMROperatorResultByName(pipelineHandle, operatorHandle, tensorHandle, name);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_ExecuteSecureMRPipeline(ulong pipelineHandle, Dictionary<ulong, ulong> tensorMappings, out ulong pipelineRunHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMRPipelineExecuteParameter parameter = new SecureMRPipelineExecuteParameter
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_PIPELINE_EXECUTE_PARAMETER_PICO,
-                    next = IntPtr.Zero,
-                    pipelineRunToBeWaited = 0,
-                    conditionTensor = 0,
-                    pairCount = 0,
-                    pipelineIOPair = IntPtr.Zero
-                };
-
-                if (tensorMappings != null && tensorMappings.Count > 0)
-                {
-                    parameter.pairCount = (uint)tensorMappings.Count;
-                    List<SecureMRPipelineIOPair> pairs = new List<SecureMRPipelineIOPair>();
-                    foreach (var tensorMapping in tensorMappings)
-                    {
-                        SecureMRPipelineIOPair pair = new SecureMRPipelineIOPair
-                        {
-                            type = XrStructureType.XR_TYPE_SECURE_MR_PIPELINE_IO_PAIR_PICO,
-                            next = IntPtr.Zero,
-                            localPlaceHolderTensor = tensorMapping.Key,
-                            globalTensor = tensorMapping.Value,
-                        };
-                        pairs.Add(pair);
-                    }
-
-                    int structSize = Marshal.SizeOf(typeof(SecureMRPipelineIOPair));
-                    parameter.pipelineIOPair = Marshal.AllocHGlobal(structSize * tensorMappings.Count);
-                    for (int i = 0; i < tensorMappings.Count; i++)
-                    {
-                        IntPtr temp = parameter.pipelineIOPair + i * structSize;
-                        Marshal.StructureToPtr(pairs[i], temp, false);
-                    }
-                }
-
-                var result = Pxr_ExecuteSecureMRPipeline(pipelineHandle, ref parameter, out pipelineRunHandle);
-
-                Marshal.FreeHGlobal(parameter.pipelineIOPair);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                pipelineRunHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_ExecuteSecureMRPipelineAfter(ulong pipelineHandle, ulong lastPipelineRunHandle, Dictionary<ulong, ulong> tensorMappings, out ulong pipelineRunHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMRPipelineExecuteParameter parameter = new SecureMRPipelineExecuteParameter
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_PIPELINE_EXECUTE_PARAMETER_PICO,
-                    next = IntPtr.Zero,
-                    pipelineRunToBeWaited = lastPipelineRunHandle,
-                    conditionTensor = 0,
-                };
-                parameter.pairCount = (uint)tensorMappings.Count;
-
-                List<SecureMRPipelineIOPair> pairs = new List<SecureMRPipelineIOPair>();
-                foreach (var tensorMapping in tensorMappings)
-                {
-                    SecureMRPipelineIOPair pair = new SecureMRPipelineIOPair
-                    {
-                        type = XrStructureType.XR_TYPE_SECURE_MR_PIPELINE_IO_PAIR_PICO,
-                        next = IntPtr.Zero,
-                        localPlaceHolderTensor = tensorMapping.Key,
-                        globalTensor = tensorMapping.Value,
-                    };
-                    pairs.Add(pair);
-                }
-
-                int structSize = Marshal.SizeOf(typeof(SecureMRPipelineIOPair));
-                parameter.pipelineIOPair = Marshal.AllocHGlobal(structSize * tensorMappings.Count);
-                for (int i = 0; i < tensorMappings.Count; i++)
-                {
-                    IntPtr temp = parameter.pipelineIOPair + i * structSize;
-                    Marshal.StructureToPtr(pairs[i], temp, false);
-                }
-
-                var result = Pxr_ExecuteSecureMRPipeline(pipelineHandle, ref parameter, out pipelineRunHandle);
-
-                Marshal.FreeHGlobal(parameter.pipelineIOPair);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                pipelineRunHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_ExecuteSecureMRPipelineConditional(ulong pipelineHandle, ulong conditionTensor, Dictionary<ulong, ulong> tensorMappings, out ulong pipelineRunHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMRPipelineExecuteParameter parameter = new SecureMRPipelineExecuteParameter
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_PIPELINE_EXECUTE_PARAMETER_PICO,
-                    next = IntPtr.Zero,
-                    pipelineRunToBeWaited = 0,
-                    conditionTensor = conditionTensor,
-                };
-                parameter.pairCount = (uint)tensorMappings.Count;
-
-                List<SecureMRPipelineIOPair> pairs = new List<SecureMRPipelineIOPair>();
-                foreach (var tensorMapping in tensorMappings)
-                {
-                    SecureMRPipelineIOPair pair = new SecureMRPipelineIOPair
-                    {
-                        type = XrStructureType.XR_TYPE_SECURE_MR_PIPELINE_IO_PAIR_PICO,
-                        next = IntPtr.Zero,
-                        localPlaceHolderTensor = tensorMapping.Key,
-                        globalTensor = tensorMapping.Value,
-                    };
-                    pairs.Add(pair);
-                }
-
-                int structSize = Marshal.SizeOf(typeof(SecureMRPipelineIOPair));
-                parameter.pipelineIOPair = Marshal.AllocHGlobal(structSize * tensorMappings.Count);
-                for (int i = 0; i < tensorMappings.Count; i++)
-                {
-                    IntPtr temp = parameter.pipelineIOPair + i * structSize;
-                    Marshal.StructureToPtr(pairs[i], temp, false);
-                }
-
-                var result = Pxr_ExecuteSecureMRPipeline(pipelineHandle, ref parameter, out pipelineRunHandle);
-
-                Marshal.FreeHGlobal(parameter.pipelineIOPair);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                pipelineRunHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMRTensorByShape(ulong frameworkHandle, SecureMRTensorDataType dataType, int[] dimensions, sbyte channel, SecureMRTensorUsage usage, out ulong tensorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMRTensorCreateInfoShape createInfo = new SecureMRTensorCreateInfoShape
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_TENSOR_CREATE_INFO_SHAPE_PICO,
-                    next = IntPtr.Zero,
-                    placeHolder = false,
-                    dimensionsCount = (uint)dimensions.Length,
-                    dimensions = IntPtr.Zero,
-                    format = IntPtr.Zero
-                };
-
-                SecureMRTensorFormat tensorFormat = new SecureMRTensorFormat
-                {
-                    dataType = dataType,
-                    channel = channel,
-                    tensorUsage = usage,
-                };
-
-                if (dimensions.Length > 0)
-                {
-                    int size = Marshal.SizeOf(typeof(int)) * dimensions.Length;
-                    createInfo.dimensions = Marshal.AllocHGlobal(size);
-                    Marshal.Copy(dimensions, 0, createInfo.dimensions, size);
-                }
-
-                int size1 = Marshal.SizeOf(typeof(SecureMRTensorFormat));
-                createInfo.format = Marshal.AllocHGlobal(size1);
-                Marshal.StructureToPtr(tensorFormat, createInfo.format, false);
-
-                var result = Pxr_CreateSecureMRTensorByShape(frameworkHandle, createInfo, out tensorHandle);
-                if (dimensions.Length > 0)
-                {
-                    Marshal.FreeHGlobal(createInfo.dimensions);
-                }
-                
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                tensorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMRPipelineTensorByShape(ulong pipelineHandle, bool placeHolder, SecureMRTensorDataType dataType, int[] dimensions, sbyte channel, SecureMRTensorUsage usage, out ulong tensorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMRTensorCreateInfoShape createInfo = new SecureMRTensorCreateInfoShape
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_TENSOR_CREATE_INFO_SHAPE_PICO,
-                    next = IntPtr.Zero,
-                    placeHolder = placeHolder,
-                    dimensionsCount = 0,
-                    dimensions = IntPtr.Zero,
-                    format = IntPtr.Zero
-                };
-
-                SecureMRTensorFormat tensorFormat = new SecureMRTensorFormat
-                {
-                    dataType = dataType,
-                    channel = channel,
-                    tensorUsage = usage,
-                };
-
-                if (dimensions.Length > 0)
-                {
-                    createInfo.dimensionsCount = (uint)dimensions.Length;
-                    int size = Marshal.SizeOf(typeof(int)) * dimensions.Length;
-                    createInfo.dimensions = Marshal.AllocHGlobal(size);
-                    Marshal.Copy(dimensions, 0, createInfo.dimensions, size);
-                }
-
-                int size1 = Marshal.SizeOf(typeof(SecureMRTensorFormat));
-                createInfo.format = Marshal.AllocHGlobal(size1);
-                Marshal.StructureToPtr(tensorFormat, createInfo.format, false);
-                var result = Pxr_CreateSecureMRPipelineTensorByShape(pipelineHandle, createInfo, out tensorHandle);
-                if (dimensions.Length > 0)
-                {
-                    Marshal.FreeHGlobal(createInfo.dimensions);
-                }
-                
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                tensorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMRTensorByGltf(ulong frameworkHandle, byte[] gltfData, out ulong tensorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMRTensorCreateInfoGltf createInfo = new SecureMRTensorCreateInfoGltf
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_TENSOR_CREATE_INFO_GLTF_PICO,
-                    next = IntPtr.Zero,
-                    placeHolder = false,
-                };
-                int size = Marshal.SizeOf(typeof(byte)) * gltfData.Length;
-
-                createInfo.bufferSize = (uint)size;
-                createInfo.buffer = Marshal.AllocHGlobal(size);
-                Marshal.Copy(gltfData, 0, createInfo.buffer, size);
-
-                var result = Pxr_CreateSecureMRTensorByGltf(frameworkHandle, createInfo, out tensorHandle);
-                Marshal.FreeHGlobal(createInfo.buffer);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                tensorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMRPipelineTensorByGltf(ulong pipelineHandle, bool placeHolder, byte[] gltfData, out ulong tensorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMRTensorCreateInfoGltf createInfo = new SecureMRTensorCreateInfoGltf
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_TENSOR_CREATE_INFO_GLTF_PICO,
-                    next = IntPtr.Zero,
-                    placeHolder = placeHolder,
-                    bufferSize = 0,
-                    buffer = IntPtr.Zero
-                };
-
-                if (gltfData!=null && gltfData.Length > 0)
-                {
-                    int size = Marshal.SizeOf(typeof(byte)) * gltfData.Length;
-                    createInfo.bufferSize = (uint)size;
-                    createInfo.buffer = Marshal.AllocHGlobal(size);
-                    Marshal.Copy(gltfData, 0, createInfo.buffer, size);
-                }
-                var result = Pxr_CreateSecureMRPipelineTensorByGltf(pipelineHandle, createInfo, out tensorHandle);
-                if (gltfData!=null && gltfData.Length > 0)
-                {
-                    Marshal.FreeHGlobal(createInfo.buffer);
-                }
-                
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                tensorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_ResetSecureMRTensor<T>(ulong tensorHandle, T[] tensorData)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMRTensorBuffer buffer = new SecureMRTensorBuffer
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_TENSOR_BUFFER_PICO,
-                    next = IntPtr.Zero,
-                    bufferSize = 0
-                };
-
-                int size = Marshal.SizeOf(typeof(T)) * tensorData.Length;
-                buffer.bufferSize = (uint)size;
-                buffer.buffer = Marshal.AllocHGlobal(size);
-                if (typeof(T) == typeof(byte))
-                {
-                    Marshal.Copy(tensorData as byte[], 0, buffer.buffer, tensorData.Length);
-                }
-                else if (typeof(T) == typeof(sbyte))
-                {
-                    sbyte[] sbyteArray = tensorData as sbyte[];
-                    byte[] byteArray = new byte[size];
-                    Buffer.BlockCopy(sbyteArray, 0, byteArray, 0, size);
-                    Marshal.Copy(byteArray, 0, buffer.buffer, size);
-                }
-                else if (typeof(T) == typeof(short))
-                {
-                    Marshal.Copy(tensorData as short[], 0, buffer.buffer, tensorData.Length);
-                }
-                else if (typeof(T) == typeof(ushort))
-                {
-                    ushort[] ushortArray = tensorData as ushort[];
-                    byte[] byteArray = new byte[size];
-                    Buffer.BlockCopy(ushortArray, 0, byteArray, 0, size);
-                    Marshal.Copy(byteArray, 0, buffer.buffer, size);
-                }
-                else if (typeof(T) == typeof(int))
-                {
-                    Marshal.Copy(tensorData as int[], 0, buffer.buffer, tensorData.Length);
-                }
-                else if (typeof(T) == typeof(float))
-                {
-                    Marshal.Copy(tensorData as float[], 0, buffer.buffer, tensorData.Length);
-                }
-                else if (typeof(T) == typeof(double))
-                {
-                    double[] doubleArray = tensorData as double[];
-                    byte[] byteArray = new byte[size];
-                    Buffer.BlockCopy(doubleArray, 0, byteArray, 0, size);
-                    Marshal.Copy(byteArray, 0, buffer.buffer, size);
-                }
-
-                var result = Pxr_ResetSecureMRTensor(tensorHandle, ref buffer);
-
-                Marshal.FreeHGlobal(buffer.buffer);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_ResetSecureMRPipelineTensor<T>(ulong pipelineHandle, ulong tensorHandle, T[] tensorData)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMRTensorBuffer buffer = new SecureMRTensorBuffer
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_TENSOR_BUFFER_PICO,
-                    next = IntPtr.Zero,
-                };
-
-                int size = Marshal.SizeOf(typeof(T)) * tensorData.Length;
-                buffer.bufferSize = (uint)size;
-                buffer.buffer = Marshal.AllocHGlobal(size);
-                if (typeof(T) == typeof(byte))
-                {
-                    Marshal.Copy(tensorData as byte[], 0, buffer.buffer, tensorData.Length);
-                }
-                else if (typeof(T) == typeof(sbyte))
-                {
-                    sbyte[] sbyteArray = tensorData as sbyte[];
-                    byte[] byteArray = new byte[size];
-                    Buffer.BlockCopy(sbyteArray, 0, byteArray, 0, size);
-                    Marshal.Copy(byteArray, 0, buffer.buffer, size);
-                }
-                else if (typeof(T) == typeof(short))
-                {
-                    Marshal.Copy(tensorData as short[], 0, buffer.buffer, tensorData.Length);
-                }
-                else if (typeof(T) == typeof(ushort))
-                {
-                    ushort[] ushortArray = tensorData as ushort[];
-                    byte[] byteArray = new byte[size];
-                    Buffer.BlockCopy(ushortArray, 0, byteArray, 0, size);
-                    Marshal.Copy(byteArray, 0, buffer.buffer, size);
-                }
-                else if (typeof(T) == typeof(int))
-                {
-                    Marshal.Copy(tensorData as int[], 0, buffer.buffer, tensorData.Length);
-                }
-                else if (typeof(T) == typeof(float))
-                {
-                    Marshal.Copy(tensorData as float[], 0, buffer.buffer, tensorData.Length);
-                }
-                else if (typeof(T) == typeof(double))
-                {
-                    double[] doubleArray = tensorData as double[];
-                    byte[] byteArray = new byte[size];
-                    Buffer.BlockCopy(doubleArray, 0, byteArray, 0, size);
-                    Marshal.Copy(byteArray, 0, buffer.buffer, size);
-                }
-
-                var result = Pxr_ResetSecureMRPipelineTensor(pipelineHandle, tensorHandle, ref buffer);
-
-                Marshal.FreeHGlobal(buffer.buffer);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_DestroySecureMRTensor(ulong tensorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                var result = Pxr_DestroySecureMRTensor(tensorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperator(ulong pipelineHandle, SecureMROperatorType operatorType, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                var result = Pxr_CreateSecureMROperator(pipelineHandle, operatorType, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperatorArithmeticCompose(ulong pipelineHandle, string configText, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMROperatorArithmeticCompose config = new SecureMROperatorArithmeticCompose
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_ARITHMETIC_COMPOSE_PICO,
-                    next = IntPtr.Zero,
-                };
-
-                config.configText = new byte[2048];
-                byte[] stringBytes = Encoding.UTF8.GetBytes(configText);
-                int copyLength = Math.Min(stringBytes.Length, 2048);
-                Array.Copy(stringBytes,config.configText,copyLength);
-
-                var result = Pxr_CreateSecureMROperatorArithmeticCompose(pipelineHandle, ref config, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperatorComparison(ulong pipelineHandle, SecureMRComparison comparison, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMROperatorComparison config = new SecureMROperatorComparison
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_COMPARISON_PICO,
-                    next = IntPtr.Zero,
-                    comparison = comparison
-                };
-                var result = Pxr_CreateSecureMROperatorComparison(pipelineHandle, ref config, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperatorNonMaximumSuppression(ulong pipelineHandle, float threshold, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMROperatorNonMaximumSuppression config = new SecureMROperatorNonMaximumSuppression
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_NON_MAXIMUM_SUPPRESSION_PICO,
-                    next = IntPtr.Zero,
-                    threshold = threshold,
-                };
-                var result = Pxr_CreateSecureMROperatorNonMaximumSuppression(pipelineHandle, ref config, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperatorUVTo3D(ulong pipelineHandle, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                var result = Pxr_CreateSecureMROperatorUVTo3D(pipelineHandle, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperatorNormalize(ulong pipelineHandle, SecureMRNormalizeType normalizeType, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMROperatorNormalize config = new SecureMROperatorNormalize
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_NORMALIZE_PICO,
-                    next = IntPtr.Zero,
-                    normalizeType = normalizeType
-                };
-                var result = Pxr_CreateSecureMROperatorNormalize(pipelineHandle, ref config, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperatorColorConvert(ulong pipelineHandle, int convert, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMROperatorColorConvert config = new SecureMROperatorColorConvert
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_COLOR_CONVERT_PICO,
-                    next = IntPtr.Zero,
-                    convert = convert,
-                };
-                var result = Pxr_CreateSecureMROperatorColorConvert(pipelineHandle, ref config, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperatorSortMatrix(ulong pipelineHandle, SecureMRMatrixSortType sortType, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMROperatorSortMatrix config = new SecureMROperatorSortMatrix
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_SORT_MATRIX_PICO,
-                    next = IntPtr.Zero,
-                    sortType = sortType,
-                };
-                var result = Pxr_CreateSecureMROperatorSortMatrix(pipelineHandle, ref config, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperatorUpdateGltf(ulong pipelineHandle, SecureMRGltfOperatorAttribute attribute, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMROperatorUpdateGltf config = new SecureMROperatorUpdateGltf
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_UPDATE_GLTF_PICO,
-                    next = IntPtr.Zero,
-                    attribute = attribute
-                };
-                var result = Pxr_CreateSecureMROperatorUpdateGltf(pipelineHandle, ref config, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMROperatorRenderText(ulong pipelineHandle, SecureMRFontTypeface typeface, string languageAndLocale, int width, int height, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMROperatorRenderText config = new SecureMROperatorRenderText
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_RENDER_TEXT_PICO,
-                    next = IntPtr.Zero,
-                    typeFace = typeface,
-                    languageAndLocale = languageAndLocale,
-                    width = width,
-                    height = height
-                };
-                var result = Pxr_CreateSecureMROperatorRenderText(pipelineHandle, ref config, out operatorHandle);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-
-            public static PxrResult UPxr_CreateSecureMrOperatorModel(ulong pipelineHandle, List<SecureMROperatorModelConfig> inputConfigs, List<SecureMROperatorModelConfig> outputConfigs, byte[] modelData, SecureMRModelType modelType, string modelName, out ulong operatorHandle)
-            {
-#if UNITY_ANDROID && !UNITY_EDITOR
-                SecureMROperatorModel model = new SecureMROperatorModel
-                {
-                    type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_MODEL_PICO,
-                    next = IntPtr.Zero,
-                    modelInputCount = (uint)inputConfigs.Count,
-                    modelOutputCount = (uint)outputConfigs.Count,
-                    bufferSize = (uint)modelData.Length,
-                    modelType = modelType,
-                    modelName = modelName,
-                };
-
-                //input config
-                List<SecureMROperatorIOMap> inputPairs = new List<SecureMROperatorIOMap>();
-                foreach (var inputConfig in inputConfigs)
-                {
-                    SecureMROperatorIOMap inputPair = new SecureMROperatorIOMap
-                    {
-                        type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_IO_MAP_PICO,
-                        next = IntPtr.Zero,
-                        encodingType = inputConfig.encodingType
-                    };
-
-                    inputPair.nodeName = new byte[512];
-                    byte[] nodeNameBytes = Encoding.UTF8.GetBytes(inputConfig.nodeName);
-                    int copyLength = Math.Min(nodeNameBytes.Length, 512);
-                    Array.Copy(nodeNameBytes, inputPair.nodeName, copyLength);
-
-                    inputPair.operatorIOName = new byte[512];
-                    byte[] ioNameBytes = Encoding.UTF8.GetBytes(inputConfig.nodeName);
-                    copyLength = Math.Min(ioNameBytes.Length, 512);
-                    Array.Copy(ioNameBytes, inputPair.operatorIOName, copyLength);
-
-                    inputPairs.Add(inputPair);
-                }
-                int structSize = Marshal.SizeOf(typeof(SecureMROperatorIOMap));
-                model.modelInputs = Marshal.AllocHGlobal(structSize * inputConfigs.Count);
-                for (int i = 0; i < inputConfigs.Count; i++)
-                {
-                    IntPtr temp = model.modelInputs + i * structSize;
-                    Marshal.StructureToPtr(inputPairs[i], temp, false);
-                }
-
-                //output config
-                List<SecureMROperatorIOMap> outputPairs = new List<SecureMROperatorIOMap>();
-                foreach (var outputConfig in outputConfigs)
-                {
-                    SecureMROperatorIOMap outputPair = new SecureMROperatorIOMap
-                    {
-                        type = XrStructureType.XR_TYPE_SECURE_MR_OPERATOR_IO_MAP_PICO,
-                        next = IntPtr.Zero,
-                        encodingType = outputConfig.encodingType
-                    };
-
-                    outputPair.nodeName = new byte[512];
-                    byte[] nodeNameBytes = Encoding.UTF8.GetBytes(outputConfig.nodeName);
-                    int copyLength = Math.Min(nodeNameBytes.Length, 512);
-                    Array.Copy(nodeNameBytes, outputPair.nodeName, copyLength);
-
-                    outputPair.operatorIOName = new byte[512];
-                    byte[] ioNameBytes = Encoding.UTF8.GetBytes(outputConfig.nodeName);
-                    copyLength = Math.Min(ioNameBytes.Length, 512);
-                    Array.Copy(ioNameBytes, outputPair.operatorIOName, copyLength);
-
-                    outputPairs.Add(outputPair);
-                }
-                model.modelOutputs = Marshal.AllocHGlobal(structSize * outputConfigs.Count);
-                for (int i = 0; i < outputConfigs.Count; i++)
-                {
-                    IntPtr temp = model.modelOutputs + i * structSize;
-                    Marshal.StructureToPtr(outputPairs[i], temp, false);
-                }
-
-                //modelData
-                int size = Marshal.SizeOf(typeof(byte)) * modelData.Length;
-                model.buffer = Marshal.AllocHGlobal(size);
-                Marshal.Copy(modelData, 0, model.buffer, size);
-
-                var result = Pxr_CreateSecureMROperatorModel(pipelineHandle, ref model, out operatorHandle);
-                Marshal.FreeHGlobal(model.buffer);
-                Marshal.FreeHGlobal(model.modelInputs);
-                Marshal.FreeHGlobal(model.modelOutputs);
-                return MixedReality.UPxr_ConvertIntToPxrResult(result);
-#else
-                operatorHandle = 0;
-                return PxrResult.SUCCESS;
-#endif
-            }
-        }
-#endif
     }
 }

@@ -254,7 +254,11 @@ namespace Unity.XR.PXR
             {
                 PXR_Plugin.MixedReality.UPxr_CreateSceneCaptureSenseDataProvider();
             }
-
+            if (PXR_ProjectSetting.GetProjectConfig().planeDetection)
+            {
+                PXR_Plugin.MixedReality.UPxr_CreatePlaneDetectionSenseDataProvider();
+            }
+            
             currentLoaderState = LoaderState.Initialized;
             return displaySubsystem != null;
         }
@@ -427,6 +431,15 @@ namespace Unity.XR.PXR
                 }
                 PXR_Plugin.MixedReality.UPxr_DestroySenseDataProvider(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.SceneCapture));
             }
+            if (PXR_ProjectSetting.GetProjectConfig().planeDetection)
+            {
+                PXR_MixedReality.GetSenseDataProviderState(PxrSenseDataProviderType.PlaneDetection, out var providerState);
+                if (providerState == PxrSenseDataProviderState.Running)
+                {
+                    PXR_MixedReality.StopSenseDataProvider(PxrSenseDataProviderType.PlaneDetection);
+                }
+                PXR_Plugin.MixedReality.UPxr_DestroySenseDataProvider(PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.PlaneDetection));
+            }
             currentLoaderState = LoaderState.Uninitialized;
 
             return true;
@@ -538,6 +551,12 @@ namespace Unity.XR.PXR
                 case XrStructureType.XR_TYPE_EVENT_DATA_SENSE_DATA_PROVIDER_STATE_CHANGED:
                 case XrStructureType.XR_TYPE_EVENT_DATA_SENSE_DATA_UPDATED:
                 case XrStructureType.XR_TYPE_EVENT_DATA_AUTO_SCENE_CAPTURE_UPDATE_PICO:
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_CREATED_BD:
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_PERSISTED_BD:
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_UNPERSISTED_BD:
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_CLEARED_BD:
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_LOADED_BD:
+                case XrStructureType.XR_TYPE_EVENT_DATA_SPATIAL_SCENE_CAPTURED_BD:
                 {
                     PXR_Manager.Instance.PollEvent(eventDB);
                     break;

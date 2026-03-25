@@ -733,6 +733,10 @@ namespace UnityEngine.XR.OpenXR.Features.Interactions
 
             AddActionMap(actionMap);
         }
+        protected override string GetDeviceLayoutName()
+        {
+            return nameof(PICO4TouchController);
+        }
     }
 }
 #endif

@@ -49,7 +49,7 @@ namespace PXR_Audio
 
             public abstract Result UpdateMesh(
                 IntPtr ctx,
-                int geometryId, 
+                int geometryId,
                 float[] newVertices,
                 int newVerticesCount,
                 int[] newIndices,
@@ -103,10 +103,12 @@ namespace PXR_Audio
                 IntPtr ctx,
                 ref SourceConfig sourceConfig,
                 ref int sourceId,
-                bool isAsync);
+                bool isAsync,
+                AudioSource nativeSource,
+                bool enablePicoAttenuation = false);
 
             public abstract Result SetSourceConfig(IntPtr ctx, int sourceId, ref SourceConfig sourceConfig,
-                uint propertyMask);
+                uint propertyMask, AudioSource nativeSource, bool enabledPicoAttenuation = false);
 
             public abstract Result SetSourceAttenuationMode(
                 IntPtr ctx,
@@ -327,12 +329,14 @@ namespace PXR_Audio
                 return SubmitMeshWithConfigImport(ctx, vertices, verticesCount, indices, indicesCount, ref config,
                     ref geometryId, false);
             }
-            
+
             [DllImport(DLLNAME, EntryPoint = "yggdrasil_audio_update_mesh")]
-            private static extern Result UpdateMeshImport(IntPtr ctx, int geometryId, float[] newVertices, int newVerticesCount, int[] newIndices,
+            private static extern Result UpdateMeshImport(IntPtr ctx, int geometryId, float[] newVertices,
+                int newVerticesCount, int[] newIndices,
                 int newIndicesCount, ref MeshConfig config, ref int newGeometryId, bool isAsync = false);
 
-            public override Result UpdateMesh(IntPtr ctx, int geometryId, float[] newVertices, int newVerticesCount, int[] newIndices,
+            public override Result UpdateMesh(IntPtr ctx, int geometryId, float[] newVertices, int newVerticesCount,
+                int[] newIndices,
                 int newIndicesCount, ref MeshConfig config, ref int newGeometryId, bool isAsync = false)
             {
                 PXR_Plugin.System.UPxr_LogSdkApi("pico_spatial_audio_update_mesh|unity_native");
@@ -347,7 +351,7 @@ namespace PXR_Audio
             {
                 return RemoveMeshImport(ctx, geometryId);
             }
-            
+
             [DllImport(DLLNAME, EntryPoint = "yggdrasil_audio_get_num_of_geometries")]
             private static extern int GetNumOfGeometriesImport(IntPtr ctx);
 
@@ -467,7 +471,9 @@ namespace PXR_Audio
                 IntPtr ctx,
                 ref SourceConfig sourceConfig,
                 ref int sourceId,
-                bool isAsync
+                bool isAsync,
+                AudioSource nativeSource,
+                bool enablePicoAttenuation = false
             )
             {
                 PXR_Plugin.System.UPxr_LogSdkApi("pico_spatial_audio_add_source_with_config|unity_native");
@@ -479,7 +485,7 @@ namespace PXR_Audio
                 uint propertyMask);
 
             public override Result SetSourceConfig(IntPtr ctx, int sourceId, ref SourceConfig sourceConfig,
-                uint propertyMask)
+                uint propertyMask, AudioSource nativeSource, bool enabledPicoAttenuation = false)
             {
                 return SetSourceConfigImport(ctx, sourceId, ref sourceConfig, propertyMask);
             }
@@ -938,7 +944,8 @@ namespace PXR_Audio
                     ref geometryId);
             }
 
-            public override Result UpdateMesh(IntPtr ctx, int geometryId, float[] newVertices, int newVerticesCount, int[] newIndices,
+            public override Result UpdateMesh(IntPtr ctx, int geometryId, float[] newVertices, int newVerticesCount,
+                int[] newIndices,
                 int newIndicesCount, ref MeshConfig config, ref int newGeometryId, bool isAsync = false)
             {
                 throw new NotImplementedException();
@@ -1047,7 +1054,9 @@ namespace PXR_Audio
                 IntPtr ctx,
                 ref SourceConfig sourceConfig,
                 ref int sourceId,
-                bool isAsync
+                bool isAsync,
+                AudioSource nativeSource,
+                bool enablePicoAttenuation = false
             )
             {
                 Debug.LogWarning("Unexpected API calling.");
@@ -1055,7 +1064,7 @@ namespace PXR_Audio
             }
 
             public override Result SetSourceConfig(IntPtr ctx, int sourceId, ref SourceConfig sourceConfig,
-                uint propertyMask)
+                uint propertyMask, AudioSource nativeSource, bool enabledPicoAttenuation = false)
             {
                 Debug.LogWarning("Unexpected API calling.");
                 return Result.Error;
@@ -1298,6 +1307,510 @@ namespace PXR_Audio
             public override Result Destroy(IntPtr ctx)
             {
                 return DestroyImport(ctx);
+            }
+        }
+
+        public class ApiUnityNativeImpl : Api
+        {
+#if (UNITY_IPHONE || UNITY_WEBGL) && !UNITY_EDITOR
+            private static string DLLNAME = "__Internal";
+#else
+            private const string DLLNAME = "PicoAudioSDKUnityNativePlugin";
+#endif
+
+
+            [DllImport(DLLNAME, EntryPoint = "yggdrasil_get_version")]
+            private static extern string GetVersionImport(ref int major, ref int minor, ref int patch);
+
+            public override string GetVersion(ref int major, ref int minor, ref int patch)
+            {
+                return GetVersionImport(ref major, ref minor, ref patch);
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_ToggleInternalSceneUpdate")]
+            private static extern Result CSharp_PicoAudioSDKUnityNativePlugin_ToggleInternalSceneUpdate(bool on);
+
+            public override Result
+                CreateContext(
+                    ref IntPtr ctx,
+                    RenderingMode mode,
+                    uint framesPerBuffer,
+                    uint sampleRate
+                )
+            {
+                //  Turn off scene update inside native spatializer plugin
+                return CSharp_PicoAudioSDKUnityNativePlugin_ToggleInternalSceneUpdate(false);
+            }
+
+            public override Result InitializeContext(IntPtr ctx)
+            {
+                Debug.Log("Unity native spatial audio plugin will automatically initialize context after creating.");
+                return Result.Success;
+            }
+
+            public override Result SubmitMesh(IntPtr ctx, float[] vertices, int verticesCount, int[] indices,
+                int indicesCount,
+                AcousticsMaterial material, ref int geometryId)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override Result SubmitMeshAndMaterialFactor(
+                IntPtr ctx,
+                float[] vertices,
+                int verticesCount,
+                int[] indices,
+                int indicesCount,
+                float[] absorptionFactor,
+                float scatteringFactor,
+                float transmissionFactor,
+                ref int geometryId)
+            {
+                throw new NotImplementedException();
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_SubmitMeshWithConfig")]
+            private static extern Result SubmitMeshWithConfigImport(float[] vertices, int verticesCount,
+                int[] indices,
+                int indicesCount,
+                ref MeshConfig config, ref int geometryId);
+
+            public override Result SubmitMeshWithConfig(IntPtr ctx, float[] vertices, int verticesCount, int[] indices,
+                int indicesCount,
+                ref MeshConfig config, ref int geometryId)
+            {
+                return SubmitMeshWithConfigImport(vertices, verticesCount, indices, indicesCount, ref config,
+                    ref geometryId);
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_UpdateMesh")]
+            private static extern Result UpdateMeshImport(int geometryId, float[] newVertices, int newVerticesCount,
+                int[] newIndices,
+                int newIndicesCount, ref MeshConfig config, ref int newGeometryId, bool isAsync = false);
+
+            public override Result UpdateMesh(IntPtr ctx, int geometryId, float[] newVertices, int newVerticesCount,
+                int[] newIndices,
+                int newIndicesCount, ref MeshConfig config, ref int newGeometryId, bool isAsync = false)
+            {
+                return UpdateMeshImport(geometryId, newVertices, newVerticesCount, newIndices, newIndicesCount,
+                    ref config, ref newGeometryId, isAsync);
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_RemoveMesh")]
+            private static extern Result RemoveMeshImport(int geometryId);
+
+            public override Result RemoveMesh(IntPtr ctx, int geometryId)
+            {
+                return RemoveMeshImport(geometryId);
+            }
+
+            public override int GetNumOfGeometries(IntPtr ctx)
+            {
+                throw new NotImplementedException();
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_SetMeshConfig")]
+            private static extern Result SetMeshConfigImport(int geometryId, ref MeshConfig config,
+                uint propertyMask);
+
+            public override Result SetMeshConfig(IntPtr ctx, int geometryId, ref MeshConfig config, uint propertyMask)
+            {
+                return SetMeshConfigImport(geometryId, ref config, propertyMask);
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_GetAbsorptionFactor")]
+            private static extern Result GetAbsorptionFactorImport(
+                AcousticsMaterial material,
+                float[] absorptionFactor);
+
+            public override Result GetAbsorptionFactor(
+                AcousticsMaterial material,
+                float[] absorptionFactor
+            )
+            {
+                return GetAbsorptionFactorImport(material, absorptionFactor);
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_GetScatteringFactor")]
+            private static extern Result GetScatteringFactorImport(
+                AcousticsMaterial material,
+                ref float scatteringFactor);
+
+            public override Result GetScatteringFactor(
+                AcousticsMaterial material,
+                ref float scatteringFactor
+            )
+            {
+                return GetScatteringFactorImport(material, ref scatteringFactor);
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_GetTransmissionFactor")]
+            private static extern Result GetTransmissionFactorImport(
+                AcousticsMaterial material,
+                ref float transmissionFactor);
+
+            public override Result GetTransmissionFactor(
+                AcousticsMaterial material,
+                ref float transmissionFactor
+            )
+            {
+                return GetTransmissionFactorImport(material, ref transmissionFactor);
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_CommitScene")]
+            private static extern Result CommitSceneImport();
+
+            public override Result CommitScene(IntPtr ctx)
+            {
+                return CommitSceneImport();
+            }
+
+
+            public override Result AddSource(
+                IntPtr ctx,
+                SourceMode sourceMode,
+                float[] position,
+                ref int sourceId,
+                bool isAsync
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+
+            public override Result AddSourceWithOrientation(
+                IntPtr ctx,
+                SourceMode mode,
+                float[] position,
+                float[] front,
+                float[] up,
+                float radius,
+                ref int sourceId,
+                bool isAsync
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+
+            public override Result AddSourceWithConfig(
+                IntPtr ctx,
+                ref SourceConfig sourceConfig,
+                ref int sourceId,
+                bool isAsync,
+                AudioSource nativeSource,
+                bool enablePicoAttenuation = false
+            )
+            {
+                //  Get CustomSpatializationData.kId using AudioSource.GetSpatializerFloat
+                nativeSource.GetSpatializerFloat((int)CustomSpatializationData.kId, out var sourceIdFloat);
+
+                sourceId = (int)sourceIdFloat;
+
+                //  Setup initial config
+                SetSourceConfig(ctx, sourceId, ref sourceConfig, (uint)SourceProperty.All, nativeSource,
+                    enablePicoAttenuation);
+
+                return Result.Success;
+            }
+
+            private enum CustomSpatializationData
+            {
+                //  Source id.
+                kId = 0,
+
+                //  Directivity
+                ///  Directivity alpha
+                kDirectivityAlpha = 1,
+
+                ///  Directivity order
+                kDirectivityOrder = 2,
+
+                //  Volumetric Radius
+                kVolumetricRadius = 3,
+
+                //  Master gain
+                kMasterGain = 4,
+
+                //  Reflection gain
+                kReflectionGain = 5,
+
+                //  Enable Pico Doppler
+                kEnableDoppler = 6,
+
+                //  Attenuation
+                kEnablePicoAttenuation = 7,
+
+                //  Pico attenuation settings
+                kPicoAttenuationMode = 8,
+            };
+
+            public override Result SetSourceConfig(IntPtr ctx, int sourceId, ref SourceConfig sourceConfig,
+                uint propertyMask, AudioSource nativeSource, bool enabledPicoAttenuation = false)
+            {
+                if (nativeSource.clip != null && nativeSource.spatialize)
+                {
+                    nativeSource.SetSpatializerFloat((int)CustomSpatializationData.kDirectivityAlpha,
+                        sourceConfig.directivityAlpha);
+                    nativeSource.SetSpatializerFloat((int)CustomSpatializationData.kDirectivityOrder,
+                        sourceConfig.directivityOrder);
+                    nativeSource.SetSpatializerFloat((int)CustomSpatializationData.kVolumetricRadius,
+                        sourceConfig.radius);
+                    nativeSource.SetSpatializerFloat((int)CustomSpatializationData.kMasterGain,
+                        sourceConfig.sourceGain);
+                    nativeSource.SetSpatializerFloat((int)CustomSpatializationData.kReflectionGain,
+                        sourceConfig.reflectionGain);
+                    nativeSource.SetSpatializerFloat((int)CustomSpatializationData.kEnableDoppler,
+                        sourceConfig.enableDoppler ? 1.0f : 0.0f);
+                    nativeSource.SetSpatializerFloat((int)CustomSpatializationData.kEnablePicoAttenuation,
+                        enabledPicoAttenuation ? 1.0f : 0.0f);
+                    nativeSource.SetSpatializerFloat((int)CustomSpatializationData.kPicoAttenuationMode,
+                        (float)sourceConfig.attenuationMode);
+                    //  Min and max attenuation distance is passed via Unity native callbacks (in native plugin code)
+                }
+
+                return Result.Success;
+            }
+
+            public override Result SetSourceAttenuationMode(
+                IntPtr ctx,
+                int sourceId,
+                SourceAttenuationMode mode,
+                DistanceAttenuationCallback directDistanceAttenuationCallback,
+                DistanceAttenuationCallback indirectDistanceAttenuationCallback
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result SetSourceRange(IntPtr ctx, int sourceId, float rangeMin, float rangeMax)
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result RemoveSource(IntPtr ctx, int sourceId)
+            {
+                return Result.Success;
+            }
+
+
+            public override Result SubmitSourceBuffer(
+                IntPtr ctx,
+                int sourceId,
+                float[] inputBufferPtr,
+                uint numFrames
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+
+            public override Result SubmitAmbisonicChannelBuffer(
+                IntPtr ctx,
+                float[] ambisonicChannelBuffer,
+                int order,
+                int degree,
+                AmbisonicNormalizationType normType,
+                float gain
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+
+            public override Result SubmitInterleavedAmbisonicBuffer(
+                IntPtr ctx,
+                float[] ambisonicBuffer,
+                int ambisonicOrder,
+                AmbisonicNormalizationType normType,
+                float gain
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+
+            public override Result SubmitMatrixInputBuffer(
+                IntPtr ctx,
+                float[] inputBuffer,
+                int inputChannelIndex
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+
+            public override Result GetInterleavedBinauralBuffer(
+                IntPtr ctx,
+                float[] outputBufferPtr,
+                uint numFrames,
+                bool isAccumulative
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+
+            public override Result GetPlanarBinauralBuffer(
+                IntPtr ctx,
+                float[][] outputBufferPtr,
+                uint numFrames,
+                bool isAccumulative
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result GetInterleavedLoudspeakersBuffer(
+                IntPtr ctx,
+                float[] outputBufferPtr,
+                uint numFrames
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+
+            public override Result GetPlanarLoudspeakersBuffer(
+                IntPtr ctx,
+                float[][] outputBufferPtr,
+                uint numFrames
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_UpdateScene")]
+            private static extern Result UpdateSceneImport();
+
+            public override Result UpdateScene(IntPtr ctx)
+            {
+                return UpdateSceneImport();
+            }
+
+            public override Result SetDopplerEffect(IntPtr ctx, int sourceId, bool on)
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result SetPlaybackMode(IntPtr ctx, PlaybackMode playbackMode)
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result SetLoudspeakerArray(
+                IntPtr ctx,
+                float[] positions,
+                int numLoudspeakers
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result SetMappingMatrix(
+                IntPtr ctx,
+                float[] matrix,
+                int numInputChannels,
+                int numOutputChannels
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result SetListenerPosition(
+                IntPtr ctx,
+                float[] position
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+
+            public override Result SetListenerOrientation(
+                IntPtr ctx,
+                float[] front,
+                float[] up
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result SetListenerPose(
+                IntPtr ctx,
+                float[] position,
+                float[] front,
+                float[] up
+            )
+            {
+                return Result.Success;
+            }
+
+            public override Result SetSourcePosition(
+                IntPtr ctx,
+                int sourceId,
+                float[] position
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result SetSourceGain(
+                IntPtr ctx,
+                int sourceId,
+                float gain
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result SetSourceSize(
+                IntPtr ctx,
+                int sourceId,
+                float volumetricSize
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            public override Result UpdateSourceMode(
+                IntPtr ctx,
+                int sourceId,
+                SourceMode mode
+            )
+            {
+                Debug.LogWarning("Unexpected API calling.");
+                return Result.Error;
+            }
+
+            [DllImport(DLLNAME, EntryPoint = "CSharp_PicoAudioSDKUnityNativePlugin_Destroy")]
+            private static extern Result DestroyImport();
+
+            public override Result Destroy(IntPtr ctx)
+            {
+                //  Turn on scene update inside native spatializer plugin
+                CSharp_PicoAudioSDKUnityNativePlugin_ToggleInternalSceneUpdate(false);
+                return DestroyImport();
             }
         }
     }

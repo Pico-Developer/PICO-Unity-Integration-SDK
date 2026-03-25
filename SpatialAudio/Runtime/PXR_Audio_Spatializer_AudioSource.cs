@@ -9,8 +9,7 @@ using UnityEngine;
 [RequireComponent(typeof(AudioSource))]
 public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
 {
-    [SerializeField] [Range(0.0f, 24.0f)]
-    private float sourceGainDB = 0.0f;
+    [SerializeField] [Range(0.0f, 24.0f)] private float sourceGainDB = 0.0f;
 
     private float sourceGainAmplitude = 1.0f;
 
@@ -27,6 +26,12 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
         "  - If you disabled this option before run or build, you cannot turn it on during runtime, since doppler effect unit is not initialized to save memory.")]
     [SerializeField]
     private bool enableDoppler = true;
+
+    [Tooltip(
+        "Whether Pico Attenuation is enabled for this sound source, which affects both direct and reflection path of it;\n" +
+        "Otherwise unity attenuation setup is used for this sound source.")]
+    [SerializeField]
+    public bool enablePicoAttenuation = true;
 
     [Tooltip(
         "Mode of distance attenuation of this sound source.\n" +
@@ -52,11 +57,14 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
              "  - Alpha = 0 gives you omnidirectional polar pattern\n" +
              "  - Alpha = 0.5 gives you cardioid polar pattern\n" +
              "  - Alpha = 1 gives you figure-8 polar pattern")]
-    [SerializeField] [Range(0.0f, 1.0f)] private float directivityAlpha = 0.0f;
+    [SerializeField]
+    [Range(0.0f, 1.0f)]
+    private float directivityAlpha = 0.0f;
 
     [Tooltip("Determine width of the radiation polar pattern of this sound source.\n" +
              "  - Larger order gives you narrower radiation pattern.")]
-    [SerializeField] [Range(0.0f, 1000.0f)]
+    [SerializeField]
+    [Range(0.0f, 1000.0f)]
     private float directivityOrder = 1.0f;
 
 #if UNITY_EDITOR
@@ -86,7 +94,7 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
         }
     }
 
-    private AudioSource nativeSource;
+    private AudioSource NativeSource => GetComponent<AudioSource>();
 
     private int sourceId = -1;
 
@@ -118,8 +126,11 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
     /// </summary>
     internal void RegisterInternal()
     {
-        nativeSource = GetComponent<AudioSource>();
-
+        if (Context.spatializerApiImpl == SpatializerApiImpl.unity_native)
+        {
+            NativeSource.spatialize = true;
+        }
+        
         positionArray[0] = transform.position.x;
         positionArray[1] = transform.position.y;
         positionArray[2] = -transform.position.z;
@@ -151,7 +162,9 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
         PXR_Audio.Spatializer.Result ret = Context.AddSourceWithConfig(
             ref sourceConfig,
             ref sourceId,
-            false);
+            false,
+            NativeSource,
+            enablePicoAttenuation);
         if (ret != PXR_Audio.Spatializer.Result.Success)
         {
             Debug.LogError("Failed to add source.");
@@ -169,10 +182,10 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
     /// </summary>
     public void Resume()
     {
-        nativeSource.time = playheadPosition;
+        NativeSource.time = playheadPosition;
         if (wasPlaying)
         {
-            nativeSource.Play();
+            NativeSource.Play();
         }
     }
 
@@ -187,7 +200,7 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
         sourceConfig.sourceGain = sourceGainAmplitude = DB2Mag(gainDB);
         sourcePropertyMask |= (uint)SourceProperty.SourceGain;
     }
-    
+
     /// <summary>
     /// Get source gain in dB
     /// </summary>
@@ -217,7 +230,7 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
         sourceConfig.reflectionGain = reflectionGainAmplitude = DB2Mag(gainDB);
         sourcePropertyMask |= (uint)SourceProperty.ReflectionGain;
     }
-    
+
     /// <summary>
     /// Get source reflection gain in dB
     /// </summary>
@@ -235,7 +248,7 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
         sourceConfig.radius = sourceSize = radius;
         sourcePropertyMask |= (uint)SourceProperty.VolumetricRadius;
     }
-    
+
     /// <summary>
     /// Get source radius in meters
     /// </summary>
@@ -253,7 +266,7 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
         sourceConfig.enableDoppler = enableDoppler = on;
         sourcePropertyMask |= (uint)SourceProperty.DopplerOnOff;
     }
-    
+
     /// <summary>
     /// Get in-engine doppler effect status
     /// </summary>
@@ -261,7 +274,7 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
     {
         return sourceConfig.enableDoppler;
     }
-    
+
     /// <summary>
     /// Get source attenuation mode
     /// </summary>
@@ -277,10 +290,10 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
     /// distance is shorter than this </param>
     public void SetMinAttenuationRange(float min)
     {
-        sourceConfig.minAttenuationDistance = minAttenuationDistance = min;
+        sourceConfig.minAttenuationDistance = minAttenuationDistance = NativeSource.minDistance = min;
         sourcePropertyMask |= (uint)SourceProperty.RangeMin;
     }
-    
+
     /// <summary>
     /// Get min attenuation range
     /// </summary>
@@ -296,10 +309,10 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
     /// distance is further than this </param>
     public void SetMaxAttenuationRange(float max)
     {
-        sourceConfig.maxAttenuationDistance = maxAttenuationDistance = max;
+        sourceConfig.maxAttenuationDistance = maxAttenuationDistance = NativeSource.maxDistance = max;
         sourcePropertyMask |= (uint)SourceProperty.RangeMax;
     }
-    
+
     /// <summary>
     /// Get max attenuation range
     /// </summary>
@@ -328,7 +341,7 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
     {
         return sourceConfig.directivityAlpha;
     }
-    
+
     public float GetDirectivityOrder()
     {
         return sourceConfig.directivityOrder;
@@ -336,7 +349,8 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
 
     void Update()
     {
-        if (isActive && sourceId >= 0 && context != null && context.Initialized)
+        if (context != null && context.Initialized && isActive &&
+            (sourceId >= 0 || Context.spatializerApiImpl != SpatializerApiImpl.unity))
         {
             if (transform.hasChanged)
             {
@@ -356,14 +370,15 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
 
             if (sourcePropertyMask != 0)
             {
-                var ret = Context.SetSourceConfig(sourceId, ref sourceConfig, sourcePropertyMask);
+                var ret = Context.SetSourceConfig(sourceId, ref sourceConfig, sourcePropertyMask, NativeSource,
+                    enablePicoAttenuation);
                 if (ret == Result.Success)
                     sourcePropertyMask = 0;
             }
 
-            if (nativeSource.isPlaying)
-                playheadPosition = nativeSource.time;
-            wasPlaying = nativeSource.isPlaying;
+            if (NativeSource.isPlaying)
+                playheadPosition = NativeSource.time;
+            wasPlaying = NativeSource.isPlaying;
         }
     }
 
@@ -381,6 +396,8 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
 #if UNITY_EDITOR
     void OnValidate()
     {
+        SetMinAttenuationRange(minAttenuationDistance);
+        SetMaxAttenuationRange(maxAttenuationDistance);
         if (EditorApplication.isPlaying)
         {
             SetGainDB(sourceGainDB);
@@ -413,6 +430,9 @@ public class PXR_Audio_Spatializer_AudioSource : MonoBehaviour
 
     private void OnAudioFilterRead(float[] data, int channels)
     {
+        if (context == null || !context.Initialized || Context.spatializerApiImpl == SpatializerApiImpl.unity_native)
+            return;
+
         if (!isActive || sourceId < 0 || context == null || !context.Initialized)
         {
             //  Mute Original signal

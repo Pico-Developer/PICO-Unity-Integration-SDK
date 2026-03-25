@@ -3,6 +3,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Unity.XR.PXR.SecureMR
 {
@@ -13,6 +15,11 @@ namespace Unity.XR.PXR.SecureMR
 
         public bool PlaceHolder { get; private set; }
         public bool IsGlobalTensor { get; private set; }
+        
+        public int[] Dimensions { get; internal set; }
+        public sbyte Channels { get; internal set; }
+        public SecureMRTensorUsage Usage { get; internal set; }
+        public SecureMRTensorDataType DataType { get; internal set; }
 
         public Tensor(ulong tensorHandle,ulong pipelineHandle,bool placeHolder,bool isGlobalTensor)
         {
@@ -26,13 +33,13 @@ namespace Unity.XR.PXR.SecureMR
         {
             if (IsGlobalTensor)
             {
-                var result = PXR_Plugin.SecureMR.UPxr_ResetSecureMRTensor(TensorHandle, tensorData);
-                PLog.i(PXR_Plugin.SecureMR.TAG, "Reset global tensor data" + result, false);
+                var result = PXR_SecureMRPlugin.UPxr_ResetSecureMRTensor(TensorHandle, tensorData);
+                PLog.i(PXR_SecureMRPlugin.TAG, "Reset global tensor data" + result, false);
             }
             else
             {
-                var result = PXR_Plugin.SecureMR.UPxr_ResetSecureMRPipelineTensor(PipelineHandle, TensorHandle, tensorData);
-                PLog.i(PXR_Plugin.SecureMR.TAG, "Reset local tensor data" + result, false);
+                var result = PXR_SecureMRPlugin.UPxr_ResetSecureMRPipelineTensor(PipelineHandle, TensorHandle, tensorData);
+                PLog.i(PXR_SecureMRPlugin.TAG, "Reset local tensor data" + result, false);
             }
         }
 
@@ -40,10 +47,23 @@ namespace Unity.XR.PXR.SecureMR
         {
             if (IsGlobalTensor)
             {
-                var result = PXR_Plugin.SecureMR.UPxr_DestroySecureMRTensor(TensorHandle);
-                PLog.i(PXR_Plugin.SecureMR.TAG, "Destroy global tensor" + result, false);
+                var result = PXR_SecureMRPlugin.UPxr_DestroySecureMRTensor(TensorHandle);
+                PLog.i(PXR_SecureMRPlugin.TAG, "Destroy global tensor" + result, false);
             }
         }
+        
+        public async Task<T[]> ReadbackBufferAsync<T>(int pollIntervalMs = 5) where T : struct
+        {
+            if (!IsGlobalTensor) throw new InvalidOperationException("Only global tensors support readback");
+            return await Readback.ReadbackBufferAsync<T>(this, pollIntervalMs);
+        }
+
+        public async Task<ReadbackTexture> ReadbackTextureAsync(int pollIntervalMs = 5)
+        {
+            if (!IsGlobalTensor) throw new InvalidOperationException("Only global tensors support readback");
+            return await Readback.ReadbackTextureAsync(this, pollIntervalMs);
+        }
+        
     }
 
     public abstract class TensorBase{}
@@ -55,6 +75,7 @@ namespace Unity.XR.PXR.SecureMR
     public class Scalar : TensorBase{}
     public class Slice : TensorBase{}
     public class TimeStamp : TensorBase { }
+    public class DynamicTexture : TensorBase{}
     
     public class TensorShape
     {

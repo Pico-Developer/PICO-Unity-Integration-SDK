@@ -19,6 +19,7 @@ using UnityEditor.Build;
 using Unity.XR.CoreUtils.Capabilities.Editor;
 using UnityEngine.XR.Management;
 using Unity.XR.CoreUtils.Capabilities;
+using System.IO;
 
 #if UNITY_OPENXR
 using UnityEngine.XR.OpenXR;
@@ -68,6 +69,19 @@ namespace Unity.XR.PXR
         public static string xriHandsInteractionDemoSampleName = "Hands Interaction Demo";
         public static string xri2HandsSetupPefabName = "XR Interaction Hands Setup";
         public static string xri3HandsSetupPefabName = "XR Origin Hands (XR Rig)";
+        public static string ProjectName{
+            get
+            {
+                return Path.GetFileName(Path.GetDirectoryName(Application.dataPath));
+            }
+        }
+
+        public static string SceneName{
+            get
+            {
+                return SceneManager.GetActiveScene().name;
+            }
+        }
         public static PackageVersion XRICurPackageVersion
         {
             get

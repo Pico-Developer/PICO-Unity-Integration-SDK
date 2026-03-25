@@ -487,6 +487,10 @@ namespace UnityEngine.XR.OpenXR.Features.Interactions
 
             AddActionMap(actionMap);
         }
+        protected override string GetDeviceLayoutName()
+        {
+            return nameof(PICOG3TouchController);
+        }
     }
 }
 #endif

@@ -100,7 +100,7 @@ public class PXR_Audio_Spatializer_AudioListener : MonoBehaviour
     private void OnAudioFilterRead(float[] data, int channels)
     {
         if (!isActive || context == null || !context.Initialized ||
-            Context.spatializerApiImpl == SpatializerApiImpl.wwise)
+            Context.spatializerApiImpl != SpatializerApiImpl.unity)
             return;
 
         isAudioDSPInProgress = true;

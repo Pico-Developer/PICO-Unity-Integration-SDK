@@ -193,8 +193,7 @@ namespace Unity.XR.PXR
             {
                 InitializeBuffer();
             }
-
-            PXR_Plugin.Sensor.UPxr_HMDUpdateSwitch(false);
+            
         }
 
         private void Start()

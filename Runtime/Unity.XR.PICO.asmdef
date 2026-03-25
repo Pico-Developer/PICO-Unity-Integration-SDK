@@ -58,6 +58,11 @@
             "define": "URP"
         },
         {
+            "name": "com.unity.xr.openxr",
+            "expression": "1.16.0",
+            "define": "UNITY_OPENXR_1_16_0"
+        },
+        {
             "name": "com.unity.xr.compositionlayers",
             "expression": "1.0.0",
             "define": "XR_COMPOSITION_LAYERS"

@@ -26,9 +26,9 @@ namespace Unity.XR.PXR.Debugger
         static void Init_PXR_PicoDebuggerSetup()
         {
             string currentPanelPath = $"{PXR_DebuggerConst.sdkPackageName}Assets/Debugger/Prefabs/DebuggerPanel.prefab";
-            string targetPanelPath = "Assets/Resources/DebuggerPanel.prefab";
+            string targetPanelPath = "Assets/Resources/PXR_DebuggerPanel.prefab";
             string currentEntryPath = $"{PXR_DebuggerConst.sdkPackageName}Assets/Debugger/Prefabs/PICODebugger.prefab";
-            string targetEntryPath = "Assets/Resources/PICODebugger.prefab";
+            string targetEntryPath = "Assets/Resources/PXR_PICODebugger.prefab";
             if(!File.Exists(targetEntryPath)){
                 if (!Directory.Exists("Assets/Resources"))
                 {

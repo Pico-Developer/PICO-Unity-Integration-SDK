@@ -167,10 +167,26 @@ namespace Unity.XR.PXR
         public static event Action SpatialAnchorDataUpdated;
         public static event Action<List<PxrSpatialMeshInfo>> SpatialMeshDataUpdated;
         public static event Action SceneAnchorDataUpdated;
+        public static event Action<List<PxrPlaneData>> PlaneDetectionDataUpdated;
         public static event Action SemiAutoCaptureDataUpdated;
         public static event Action<bool> EnableVideoSeeThroughAction;
         public static Action<PxrVstStatus> VstDisplayStatusChanged;
 
+        #region 2.0 API Deprecate
+        [Obsolete("Deprecated.Only Support PICO 4.")]
+        public static event Action<PxrEventAnchorEntityCreated> AnchorEntityCreated;
+        [Obsolete("Deprecated.Only Support PICO 4.")]
+        public static event Action<PxrEventAnchorEntityPersisted> AnchorEntityPersisted;
+        [Obsolete("Deprecated.Only Support PICO 4.")]
+        public static event Action<PxrEventAnchorEntityUnPersisted> AnchorEntityUnPersisted;
+        [Obsolete("Deprecated.Only Support PICO 4.")]
+        public static event Action<PxrEventAnchorEntityCleared> AnchorEntityCleared;
+        [Obsolete("Deprecated.Only Support PICO 4.")]
+        public static event Action<PxrEventAnchorEntityLoaded> AnchorEntityLoaded;
+        [Obsolete("Deprecated.Only Support PICO 4.")]
+        public static event Action<PxrEventSpatialSceneCaptured> SpatialSceneCaptured;
+        #endregion
+        
         private static bool _enableVideoSeeThrough;
         [HideInInspector]
         public static bool EnableVideoSeeThrough
@@ -425,7 +441,6 @@ namespace Unity.XR.PXR
             
             if (openMRC)
             {
-                PXR_Plugin.System.MRCStateChangedAction += OnMRCStateChanged;
 
 #if UNITY_6000_0_OR_NEWER
                 if (GraphicsSettings.defaultRenderPipeline != null)
@@ -461,6 +476,99 @@ namespace Unity.XR.PXR
         {
             switch (eventDB.type)
             {
+                case XrStructureType.XR_TYPE_EVENT_DATA_SPATIAL_SCENE_CAPTURED_BD:
+                {
+                    if (SpatialSceneCaptured != null)
+                    {
+                        PxrEventSpatialSceneCaptured info = new PxrEventSpatialSceneCaptured()
+                        {
+                            taskId = BitConverter.ToUInt64(eventDB.data, 0),
+                            result = PxrResult.SUCCESS,
+                            status = (PxrSpatialSceneCaptureStatus)BitConverter.ToUInt32(eventDB.data, 12),
+                        };
+                        SpatialSceneCaptured(info);
+                    }
+                    break;
+                }
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_LOADED_BD:
+                {
+                    if (AnchorEntityLoaded != null)
+                    {
+                        PxrEventAnchorEntityLoaded info = new PxrEventAnchorEntityLoaded()
+                        {
+                            taskId = BitConverter.ToUInt64(eventDB.data, 0),
+                            result = (PxrResult)BitConverter.ToInt32(eventDB.data, 8),
+                            count = BitConverter.ToUInt32(eventDB.data, 12),
+                            location = (PxrPersistLocation)BitConverter.ToInt32(eventDB.data, 16)
+                        };
+                        AnchorEntityLoaded(info);
+                    }
+                    break;
+                }
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_CLEARED_BD:
+                {
+                    if (AnchorEntityCleared != null)
+                    {
+                        PxrEventAnchorEntityCleared info = new PxrEventAnchorEntityCleared()
+                        {
+                            taskId = BitConverter.ToUInt64(eventDB.data, 0),
+                            result = (PxrResult)BitConverter.ToInt32(eventDB.data, 8),
+                            location = (PxrPersistLocation)BitConverter.ToInt32(eventDB.data, 12)
+                        };
+                        AnchorEntityCleared(info);
+                    }
+
+                    break;
+                }
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_UNPERSISTED_BD:
+                {
+                    if (AnchorEntityUnPersisted != null)
+                    {
+                        PxrEventAnchorEntityUnPersisted info = new PxrEventAnchorEntityUnPersisted()
+                        {
+                            taskId = BitConverter.ToUInt64(eventDB.data, 0),
+                            result = (PxrResult)BitConverter.ToInt32(eventDB.data, 8),
+                            location = (PxrPersistLocation)BitConverter.ToInt32(eventDB.data, 12)
+                        };
+                        AnchorEntityUnPersisted(info);
+                    }
+                    break;
+                }
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_PERSISTED_BD:
+                {
+                    if (AnchorEntityPersisted != null)
+                    {
+                        PxrEventAnchorEntityPersisted info = new PxrEventAnchorEntityPersisted()
+                        {
+                            taskId = BitConverter.ToUInt64(eventDB.data, 0),
+                            result = (PxrResult)BitConverter.ToInt32(eventDB.data, 8),
+                            location = (PxrPersistLocation)BitConverter.ToInt32(eventDB.data, 12)
+                        };
+                        AnchorEntityPersisted(info);
+                    }
+                    break;
+                }
+                case XrStructureType.XR_TYPE_EVENT_DATA_ANCHOR_ENTITY_CREATED_BD:
+                {
+                    if (AnchorEntityCreated != null)
+                    {
+                        PxrEventAnchorEntityCreated info = new PxrEventAnchorEntityCreated()
+                        {
+                            taskId = BitConverter.ToUInt64(eventDB.data, 0),
+                            result = (PxrResult)BitConverter.ToInt32(eventDB.data, 8),
+                            anchorHandle = BitConverter.ToUInt64(eventDB.data, 16),
+                        };
+
+                        byte[] byteArray = new byte[16];
+                        var value0 = BitConverter.ToUInt64(eventDB.data, 24);
+                        var value1 = BitConverter.ToUInt64(eventDB.data, 32);
+                        BitConverter.GetBytes(value0).CopyTo(byteArray, 0);
+                        BitConverter.GetBytes(value1).CopyTo(byteArray, 8);
+                        info.uuid = new Guid(byteArray);
+                        AnchorEntityCreated(info);
+                    }
+                    break;
+                }
                 case XrStructureType.XR_TYPE_EVENT_DATA_SENSE_DATA_PROVIDER_STATE_CHANGED:
                 {
                     if (SenseDataProviderStateChanged != null)
@@ -497,6 +605,11 @@ namespace Unity.XR.PXR
                         {
                             SceneAnchorDataUpdated();
                         }
+                    }
+                    
+                    if (providerHandle == PXR_Plugin.MixedReality.UPxr_GetSenseDataProviderHandle(PxrSenseDataProviderType.PlaneDetection))
+                    {
+                        StartCoroutine(QueryPlaneAnchor());
                     }
 
                     if (providerHandle == PXR_Plugin.MixedReality.UPxr_GetSpatialMeshProviderHandle())
@@ -574,6 +687,18 @@ namespace Unity.XR.PXR
                 SpatialMeshDataUpdated?.Invoke(meshInfos);
             }
         }
+        
+        private IEnumerator QueryPlaneAnchor()
+        {
+            var task = PXR_MixedReality.QueryPlaneAnchorAsync();
+            yield return new WaitUntil(() => task.IsCompleted);
+            
+            var (result, meshInfos) = task.Result;
+            if (result == PxrResult.SUCCESS)
+            {
+                PlaneDetectionDataUpdated?.Invoke(meshInfos);
+            }
+        }
 
         public void SetSpaceWarp(bool enabled)
         {
@@ -612,7 +737,6 @@ namespace Unity.XR.PXR
             StopAllCoroutines();
             if (openMRC)
             {
-                PXR_Plugin.System.MRCStateChangedAction -= OnMRCStateChanged;
 #if UNITY_6000_0_OR_NEWER
                 if (GraphicsSettings.defaultRenderPipeline != null)
 #else
@@ -1030,11 +1154,7 @@ namespace Unity.XR.PXR
 
             PLog.d(TAG_MRC, $"CalibrationMRCCam backgroundCamObj.transform.localPosition={ backgroundCamObj.transform.localPosition}");
         }
-
-        private void OnMRCStateChanged(bool enable)
-        {
-            PXR_Plugin.Sensor.UPxr_HMDUpdateSwitch(!enable);
-        }
+        
         #endregion
         
        

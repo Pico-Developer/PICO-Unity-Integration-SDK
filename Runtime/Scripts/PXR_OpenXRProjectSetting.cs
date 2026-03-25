@@ -78,6 +78,7 @@ namespace Unity.XR.OpenXR.Features.PICOSupport
 
         public string GetSystemSplashScreen(string path)
         {
+            OnValidate();
             if (systemSplashScreen == null || splashPath == string.Empty)
             {
                 return "0";

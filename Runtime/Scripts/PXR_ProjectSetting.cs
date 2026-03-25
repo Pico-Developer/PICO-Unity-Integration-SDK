@@ -41,6 +41,8 @@ namespace Unity.XR.PXR
         public bool sceneCapture;
         public bool sharedAnchor;
         public bool spatialMesh;
+        public bool planeDetection;
+        public bool secureMR;
         public PxrMeshLod meshLod;
         public bool superResolution;
         public bool normalSharpening;
@@ -110,7 +112,8 @@ namespace Unity.XR.PXR
                 projectConfig.isDataCollectionDisabled = false;
                 projectConfig.portalFirstSelected = 0;
                 projectConfig.meshLod = PxrMeshLod.Low;
-
+                projectConfig.secureMR = false;
+                projectConfig.planeDetection = false;
                 string path = Application.dataPath + "/Resources";
                 if (!Directory.Exists(path))
                 {

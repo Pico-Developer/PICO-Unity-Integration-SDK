@@ -14,17 +14,18 @@ namespace PXR_Audio
             Success = 0,
             SourceNotFound = -1001,
             SourceDataNotFound = -1002,
-            SceneNotFound = -1003,
-            SceneMeshNotFound = -1004,
-            IllegalValue = -1005,
-            ContextNotCreated = -1006,
-            ContextNotReady = -1007,
-            ContextRepeatedInitialization = -1008,
-            EnvironmentalAcousticsDisabled = -1009,
-            ApiDisabled = -1010,
-
-            ///< API is disabled in current build
-            SourceInuse = -1011,
+            SoundFieldNotFound = -1003,
+            SoundFieldDataNotFound = -1004,
+            SceneNotFound = -1005,
+            SceneMeshNotFound = -1006,
+            IllegalValue = -1007,
+            ContextNotCreated = -1008,
+            ContextNotReady = -1009,
+            ContextRepeatedInitialization = -1010,
+            EnvironmentalAcousticsDisabled = -1011,
+            ApiDisabled = -1012, ///< API is disabled in current build
+            SourceInuse = -1013,
+            NotImplemented = -1014,
         };
 
         public enum PlaybackMode
@@ -118,13 +119,14 @@ namespace PXR_Audio
             None = 0, // 引擎不依据距离计算衰减
             Fixed = 1, // 与None完全一致
             InverseSquare = 2, // 引擎 InverseSquare Law 计算距离衰减
-            Customized = 3, // 依据外部传入的 Callback 计算距离衰减
+            Customized = ~0, // 依据外部传入的 Callback 计算距离衰减
         };
 
         public enum SpatializerApiImpl
         {
             unity,
             wwise,
+            unity_native
         }
 
         public delegate float DistanceAttenuationCallback(float distance, float rangeMin, float rangeMax);

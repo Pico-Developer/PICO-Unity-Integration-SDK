@@ -13,6 +13,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.XR.Interaction.Toolkit;
 using UnityEngine.XR.Interaction.Toolkit.Inputs;
 using UnityEngine.XR.Interaction.Toolkit.UI;
+using UnityEngine.Rendering;
+using System.IO;
 
 #if PICO_OPENXR_SDK
 using UnityEngine.XR.OpenXR;
@@ -546,6 +548,7 @@ namespace Unity.XR.PXR
         static string handRightName = $"{PXR_Utils.BuildingBlock} {k_Id} Right";
 
         private static bool isExecuting = false;
+        private static string ImportPendingKey = PXR_Utils.ProjectName+PXR_Utils.SceneName+"PXR_BuildingBlocksXRHandTracking";
 
         static void DoInterestingStuff()
         {
@@ -572,11 +575,33 @@ namespace Unity.XR.PXR
                 // if no samples, add.
                 if (PXR_Utils.TryFindSample(PXR_Utils.xrHandPackageName, PXR_Utils.xrHandVersion, PXR_Utils.xrHandVisualizerSampleName, out var visualizerSample))
                 {
-                    visualizerSample.Import(Sample.ImportOptions.OverridePreviousImports);
+                    if (!Directory.Exists(visualizerSample.importPath)){
+                        EditorPrefs.SetBool(ImportPendingKey, true);
+                        visualizerSample.Import(Sample.ImportOptions.OverridePreviousImports);
+                    }else{
+                        GenerateXRHands();
+                    }
                 }
             }
 
+#endif
+        }
+#if XR_HAND
+        [InitializeOnLoadMethod]
+        private static void OnDomainReloadXRHandHandler()
+        {
+            if(EditorPrefs.GetBool(ImportPendingKey, false)){
+                Debug.Log("Detected post-import reload, continuing logic..." + EditorPrefs.GetBool(ImportPendingKey, false));
+                EditorApplication.delayCall += ()=>{
+                    GenerateXRHands();
+                };
+            }
+        }
+        private static void GenerateXRHands(){
             // Get XROrigin
+            bool isURP = GraphicsSettings.currentRenderPipeline != null && GraphicsSettings.currentRenderPipeline.GetType().Name.Contains("Universal");
+            var xrHandPackage = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(UnityEngine.XR.Hands.XRHand).Assembly);
+            if (xrHandPackage != null) PXR_Utils.xrHandVersion = xrHandPackage.version;
             GameObject cameraOrigin = PXR_Utils.CheckAndCreateXROrigin();
             PXR_ProjectSetting.GetProjectConfig().handTracking = true;
             PXR_ProjectSetting.SaveAssets();
@@ -595,6 +620,12 @@ namespace Unity.XR.PXR
                         leftHand.transform.localPosition = Vector3.zero;
                         leftHand.transform.localRotation = Quaternion.identity;
                         leftHand.transform.localScale = Vector3.one;
+                        var leftHandSkin = leftHand.transform.GetComponentInChildren<SkinnedMeshRenderer>(true);
+                        if(leftHandSkin != null && leftHandSkin.sharedMaterial != null){
+                            var material = new Material(leftHandSkin.sharedMaterial);
+                            material.shader = isURP?Shader.Find("Universal Render Pipeline/Lit"):Shader.Find("Standard");
+                            leftHandSkin.material = material;
+                        }
                         leftHand.SetActive(true);
                         leftHand.name = handLeftName;
                     }
@@ -615,6 +646,12 @@ namespace Unity.XR.PXR
                         rightHand.transform.localPosition = Vector3.zero;
                         rightHand.transform.localRotation = Quaternion.identity;
                         rightHand.transform.localScale = Vector3.one;
+                         var rightHandSkin = rightHand.transform.GetComponentInChildren<SkinnedMeshRenderer>(true);
+                        if(rightHandSkin != null && rightHandSkin.sharedMaterial != null){
+                            var material = new Material(rightHandSkin.sharedMaterial);
+                            material.shader = isURP?Shader.Find("Universal Render Pipeline/Lit"):Shader.Find("Standard");
+                            rightHandSkin.material = material;
+                        }
                         rightHand.SetActive(true);
                         rightHand.name = handRightName;
                     }
@@ -626,9 +663,8 @@ namespace Unity.XR.PXR
             EditorSceneManager.MarkSceneDirty(cameraOrigin.scene);
             EditorSceneManager.SaveScene(cameraOrigin.scene);
             isExecuting = false;
-#endif
         }
-
+#endif
         public void ExecuteBuildingBlock() => DoInterestingStuff();
 
         // Each building block should have an accompanying MenuItem as a good practice, we add them here.

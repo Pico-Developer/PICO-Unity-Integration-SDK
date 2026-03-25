@@ -41,6 +41,9 @@ namespace Unity.XR.PXR.SecureMR
                     case SecureMRTensorUsage.Scalar:
                             CreateScalarTensor(secureMrProvider, tensorMetadata);
                         break;
+                    case SecureMRTensorUsage.DynamicTexture:
+                        CreateDynamicTextureTensor(secureMrProvider, tensorMetadata);
+                        break;
                 }            
             }
         }
@@ -122,6 +125,20 @@ namespace Unity.XR.PXR.SecureMR
                     tensor = secureMrProvider.CreateTensor<byte,Matrix>(tensorMetadata.channel, new TensorShape(tensorMetadata.shape), tensorData.ToByteArray());
                     break;
 
+            }
+        }
+        
+        void CreateDynamicTextureTensor(Provider secureMrProvider, PXR_SecureMRTensorMetadata tensorMetadata)
+        {
+            switch(tensorMetadata.dataType)
+            {
+                case SecureMRTensorDataType.DynamicTextureByte:
+                    tensor = secureMrProvider.CreateTensor<byte,DynamicTexture>(tensorMetadata.channel, new TensorShape(tensorMetadata.shape), tensorData.ToByteArray());
+                    break;
+                case SecureMRTensorDataType.DynamicTextureFloat:
+                    tensor = secureMrProvider.CreateTensor<float,DynamicTexture>(tensorMetadata.channel, new TensorShape(tensorMetadata.shape), tensorData.ToFloatArray());
+                    break;
+                
             }
         }
     }

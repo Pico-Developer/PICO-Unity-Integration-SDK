@@ -46,7 +46,11 @@ public class EnterpriseAPI : MonoBehaviour
         imgByte = new byte[width*height*4];
         texture = new Texture2D((int)width, (int)height, TextureFormat.RGBA32, false);
         videoMaterial.SetTexture("_MainTex", texture);
-        
+        PXR_Enterprise.InitEnterpriseService();
+        PXR_Enterprise.BindEnterpriseService(b =>
+        {
+            Debug.Log($"{tag}  Bind enterprise service success={b}");
+        } );
     }
     public void OpenCamera()
     {

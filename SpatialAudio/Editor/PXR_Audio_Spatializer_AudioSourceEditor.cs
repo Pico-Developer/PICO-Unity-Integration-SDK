@@ -11,6 +11,7 @@ public class PXR_Audio_Spatializer_AudioSourceEditor : Editor
     private SerializedProperty reflectionGainDBProperty;
     private SerializedProperty sourceSizeProperty;
     private SerializedProperty enableDopplerProperty;
+    private SerializedProperty enablePicoAttenuationProperty;
     private SerializedProperty sourceAttenuationModeProperty;
     private SerializedProperty minAttenuationDistanceProperty;
     private SerializedProperty maxAttenuationDistanceProperty;
@@ -26,6 +27,7 @@ public class PXR_Audio_Spatializer_AudioSourceEditor : Editor
         reflectionGainDBProperty = serializedObject.FindProperty("reflectionGainDB");
         sourceSizeProperty = serializedObject.FindProperty("sourceSize");
         enableDopplerProperty = serializedObject.FindProperty("enableDoppler");
+        enablePicoAttenuationProperty = serializedObject.FindProperty("enablePicoAttenuation");
         sourceAttenuationModeProperty = serializedObject.FindProperty("sourceAttenuationMode");
         minAttenuationDistanceProperty = serializedObject.FindProperty("minAttenuationDistance");
         maxAttenuationDistanceProperty = serializedObject.FindProperty("maxAttenuationDistance");
@@ -50,18 +52,29 @@ public class PXR_Audio_Spatializer_AudioSourceEditor : Editor
             EditorGUI.indentLevel++;
 
             EditorGUILayout.PropertyField(enableDopplerProperty);
-
+            
             EditorGUI.BeginDisabledGroup(Application.isPlaying);
-            EditorGUILayout.PropertyField(sourceAttenuationModeProperty);
+            EditorGUILayout.PropertyField(enablePicoAttenuationProperty);
             EditorGUI.EndDisabledGroup();
-            var attenuationMode = (SourceAttenuationMode)sourceAttenuationModeProperty.enumValueIndex;
-            if (attenuationMode == SourceAttenuationMode.InverseSquare ||
-                attenuationMode == SourceAttenuationMode.Customized)
+            if (enablePicoAttenuationProperty.boolValue)
             {
                 EditorGUI.indentLevel++;
+                EditorGUI.BeginDisabledGroup(Application.isPlaying);
+                EditorGUILayout.PropertyField(sourceAttenuationModeProperty);
+                EditorGUI.EndDisabledGroup();
+                var attenuationMode = (SourceAttenuationMode)sourceAttenuationModeProperty.enumValueIndex;
+                if (attenuationMode == SourceAttenuationMode.InverseSquare ||
+                    attenuationMode == SourceAttenuationMode.Customized)
+                {
+                    EditorGUILayout.PropertyField(minAttenuationDistanceProperty);
+                    EditorGUILayout.PropertyField(maxAttenuationDistanceProperty);
+                }
+                EditorGUI.indentLevel--;
+            }
+            else
+            {
                 EditorGUILayout.PropertyField(minAttenuationDistanceProperty);
                 EditorGUILayout.PropertyField(maxAttenuationDistanceProperty);
-                EditorGUI.indentLevel--;
             }
 
             showDirectivityOptions = EditorGUILayout.Foldout(showDirectivityOptions,

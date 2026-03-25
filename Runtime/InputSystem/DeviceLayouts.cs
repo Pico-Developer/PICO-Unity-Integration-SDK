@@ -151,7 +151,7 @@ namespace Unity.XR.PXR.Input
     public class PXR_Controller : XRControllerWithRumble
     {
         [Preserve]
-        [InputControl(aliases = new[] { "Primary2DAxis", "Touchpad" })]
+        [InputControl(aliases = new[] { "Primary2DAxis", "Thumbstick" })]
         public Vector2Control thumbstick { get; private set; }
 
         [Preserve]
@@ -171,7 +171,7 @@ namespace Unity.XR.PXR.Input
         [InputControl(aliases = new[] { "GripButton", "GripPress" })]
         public ButtonControl gripPressed { get; private set; }
         [Preserve]
-        [InputControl(aliases = new[] { "Primary2DAxisClick", "TouchpadPress" })]
+        [InputControl(aliases = new[] { "Primary2DAxisClick", "ThumbstickPress" })]
         public ButtonControl thumbstickClicked { get; private set; }
         [Preserve]
         [InputControl(aliases = new[] { "ATouch", "XTouch" })]
@@ -189,11 +189,11 @@ namespace Unity.XR.PXR.Input
         [InputControl(aliases = new[] { "Menu" })]
         public ButtonControl menu { get; private set; }
         [Preserve]
-        [InputControl(aliases = new[] { "TouchpadTouch" })]
-        public ButtonControl touchpadTouched { get; private set; }
+        [InputControl(aliases = new[] { "ThumbstickTouch" })]
+        public ButtonControl thumbstickTouched { get; private set; }
         [Preserve]
         [InputControl(aliases = new[] { "ThumbRestTouch" })]
-        public ButtonControl thumbstickTouched { get; private set; }
+        public ButtonControl thumbRestTouched { get; private set; }
 
         [Preserve]
         [InputControl(aliases = new[] { "controllerTrackingState" })]

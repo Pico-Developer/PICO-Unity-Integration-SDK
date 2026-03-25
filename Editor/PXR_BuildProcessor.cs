@@ -191,7 +191,8 @@ namespace Unity.XR.PXR.Editor
         {
             { "xr-usable-core-mask-enabled", "1"},
             { "xr-require-backbuffer-textures", "0" },
-            { "xr-hide-memoryless-render-texture", "1" }
+            { "xr-hide-memoryless-render-texture", "1" },
+            { "xr-vulkan-extension-fragment-density-map-enabled", "1"}
         };
 
         public void OnPreprocessBuild(BuildReport report)
@@ -325,7 +326,7 @@ namespace Unity.XR.PXR.Editor
             string usesPermissionTagName = "uses-permission";
 
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pvr.app.type"}},new Dictionary<string, string>{{"value","vr"}});
-            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pxr.sdk.version_code"}},new Dictionary<string, string>{{"value", "5140"}});
+            doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","pxr.sdk.version_code"}},new Dictionary<string, string>{{"value", "5150"}});
             doc.InsertAttributeInTargetTag(applicationTagPath,null, new Dictionary<string, string>() {{"requestLegacyExternalStorage", "true"}});
 #if PICO_OPENXR_SDK
             doc.InsertAttributeInTargetTag(metaDataTagPath,new Dictionary<string, string>{{"name","use.pxr.sdk"}},new Dictionary<string, string>{{"value", "2"}});
@@ -499,11 +500,13 @@ namespace Unity.XR.PXR.Editor
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_cloud_anchor" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().sharedAnchor ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_mesh_anchor" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().spatialMesh ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_scene_anchor" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().sceneCapture ? "1" : "0" } });
+            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "enable_plane_detection" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().planeDetection ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.SuperResolution" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().superResolution ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.NormalSharpening" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().normalSharpening ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.QualitySharpening" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().qualitySharpening ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.FixedFoveatedSharpening" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().fixedFoveatedSharpening ? "1" : "0" } });
             doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.SelfAdaptiveSharpening" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().selfAdaptiveSharpening ? "1" : "0" } });
+            doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "pvr.app.secure_mr" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().secureMR ? "1" : "0" } });
             doc.CreateElementInTag(manifestTagPath,usesPermissionTagName,new Dictionary<string, string>{{"name","android.permission.WRITE_SETTINGS"}});
 
             if (PXR_ProjectSetting.GetProjectConfig().eyeTracking || PXR_ProjectSetting.GetProjectConfig().enableETFR)
@@ -513,7 +516,7 @@ namespace Unity.XR.PXR.Editor
                 doc.InsertAttributeInTargetTag(metaDataTagPath, new Dictionary<string, string> { { "name", "eyetracking_calibration" } }, new Dictionary<string, string> { { "value", PXR_ProjectSetting.GetProjectConfig().eyetrackingCalibration ? "true" : "false" } });
             }
 
-            if (PXR_ProjectSetting.GetProjectConfig().spatialAnchor || PXR_ProjectSetting.GetProjectConfig().sceneCapture || PXR_ProjectSetting.GetProjectConfig().spatialMesh || PXR_ProjectSetting.GetProjectConfig().sharedAnchor)
+            if (PXR_ProjectSetting.GetProjectConfig().sceneCapture || PXR_ProjectSetting.GetProjectConfig().spatialMesh || PXR_ProjectSetting.GetProjectConfig().planeDetection)
             {
                 doc.CreateElementInTag(manifestTagPath, usesPermissionTagName,
                     new Dictionary<string, string> { { "name", "com.picovr.permission.SPATIAL_DATA" } });

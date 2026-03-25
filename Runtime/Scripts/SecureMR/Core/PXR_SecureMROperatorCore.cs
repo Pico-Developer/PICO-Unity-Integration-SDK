@@ -135,6 +135,16 @@ namespace Unity.XR.PXR.SecureMR
             outputConfigs.Add(config);
         }
     }
+    
+    public class JavascriptOperatorConfiguration : OperatorConfiguration
+    {
+        public string configText { get; set; }
+        
+        public JavascriptOperatorConfiguration(string configText)
+        {
+            this.configText = configText;
+        }
+    }
 
     public abstract class Operator
     {
@@ -144,12 +154,12 @@ namespace Unity.XR.PXR.SecureMR
 
         public PxrResult SetOperand(string name, Tensor tensor)
         {
-            return PXR_Plugin.SecureMR.UPxr_SetSecureMROperatorOperandByName(PipelineHandle, OperatorHandle, tensor.TensorHandle, name);
+            return PXR_SecureMRPlugin.UPxr_SetSecureMROperatorOperandByName(PipelineHandle, OperatorHandle, tensor.TensorHandle, name);
         }
 
         public PxrResult SetResult(string name, Tensor tensor)
         {
-            return PXR_Plugin.SecureMR.UPxr_SetSecureMROperatorResultByName(PipelineHandle, OperatorHandle, tensor.TensorHandle, name);
+            return PXR_SecureMRPlugin.UPxr_SetSecureMROperatorResultByName(PipelineHandle, OperatorHandle, tensor.TensorHandle, name);
         }
 
         public Operator(ulong pipelineHandle, SecureMROperatorType operatorType)
@@ -163,7 +173,7 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ArithmeticComposeOperator(ulong pipelineHandle, SecureMROperatorType operatorType, ArithmeticComposeOperatorConfiguration config) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperatorArithmeticCompose(base.PipelineHandle, config.configText, out var operatorHandle);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorArithmeticCompose(base.PipelineHandle, config.configText, out var operatorHandle);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -175,8 +185,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ElementwiseMinOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -188,8 +198,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ElementwiseMaxOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -201,8 +211,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ElementwiseMultiplyOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -214,8 +224,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public CustomizedCompareOperator(ulong pipelineHandle, SecureMROperatorType operatorType, ComparisonOperatorConfiguration configuration) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperatorComparison(base.PipelineHandle, configuration.comparison, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorComparison(base.PipelineHandle, configuration.comparison, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -227,8 +237,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ElementwiseOrOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -240,8 +250,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ElementwiseAndOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -253,8 +263,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public AllOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -266,8 +276,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public AnyOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -279,8 +289,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public NmsOperator(ulong pipelineHandle, SecureMROperatorType operatorType, NmsOperatorConfiguration configuration) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperatorNonMaximumSuppression(base.PipelineHandle, configuration.threshold, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorNonMaximumSuppression(base.PipelineHandle, configuration.threshold, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -292,8 +302,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public SolvePnPOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -305,8 +315,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public GetAffineOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -318,8 +328,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ApplyAffineOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -331,8 +341,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ApplyAffinePointOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -344,8 +354,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public UvTo3DInCameraSpaceOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperatorUVTo3D(pipelineHandle, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorUVTo3D(pipelineHandle, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -357,8 +367,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public AssignmentOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -370,8 +380,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public RunModelInferenceOperator(ulong pipelineHandle, SecureMROperatorType operatorType, ModelOperatorConfiguration configuration) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMrOperatorModel(pipelineHandle, configuration.inputConfigs, configuration.outputConfigs, configuration.modelData, configuration.modelType, configuration.modelName, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMrOperatorModel(pipelineHandle, configuration.inputConfigs, configuration.outputConfigs, configuration.modelData, configuration.modelType, configuration.modelName, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -383,8 +393,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public NormalizeOperator(ulong pipelineHandle, SecureMROperatorType operatorType, NormalizeOperatorConfiguration configuration) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperatorNormalize(pipelineHandle, configuration.normalizeType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorNormalize(pipelineHandle, configuration.normalizeType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -396,8 +406,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public CameraSpaceToWorldOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -409,8 +419,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public RectifiedVstAccessOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -422,8 +432,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ArgmaxOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -435,8 +445,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public ConvertColorOperator(ulong pipelineHandle, SecureMROperatorType operatorType, ColorConvertOperatorConfiguration convertConfiguration) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperatorColorConvert(pipelineHandle, convertConfiguration.convert, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorColorConvert(pipelineHandle, convertConfiguration.convert, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -448,8 +458,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public SortVectorOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -461,8 +471,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public InversionOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -474,8 +484,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public GetTransformMatrixOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -487,8 +497,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public SortMatrixOperator(ulong pipelineHandle, SecureMROperatorType operatorType, SortMatrixOperatorConfiguration configuration) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperatorSortMatrix(pipelineHandle, configuration.sortType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorSortMatrix(pipelineHandle, configuration.sortType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -500,8 +510,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public SwitchGltfRenderStatusOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -513,8 +523,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public UpdateGltfOperator(ulong pipelineHandle, SecureMROperatorType operatorType, UpdateGltfOperatorConfiguration configuration) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperatorUpdateGltf(pipelineHandle, configuration.attribute, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorUpdateGltf(pipelineHandle, configuration.attribute, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -526,8 +536,8 @@ namespace Unity.XR.PXR.SecureMR
     {
         public RenderTextOperator(ulong pipelineHandle, SecureMROperatorType operatorType, RenderTextOperatorConfiguration configuration) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperatorRenderText(pipelineHandle, configuration.typeface, configuration.languageAndLocale, configuration.width, configuration.height, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorRenderText(pipelineHandle, configuration.typeface, configuration.languageAndLocale, configuration.width, configuration.height, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;
@@ -539,8 +549,60 @@ namespace Unity.XR.PXR.SecureMR
     {
         public LoadTextureOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
         {
-            var result = PXR_Plugin.SecureMR.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
-            PLog.i(PXR_Plugin.SecureMR.TAG, $"Create {operatorType} operator" + result, false);
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
+            if (result == PxrResult.SUCCESS)
+            {
+                base.OperatorHandle = operatorHandle;
+            }
+        }
+    }
+    
+    public class SvdOperator : Operator
+    {
+        public SvdOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
+        {
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
+            if (result == PxrResult.SUCCESS)
+            {
+                base.OperatorHandle = operatorHandle;
+            }
+        }
+    }
+    
+    public class NormOperator : Operator
+    {
+        public NormOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
+        {
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
+            if (result == PxrResult.SUCCESS)
+            {
+                base.OperatorHandle = operatorHandle;
+            }
+        }
+    }
+    
+    public class SwapHwcChwOperator : Operator
+    {
+        public SwapHwcChwOperator(ulong pipelineHandle, SecureMROperatorType operatorType) : base(pipelineHandle, operatorType)
+        {
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperator(pipelineHandle, operatorType, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
+            if (result == PxrResult.SUCCESS)
+            {
+                base.OperatorHandle = operatorHandle;
+            }
+        }
+    }
+    
+    public class JavascriptOperator : Operator
+    {
+        public JavascriptOperator(ulong pipelineHandle, SecureMROperatorType operatorType, JavascriptOperatorConfiguration operatorConfiguration) : base(pipelineHandle, operatorType)
+        {
+            var result = PXR_SecureMRPlugin.UPxr_CreateSecureMROperatorJavascript(pipelineHandle, operatorConfiguration.configText, out var operatorHandle);
+            PLog.i(PXR_SecureMRPlugin.TAG, $"Create {operatorType} operator" + result, false);
             if (result == PxrResult.SUCCESS)
             {
                 base.OperatorHandle = operatorHandle;

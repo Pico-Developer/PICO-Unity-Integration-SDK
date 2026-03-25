@@ -211,6 +211,30 @@ namespace Unity.XR.PXR.SecureMR
                     Operator = pipeline.pipeline.CreateOperator<LoadTextureOperator>();
                 }
                     break;
+                case SecureMROperatorType.Svd:
+                {
+                    Operator = pipeline.pipeline.CreateOperator<SvdOperator>();
+                }
+                    break;
+                case SecureMROperatorType.Norm:
+                {
+                    Operator = pipeline.pipeline.CreateOperator<NormOperator>();
+                }
+                    break;
+                case SecureMROperatorType.SwapHwcChw:
+                {
+                    Operator = pipeline.pipeline.CreateOperator<SwapHwcChwOperator>();
+                }
+                    break;
+                case SecureMROperatorType.Javascript:
+                {
+                    if (operatorConfig != null && operatorConfig is PXR_SecureMRJavascriptOperatorConfig opConfig)
+                    {
+                        JavascriptOperatorConfiguration javascriptOperatorConfig = new JavascriptOperatorConfiguration(opConfig.configText);
+                        Operator = pipeline.pipeline.CreateOperator<JavascriptOperator>(javascriptOperatorConfig);
+                    }
+                }
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
